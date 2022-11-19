@@ -1,0 +1,40 @@
+<html>
+    <head>
+        {% if data.fuco %}
+        <title>{{ data.fuco.question }}</title>
+        {% else %}
+        <title>Nice Try</title>
+        {% endif %}
+   <script>
+function getAnalisys(JobId) {
+        const Http = new XMLHttpRequest();
+        const url='/getAnalisys?JobId='+JobId;
+        Http.open("GET", url);
+        Http.send();
+
+        Http.onreadystatechange = (e) => {
+          document.getElementById(JobId).innerHTML = "";
+          console.log(JobId);
+          console.log(Http.responseText);
+
+          document.getElementById(JobId).innerHTML = Http.responseText;
+        }
+}
+
+function onload() {
+{% for u in data.analysis %}
+        getAnalisys("{{ u.id }}");
+{% endfor %}
+}
+   </script>
+
+    </head>
+    <body onload="onload()">
+        <h1>Scanned {{ data.fuco.datatype }}: {{ data.fuco.question }}</h1>
+        {% for u in data.analysis %}
+        <div id="{{ u.analyzerName }}"><p>{{ u.analyzerName }}</p>
+		<div id="{{ u.id }}">{{ u }}</div>
+        </div>
+        {% endfor %}
+    </body>
+</html>

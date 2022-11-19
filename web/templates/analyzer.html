@@ -1,0 +1,4 @@
+                {% for u in data %}
+		<input type="checkbox" name="analyzer" value="{{ u.name }}">
+     		<label for="{{ u.name }}">{{ u.name }}</label>
+                {% endfor %}

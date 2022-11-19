@@ -1,0 +1,5 @@
+Flask
+Flask-RESTful
+Jinja2
+cortex4py
+flask_apscheduler
