@@ -1,5 +1,5 @@
 # fuco
-
+FUCO is a search engine for Cortex 
 
 ## try it in 4 minutes
 ```
