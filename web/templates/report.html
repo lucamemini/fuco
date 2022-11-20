@@ -1,100 +1,160 @@
-<html>
+<!doctype html>
+<html lang="en" class="h-100">
   <head>
-    <title>FUCO: {{ data.fuco.question }}</title>
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="author" content="colorlib.com">
-    <link href="https://fonts.googleapis.com/css?family=Poppins" rel="stylesheet" />
-    <link href="css/main.css" rel="stylesheet" />
-        <!-- Latest compiled and minified CSS -->
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/css/bootstrap.min.css" integrity="sha384-HSMxcRTRxnN+Bdg0JdbxYKrThec>
-        <!-- Optional theme -->
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/css/bootstrap-theme.min.css" integrity="sha384-6pzBo3FDv/PJ8r2KRkGHi>
-        <!-- Latest compiled and minified JavaScript -->
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/js/bootstrap.min.js" integrity="sha384-aJ21OjlMXNL5UyIl/XNwTMqvzeRMZH2w8c5cRVpzpU8Y5>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="Mark Otto, Jacob Thornton, and Bootstrap contributors">
+    <meta name="generator" content="Hugo 0.104.2">
+    <title>Sticky Footer Navbar Template · Bootstrap v5.2</title>
 
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.2.0/css/fontawesome.min.css" integrity="sha384-z4tVnCr80Z>
+    <link rel="canonical" href="https://getbootstrap.com/docs/5.2/examples/sticky-footer-navbar/">
 
-        <link href="https://cdn.jsdelivr.net/npm/pretty-checkbox@3.0/dist/pretty-checkbox.min.css" rel="stylesheet" />
-   <style>
-        // todo
-   </style>
+    <link href="/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+      .bd-placeholder-img {
+        font-size: 1.125rem;
+        text-anchor: middle;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        user-select: none;
+      }
+
+      @media (min-width: 768px) {
+        .bd-placeholder-img-lg {
+          font-size: 3.5rem;
+        }
+      }
+
+      .b-example-divider {
+        height: 3rem;
+        background-color: rgba(0, 0, 0, .1);
+        border: solid rgba(0, 0, 0, .15);
+        border-width: 1px 0;
+        box-shadow: inset 0 .5em 1.5em rgba(0, 0, 0, .1), inset 0 .125em .5em rgba(0, 0, 0, .15);
+      }
+
+      .b-example-vr {
+        flex-shrink: 0;
+        width: 1.5rem;
+        height: 100vh;
+      }
+
+      .bi {
+        vertical-align: -.125em;
+        fill: currentColor;
+      }
+
+      .nav-scroller {
+        position: relative;
+        z-index: 2;
+        height: 2.75rem;
+        overflow-y: hidden;
+      }
+
+      .nav-scroller .nav {
+        display: flex;
+        flex-wrap: nowrap;
+        padding-bottom: 1rem;
+        margin-top: -1px;
+        overflow-x: auto;
+        text-align: center;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+      }
+    </style>
    <script>
-	function getAnalisys(JobId) {
-	        const Http = new XMLHttpRequest();
-	        const url='/getAnalisys?JobId='+JobId;
-	        Http.open("GET", url);
-	        Http.send();
-
-	        Http.onreadystatechange = (e) => {
-	          document.getElementById(JobId).innerHTML = "";
-	          console.log(JobId);
-	          console.log(Http.responseText);
-
-	          document.getElementById(JobId).innerHTML = Http.responseText;
-	        }
-	}
-
-	function onload() {
-	{% for u in data.analysis %}
-	        getAnalisys("{{ u.id }}");
-	{% endfor %}
-	}
-   </script>
-
-  </head>
-  <body onload="onload()">
-    <div class="s003"><html>
-  <head>
-    <title>FUCO: Ioc Search Engine</title>
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="author" content="colorlib.com">
-    <link href="https://fonts.googleapis.com/css?family=Poppins" rel="stylesheet" />
-    <link href="css/main.css" rel="stylesheet" />
-        <!-- Latest compiled and minified CSS -->
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/css/bootstrap.min.css" integrity="sha384-HSMxcRTRxnN+Bdg0JdbxYKrThec>
-        <!-- Optional theme -->
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/css/bootstrap-theme.min.css" integrity="sha384-6pzBo3FDv/PJ8r2KRkGHi>
-        <!-- Latest compiled and minified JavaScript -->
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/js/bootstrap.min.js" integrity="sha384-aJ21OjlMXNL5UyIl/XNwTMqvzeRMZH2w8c5cRVpzpU8Y5>
-
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.2.0/css/fontawesome.min.css" integrity="sha384-z4tVnCr80Z>
-
-        <link href="https://cdn.jsdelivr.net/npm/pretty-checkbox@3.0/dist/pretty-checkbox.min.css" rel="stylesheet" />
-   <style>
-        // todo
-   </style>
-   <script>
-        function getAnalyzer(selectObject) {
-                var value = selectObject.value;
+        function getAnalisys(JobId) {
                 const Http = new XMLHttpRequest();
-                const url='/getAnalyzer?type='+value;
+                const url='/getAnalisys?JobId='+JobId;
                 Http.open("GET", url);
                 Http.send();
 
                 Http.onreadystatechange = (e) => {
-                  document.getElementById('analyzer_list').innerHTML = "";
-                  /*
-                  console.log(value);
+                  document.getElementById(JobId).innerHTML = "";
+                  console.log(JobId);
                   console.log(Http.responseText);
-                  */
-                  document.getElementById('analyzer_list').innerHTML = Http.responseText;
+
+                  document.getElementById(JobId).innerHTML = Http.responseText;
                 }
+        }
+
+        function onload() {
+        {% for u in data.analysis %}
+                getAnalisys("{{ u.id }}");
+        {% endfor %}
         }
    </script>
 
+    
+    <!-- Custom styles for this template -->
+    <link href="/css/sticky-footer-navbar.css" rel="stylesheet">
   </head>
-  <body>
-    <div class="s003">
-        <h1>Scanned {{ data.fuco.datatype }}: {{ data.fuco.question }}</h1>
-        {% for u in data.analysis %}
-        <div id="{{ u.analyzerName }}"><p>{{ u.analyzerName }}</p>
-		<div id="{{ u.id }}"><pre>{{ u }}</pre></div>
-        </div>
-        {% endfor %}
+  <body class="d-flex flex-column h-100"  onload="onload()">
+    
+<header>
+  <!-- Fixed navbar -->
+  <nav class="navbar navbar-expand-md navbar-dark fixed-top bg-dark">
+    <div class="container-fluid">
+      <div class="collapse navbar-collapse" id="navbarCollapse">
+        <ul class="navbar-nav me-auto mb-2 mb-md-0">
+          <li class="nav-item">
+            <a class="nav-link active" aria-current="page" href="#">Fuco</a>
+          </li>
+<!--
+          <li class="nav-item">
+            <a class="nav-link" href="#">Link</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link disabled">Disabled</a>
+          </li>
+-->
+        </ul>
+<!--
+        <form class="d-flex" role="search">
+          <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search">
+          <button class="btn btn-outline-success" type="submit">Search</button>
+        </form>
+-->
+      </div>
     </div>
+  </nav>
+</header>
+
+<!-- Begin page content -->
+<main class="flex-shrink-0">
+  <div class="container">
+    <h1 class="mt-5">Result for {{ data.fuco.datatype }}: {{ data.fuco.question }}</h1>
+        <div class="accordion" id="accordion_result">
+        {% for u in data.analysis %}
+  <div class="accordion-item">
+    <h2 class="accordion-header" id="heading_{{ u.id }}">
+      <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapse_{{ u.id }}" aria-expanded="true" aria-controls="collapse_{{ u.id }}">
+       {{ u.analyzerName }}
+      </button>
+    </h2>
+    <div id="collapse_{{ u.id }}"  class="accordion-collapse collapse" aria-labelledby="heading_{{ u.id }}" data-bs-parent="#accordion_result">
+      <div class="accordion-body" id="{{ u.id }}">
+        <pre>{{ u }}</pre>
+      </div>
+    </div>
+  </div>
+
+        {% endfor %}
+        </div>
+  </div>
+</main>
+
+<footer class="footer mt-auto py-3 bg-light">
+  <div class="container">
+    <span class="text-muted">By Luca Memini</span>
+  </div>
+</footer>
+
+
+    <script src="/js/bootstrap.bundle.min.js"></script>
+
+      
   </body>
 </html>
