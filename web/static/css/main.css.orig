@@ -147,7 +147,7 @@ dfn {
  * Add the correct background and color in IE 9-.
  */
 mark {
-  background-color: #ff0;
+  background-color: #3a3a3a;
   color: #000;
 }
 
@@ -454,7 +454,7 @@ legend {
 .choices {
   position: relative;
   margin-bottom: 24px;
-  font-size: 14px;
+  font-size: 16px;
 }
 
 .choices:focus {
@@ -700,7 +700,7 @@ legend {
 .choices__list--dropdown .choices__item {
   position: relative;
   padding: 10px;
-  font-size: 12px;
+  font-size: 14px;
 }
 
 [dir="rtl"] .choices__list--dropdown .choices__item {
@@ -818,8 +818,8 @@ legend {
       justify-content: center;
   -ms-flex-align: center;
       align-items: center;
-  font-family: 'Poppins', sans-serif;
-  background-color: #f2f2f2;
+  font-family: 'Metropolis', sans-serif;
+  background-color: #f2edf0;
   background-size: cover;
   background-position: center center;
   padding: 15px;
@@ -970,7 +970,7 @@ legend {
   color: #fff;
   border: 0;
   cursor: pointer;
-  background: #63c76a;
+  background: #3f3fbc;
   transition: all .2s ease-out, color .2s ease-out;
 }
 
@@ -979,7 +979,7 @@ legend {
 }
 
 .s003 form .inner-form .input-field.third-wrap .btn-search:hover {
-  background: #50c058;
+  background: #223982;
 }
 
 .s003 form .inner-form .input-field.third-wrap .btn-search:focus {
