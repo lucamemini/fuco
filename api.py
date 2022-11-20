@@ -75,10 +75,16 @@ def getAnalisys():
 @app.route('/analysis', methods=['POST'])
 def analysis():
     data = request.form.get('tosearch')
+    if not bool(data):
+      return make_response("551",500)
     datatype = request.form.get('DataType')
+    if not bool(datatype):
+      return make_response("552",500)
     #for key in request.form.get('analyzer'):
     #print(request.form.getlist('analyzer')) # https://stackoverflow.com/questions/31859903/get-the-value-of-a-checkbox-in-flask
     analyzer_list = request.form.getlist('analyzer');
+    if not bool(analyzer_list):
+      return make_response("553",500)
     print(request.form)
     result = dict()
     result['analysis'] = list()
