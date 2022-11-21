@@ -6,12 +6,11 @@
     <meta name="description" content="">
     <meta name="author" content="Mark Otto, Jacob Thornton, and Bootstrap contributors">
     <meta name="generator" content="Hugo 0.104.2">
-    <title>Sticky Footer Navbar Template · Bootstrap v5.2</title>
+    <title>Result for {{ data.fuco.datatype }}: {{ data.fuco.question }}</title>
 
     <link rel="canonical" href="https://getbootstrap.com/docs/5.2/examples/sticky-footer-navbar/">
-
     <link href="/css/bootstrap.min.css" rel="stylesheet">
-
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.6/angular.min.js"></script>
     <style>
       .bd-placeholder-img {
         font-size: 1.125rem;
@@ -71,18 +70,32 @@
                 Http.open("GET", url);
                 Http.send();
 
-                Http.onreadystatechange = (e) => {
-                  document.getElementById(JobId).innerHTML = "";
-                  console.log(JobId);
-                  console.log(Http.responseText);
+                Http.onreadystatechange = function() {
+			if (Http.readyState == 4 && Http.status == 200) {
+	                  document.getElementById(JobId).innerHTML = "";
+	                  document.getElementById(JobId).innerHTML = Http.responseText;
+	                }
+                }
+        }
 
-                  document.getElementById(JobId).innerHTML = Http.responseText;
+        function getAnalisys_short(JobId) {
+                const Http = new XMLHttpRequest();
+                const url='/getShort?JobId='+JobId;
+                Http.open("GET", url);
+                Http.send();
+
+		
+                Http.onreadystatechange = function() {
+			if (Http.readyState == 4 && Http.status == 200) {
+	                  	document.getElementById("tagCloud").innerHTML += Http.responseText;
+	                }
                 }
         }
 
         function onload() {
         {% for u in data.analysis %}
                 getAnalisys("{{ u.id }}");
+	        getAnalisys_short("{{ u.id }}");
         {% endfor %}
         }
    </script>
@@ -100,7 +113,7 @@
       <div class="collapse navbar-collapse" id="navbarCollapse">
         <ul class="navbar-nav me-auto mb-2 mb-md-0">
           <li class="nav-item">
-            <a class="nav-link active" aria-current="page" href="#">Fuco</a>
+            <a class="nav-link active" aria-current="page" href="/">Fuco</a>
           </li>
 <!--
           <li class="nav-item">
@@ -125,18 +138,22 @@
 <!-- Begin page content -->
 <main class="flex-shrink-0">
   <div class="container">
-    <h1 class="mt-5">Result for {{ data.fuco.datatype }}: {{ data.fuco.question }}</h1>
+    <h1 class="mt-5">{{ data.fuco.question }}</h1>
+	<h6 id="tagCloud">&nbsp;</h6>
         <div class="accordion" id="accordion_result">
         {% for u in data.analysis %}
   <div class="accordion-item">
     <h2 class="accordion-header" id="heading_{{ u.id }}">
       <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapse_{{ u.id }}" aria-expanded="true" aria-controls="collapse_{{ u.id }}">
-       {{ u.analyzerName }}
+       {{ u.analyzerName }} 
       </button>
     </h2>
     <div id="collapse_{{ u.id }}"  class="accordion-collapse collapse" aria-labelledby="heading_{{ u.id }}" data-bs-parent="#accordion_result">
       <div class="accordion-body" id="{{ u.id }}">
-        <pre>{{ u }}</pre>
+	<button type="button" disabled="" class="btn btn-success">
+	  <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+	  Loading...
+	</button>
       </div>
     </div>
   </div>

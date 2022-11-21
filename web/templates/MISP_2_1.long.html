@@ -1,3 +1,4 @@
+{% set content = artifact.report.full %}
 <uib-tabset active="active">
 	<uib-tab index="$index" ng-repeat="res in content.results" heading="{{res.name}} - {{res.result.length}} results" disable="tab.disabled">
 		<div class="panel-body">
@@ -69,7 +70,7 @@
 <!-- General error  -->
 <div class="panel panel-danger" ng-if="!success">
     <div class="panel-heading">
-        <strong>{{(artifact.data || artifact.attachment.name) | fang}}</strong>
+	<strong>{{(artifact.data)}}</strong>
     </div>
     <div class="panel-body">
         {{content.errorMessage}}

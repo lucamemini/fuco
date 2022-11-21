@@ -2,7 +2,7 @@ import json
 
 from flask import Flask, render_template, request, make_response
 from flask_restful import reqparse, abort, Api, Resource
-
+import os
 from subprocess import Popen
 from urllib.parse import quote
 from uuid import uuid1
@@ -14,6 +14,7 @@ import time
 from cortex4py.api import Api
 from cortex4py.query import *
 
+template_folder='web/templates/'
 
 import fucoconfig as cfg 
 api = Api(cfg.cortex["host"], cfg.cortex["apikey"])
@@ -21,7 +22,7 @@ api = Api(cfg.cortex["host"], cfg.cortex["apikey"])
 app = app = Flask(__name__,
             static_url_path='',
             static_folder='web/static',
-            template_folder='web/templates')
+            template_folder=template_folder)
 
 
 def get_analyzer_by_type(t):
@@ -37,8 +38,8 @@ def run_analisys(analizer,datatype,data):
        'tlp': 1
    }, force=1)
    print('Task {} Question {} ({}) jobId {} Status {}'.format(analizer, data, datatype, job.id, job.status))
+#   print("JOB ANALISYS:")
 #   print(json.dumps(job.json(), indent=2))
-#   return job.id
    return job.json()
 
 @app.route('/')
@@ -58,19 +59,67 @@ def getAnalyzer():
 def getAnalisys():
    JobId = str(request.args.get('JobId')) 
 
-   i = 1
-   while i < 10:
+   i = 5
+   while i < 15:
      time.sleep(i)
      report = api.jobs.get_report(JobId)
-     print(report.status)
      if report.status == "Success":
        break
      if report.status == "Failure":
        break
      i += 1
-   print(report.report)
-   return report.json()
-#   return render_template('analyzer.html', data=result)
+#   print(json.dumps(report.json(), indent=2))
+   if os.path.exists(template_folder+report.analyzerName+".long.html"):
+     print("Using report template: "+template_folder+report.analyzerName+".long.html")
+
+     print(json.dumps(report.json(), indent=2))
+     return render_template(report.analyzerName+".long.html", artifact=report)
+
+     try:
+         return render_template(report.analyzerName+".long.html", artifact=report)
+     except:
+         return "<pre><code>"+str(report.json())+"</code></pre>"
+   else:
+     print("Report template: "+template_folder+report.analyzerName+".long.html not found")
+     return report.json()
+
+@app.route('/getShort', methods=['GET'])
+def getShort():
+   JobId = str(request.args.get('JobId')) 
+
+   i = 1
+   while i < 10:
+     report = api.jobs.get_report(JobId)
+     if report.status == "Success":
+       break
+     if report.status == "Failure":
+       break
+     i += 1
+     time.sleep(i)
+   taxonomies = report.report['summary']['taxonomies'][0]
+
+   level = taxonomies.get("level")
+   if level == "info": 
+         taxonomies['css'] = "bg-info";
+   elif level == "safe": 
+         taxonomies['css'] = "bg-success";
+   elif level == "suspicious": 
+         taxonomies['css'] = "bg-warning";
+   elif level == "malicious": 
+         taxonomies['css'] = "bg-danger";
+   else:
+         taxonomies['css'] = "";
+
+
+   if os.path.exists(template_folder+report.analyzerName+".short.html"):
+     print("Using report template: "+template_folder+report.analyzerName+".short.html")
+     try:
+         return render_template(report.analyzerName+".short.html", t=taxonomies)
+     except:
+         return t
+   else:
+     print("Report template: "+template_folder+report.analyzerName+".short.html not found")
+     return t
 
 @app.route('/analysis', methods=['POST'])
 def analysis():
