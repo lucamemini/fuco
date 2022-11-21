@@ -1,0 +1,20 @@
+<div class="panel panel-info" ng-if="success">
+    <div class="panel-heading">
+        Forcepoint WebsensePing Categories of <strong>{{artifact.data}}</strong>
+    </div>
+    <div class="panel-body">
+        <dl class="dl-horizontal" ng-repeat="(tag, value) in content">
+            <dt>{{tag}}</dt>
+            <dd>{{value}}</dd>
+        </dl>
+    </div>
+</div>
+
+<div class="panel panel-danger" ng-if="!success">
+    <div class="panel-heading">
+        <strong>{{(artifact.data || artifact.attachment.name) | fang}}</strong>
+    </div>
+    <div class="panel-body">
+        {{content.errorMessage}}
+    </div>
+</div>
