@@ -96,30 +96,32 @@ def getShort():
        break
      i += 1
      time.sleep(i)
-   taxonomies = report.report['summary']['taxonomies'][0]
 
-   level = taxonomies.get("level")
-   if level == "info": 
+   try:
+     taxonomies = report.report['summary']['taxonomies'][0]
+     level = taxonomies.get("level")
+     if level == "info": 
          taxonomies['css'] = "bg-info";
-   elif level == "safe": 
+     elif level == "safe": 
          taxonomies['css'] = "bg-success";
-   elif level == "suspicious": 
+     elif level == "suspicious": 
          taxonomies['css'] = "bg-warning";
-   elif level == "malicious": 
+     elif level == "malicious": 
          taxonomies['css'] = "bg-danger";
-   else:
+     else:
          taxonomies['css'] = "";
-
+   except:
+     taxonomies = dict() 
 
    if os.path.exists(template_folder+report.analyzerName+".short.html"):
      print("Using report template: "+template_folder+report.analyzerName+".short.html")
      try:
          return render_template(report.analyzerName+".short.html", t=taxonomies)
      except:
-         return t
+         return taxonomies
    else:
      print("Report template: "+template_folder+report.analyzerName+".short.html not found")
-     return t
+     return taxonomies
 
 @app.route('/analysis', methods=['POST'])
 def analysis():
