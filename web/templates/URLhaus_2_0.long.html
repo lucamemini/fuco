@@ -1,6 +1,5 @@
-{% set content = artifact.report.full %}
-
 {% if artifact.status == "Success" %}
+{% set content = artifact.report.full %}
 <div class="card border-success">
     <div class="card-header">
     <ul class="nav nav-tabs card-header-tabs">
@@ -345,7 +344,7 @@
         <strong>{{(artifact.data)}}</strong>
     </div>
     <div class="card-body">
-        {{content.errorMessage}}
+        {{artifact.report.errorMessage}}
     </div>
 </div>
 {% endif %}

@@ -48,9 +48,9 @@
         <strong>{{(artifact.data || artifact.attachment.name) | fang}}</strong>
     </div>
     <div class="panel-body">
-        <dl class="dl-horizontal" ng-if="content.errorMessage">
+        <dl class="dl-horizontal" ng-if="artifact.report.errorMessage">
             <dt><i class="fa fa-warning"></i> Yara: </dt>
-            <dd class="wrap">{{content.errorMessage}}</dd>
+            <dd class="wrap">{{artifact.report.errorMessage}}</dd>
         </dl>
     </div>
 </div>

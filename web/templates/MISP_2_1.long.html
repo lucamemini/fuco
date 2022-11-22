@@ -1,3 +1,4 @@
+{% if artifact.status == "Success" %}
 {% set content = artifact.report.full %}
 <uib-tabset active="active">
 	<uib-tab index="$index" ng-repeat="res in content.results" heading="{{res.name}} - {{res.result.length}} results" disable="tab.disabled">
@@ -73,6 +74,6 @@
 	<strong>{{(artifact.data)}}</strong>
     </div>
     <div class="panel-body">
-        {{content.errorMessage}}
+        {{artifact.report.errorMessage}}
     </div>
 </div>

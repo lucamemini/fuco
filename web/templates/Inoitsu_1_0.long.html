@@ -53,11 +53,11 @@
     <strong>{{ artifact.data | fang }}</strong>
   </div>
   <div class="panel-body">
-    <dl class="dl-horizontal" ng-if="content.errorMessage">
+    <dl class="dl-horizontal" ng-if="artifact.report.errorMessage">
       <dt>
         <i class="fa fa-warning"></i>
       </dt>
-      <dd class="wrap">{{ content.errorMessage }}</dd>
+      <dd class="wrap">{{ artifact.report.errorMessage }}</dd>
     </dl>
   </div>
 </div>
