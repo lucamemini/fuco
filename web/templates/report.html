@@ -6,7 +6,7 @@
     <meta name="description" content="">
     <meta name="author" content="Mark Otto, Jacob Thornton, and Bootstrap contributors">
     <meta name="generator" content="Hugo 0.104.2">
-    <title>Result for {{ data.fuco.datatype }}: {{ data.fuco.question }}</title>
+    <title>FUCO Result :: {{ data.fuco.datatype }} - {{ data.fuco.question }}</title>
 
     <link rel="canonical" href="https://getbootstrap.com/docs/5.2/examples/sticky-footer-navbar/">
     <link href="/css/bootstrap.min.css" rel="stylesheet">
@@ -18,7 +18,8 @@
       .bg-fuco  {
 	border-radius: 3px; 
 	box-shadow: 0px 8px 20px 0px rgba(0, 0, 0, 0.15);
-        background: #63c76a;
+/*        background: #63c76a; */
+        background: #ffd700;
       }
       .bd-placeholder-img {
         font-size: 1.125rem;
@@ -79,9 +80,11 @@
                 Http.send();
 
                 Http.onreadystatechange = function() {
-			if (Http.readyState == 4 && Http.status == 200) {
-	                  document.getElementById(JobId).innerHTML = "";
-	                  document.getElementById(JobId).innerHTML = Http.responseText;
+			if (Http.readyState == 4) { 
+			        if (Http.status == 200) {
+		                  document.getElementById(JobId).innerHTML = "";
+		                  document.getElementById(JobId).innerHTML = Http.responseText;
+		                }
   			  getAnalisys_short(JobId);
 	                }
                 }
@@ -133,12 +136,12 @@
           </li>
 -->
         </ul>
-<!--
+
         <form class="d-flex" role="search">
           <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search">
           <button class="btn btn-outline-success" type="submit">Search</button>
         </form>
--->
+
       </div>
     </div>
   </nav>

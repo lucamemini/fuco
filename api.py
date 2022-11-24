@@ -68,17 +68,17 @@ def getAnalisys():
      if report.status == "Failure":
        break
      i += 1
-#   print(json.dumps(report.json(), indent=2))
+
    if os.path.exists(template_folder+report.analyzerName+".long.html"):
      print("Using report template: "+template_folder+report.analyzerName+".long.html")
-
+####### Solo per debug
      print(json.dumps(report.json(), indent=2))
      return render_template(report.analyzerName+".long.html", artifact=report)
-
+#######################################
      try:
          return render_template(report.analyzerName+".long.html", artifact=report)
      except:
-         return "<pre><code>"+str(report.json())+"</code></pre>"
+         return str(report.json())
    else:
      print("Report template: "+template_folder+report.analyzerName+".long.html not found")
      return report.json()
@@ -114,13 +114,21 @@ def getShort():
      taxonomies = dict() 
 
    if os.path.exists(template_folder+report.analyzerName+".short.html"):
-     print("Using report template: "+template_folder+report.analyzerName+".short.html")
+     template = report.analyzerName+".short.html"
+     print("Using custom short template: "+template)
      try:
-         return render_template(report.analyzerName+".short.html", t=taxonomies)
+         return render_template(template, t=taxonomies)
+     except:
+         return taxonomies
+   elif os.path.exists(template_folder+"generic.short.html"):
+     template = "generic.short.html"
+     print("Using generic short template: "+template)
+     try:
+         return render_template(template, t=taxonomies)
      except:
          return taxonomies
    else:
-     print("Report template: "+template_folder+report.analyzerName+".short.html not found")
+     print("Report short template not found")
      return taxonomies
 
 @app.route('/analysis', methods=['POST'])
@@ -146,8 +154,10 @@ def analysis():
 #      result.append(run_analisys(k,datatype,data))
       result['analysis'].append(run_analisys(k,datatype,data))
 
-    return render_template('report.html', data=result)
-#    return result
+    try:
+      return render_template('report.html', data=result)
+    except:
+       return result
 
 
 @app.errorhandler(404)
