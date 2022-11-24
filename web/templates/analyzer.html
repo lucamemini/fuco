@@ -1,5 +1,16 @@
+  <div style="display: flex; justify-content: flex-end">
+    <div class="pretty p-switch p-fill">
+        <input type="checkbox" onclick="CheckAll(this)">
+        <div class="state">
+            <label>All</label>
+        </div>
+    </div>
+</div>
+  <div style="margin-top: 10px;">
 	<!-- https://lokesh-coder.github.io/pretty-checkbox/ -->
+	<ul style="margin-left: -45px;">
         {% for u in data %}
+	<li style="display: block; float: left; width: 25%; font-size: 11px">
 	    <div class="pretty p-svg p-curve" style="margin: 5px;">
 	        <input type="checkbox" name="analyzer" value="{{ u.name }}" />
 	        <div class="state p-success">
@@ -14,4 +25,7 @@
 {{ u }}
 -->
 	    </div>
+	</li>
         {% endfor %}
+	</ul>
+</div>
