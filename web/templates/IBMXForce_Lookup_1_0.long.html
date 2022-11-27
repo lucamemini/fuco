@@ -1,3 +1,27 @@
+{% if artifact.status == "Success" %}
+{% set content = artifact.report.full %}
+<div class="card border-success">
+    <div class="card-header">
+    <ul class="nav nav-tabs card-header-tabs">
+      <li class="nav-item">
+        <a class="nav-link active" class="nav-link active" id="home-tab_{{ artifact.id }}" data-bs-toggle="tab" data-bs-target="#home_{{ artifact.id }}" role="tab" aria-controls="home_{{ artifact.id }}" aria-selected="true">Result</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" id="json-tab_{{ artifact.id }}" data-bs-toggle="tab" data-bs-target="#json_{{ artifact.id }}" role="tab" aria-controls="json_{{ artifact.id }}" aria-selected="false">Json</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link disabled">Ext. Analisys
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-link-45deg" viewBox="0 0 16 16">
+          <path d="M4.715 6.542 3.343 7.914a3 3 0 1 0 4.243 4.243l1.828-1.829A3 3 0 0 0 8.586 5.5L8 6.086a1.002 1.002 0 0 0-.154.199 2 2 0 0 1 .861 3.337L6.88 11.45a2 2 0 1 1-2.83-2.83l.793-.792a4.018 4.018 0 0 1-.128-1.287z"/>
+          <path d="M6.586 4.672A3 3 0 0 0 7.414 9.5l.775-.776a2 2 0 0 1-.896-3.346L9.12 3.55a2 2 0 1 1 2.83 2.83l-.793.792c.112.42.155.855.128 1.287l1.372-1.372a3 3 0 1 0-4.243-4.243L6.586 4.672z"/>
+        </svg>
+        </a>
+      </li>
+    </div>
+    <div class="card-body">
+    <div class="tab-content" id="myTabContent">
+     <div class="tab-pane fade show active" id="home_{{ artifact.id }}" role="tabpanel" aria-labelledby="home-tab_{{ artifact.id }}">
+               
 <!-- Success case -->
 <div ng-if="success">
 	<div class="panel panel-info">
@@ -6,30 +30,38 @@
 		</div>
 		<div class="panel-body">
 		 
-			<h4>IBM X-Force information for {{artifact.data | fang}}</h4>
+			<h4>IBM X-Force information for {{artifact.data }}</h4>
 
 			<dl class="dl-horizontal">
 				<dt>Score</dt>
 				<dd><span class="label label-primary">{{content.score_value}}</span></dd>
 			</dl>
+			{% if content.families.length |length == 0 %}
 			<dl class="dl-horizontal" ng-if="content.families.length > 0">
 				<dt>Families</dt>
+				{% for family in content.families %}
 				<dd ng-repeat="family in content.families">{{family}}</dd>
+				{% endfor %}
 			</dl>
+			{% endif %}
+			{% if content.cats.length |length == 0 %}			
 			<dl class="dl-horizontal" ng-if="content.cats.length > 0">
 				<dt>Categories</dt>
+				{% for family in content.cats %}
 				<dd ng-repeat="cat in content.cats">{{cat}}</dd>
+				{% endfor %}
 			</dl>
+			{% endif %}
 		</div>
 	</div>
 
-
+	{% if content.subjects_info.length |length == 0 %}
 	<div class="panel panel-info" ng-if="content.subjects_info.length > 0" ng-init="content.subjects_info_limit = 5">
 		<div class="panel-heading">
 			<strong>Subjects Info</strong>
 			<span class="pull-right" ng-if="::content.subjects_info.length > 5">
-				<a ng-if="content.subjects_info_limit == 5" href="" ng-click="content.subjects_info_limit = content.subjects_info.length">View All ({{::content.subjects_info.length}})</a>
-				<a ng-if="content.subjects_info_limit > 5"  href="" ng-click="content.subjects_info_limit = 5">View All ({{::content.subjects_info.length}})</a>
+				<a ng-if="content.subjects_info_limit == 5" href="" ng-click="content.subjects_info_limit = content.subjects_info.length">View All ({{ content.subjects_info.length}})</a>
+				<a ng-if="content.subjects_info_limit > 5"  href="" ng-click="content.subjects_info_limit = 5">View All ({{content.subjects_info.length}})</a>
 			</span>
 		</div>
 		<div class="panel-body">
@@ -41,23 +73,30 @@
 					<th>Date</th>
 				</tr>
 				<tr ng-repeat="obj in content.subjects_info | limitTo:content.subjects_info_limit">
+					{% for obj in content.subjects_info %}				
 					<td>{{obj[0]}}</td>
 					<td>{{obj[1]}}</td>
-					<td><span ng-repeat="ip in obj[2]">{{ip}}<br/></span></td>
+					<td>
+						{% for ip in obj[2] %}				
+						<span ng-repeat="ip in obj[2]">{{ip}}<br/></span>
+						{% endfor %}
+					</td>
 					<td>{{obj[3]}}</td>
+					{% endfor %}
 				</tr>
 			</table>
 		</div>
 	</div>
-
+	{% endif %}
 	
+	{% if content.subjects_info.length |length == 0 %}
 	<div class="panel panel-info" ng-if="content.emails_info.length > 0" ng-init="content.emails_info_limit = 5">
 		<div class="panel-heading">
 			<strong>Emails Info</strong>
 			
 			<span class="pull-right" ng-if="::content.emails_info.length > 5">
-				<a  ng-if="content.emails_info_limit == 5" href="" ng-click="emails_info_limit = content.emails_info.length">View All ({{::content.emails_info.length}})</a>
-				<a  ng-if="content.emails_info_limit > 5" href="" ng-click="emails_info_limit = 5">View All ({{::content.emails_info.length}})</a>
+				<a  ng-if="content.emails_info_limit == 5" href="" ng-click="emails_info_limit = content.emails_info.length">View All ({{content.emails_info.length}})</a>
+				<a  ng-if="content.emails_info_limit > 5" href="" ng-click="emails_info_limit = 5">View All ({{content.emails_info.length}})</a>
 			</span>
 		</div>
 		<div class="panel-body">
@@ -68,22 +107,26 @@
 					<th>Sender domain</th>
 					<th>Date</th>
 				</tr>
+				{% for obj in content.subjects_info %}				
 				<tr ng-repeat="obj in content.emails_info | limitTo:content.emails_info_limit">
-					<td>{{obj[2]}}</td>
-					<td>{{obj[1]}}</td>
 					<td>{{obj[0]}}</td>
+					<td>{{obj[1]}}</td>
+					<td>{{obj[2]}}</td>
 					<td>{{obj[3]}}</td>
 				</tr>
+					{% endfor %}
 			</table>
 		</div>
 	</div>
+	{% endif %}
 	
+	{% if content.subjects_info.length |length == 0 %}	
 	<div class="panel panel-info" ng-if="content.dns.length > 0" ng-init="content.dns_limit = 5">
 		<div class="panel-heading">
 			<strong>DNS Info</strong>
 			<span class="pull-right" ng-if="::content.dns.length > 5">
-				<a ng-if="content.dns_limit == 5" href="" ng-click="content.dns_limit = content.dns.length">View All ({{::content.dns.length}})</a>
-				<a ng-if="content.dns_limit > 5" href="" ng-click="content.dns_limit = 5">View All ({{::content.dns.length}})</a>
+				<a ng-if="content.dns_limit == 5" href="" ng-click="content.dns_limit = content.dns.length">View All ({{content.dns.length}})</a>
+				<a ng-if="content.dns_limit > 5" href="" ng-click="content.dns_limit = 5">View All ({{content.dns.length}})</a>
 			</span>
 		</div>
 		<div class="panel-body">
@@ -93,21 +136,25 @@
 					<th>Last</th>
 					<th>Value</th>
 				</tr>
+				{% for obj in content.subjects_info %}				
 				<tr ng-repeat="obj in content.dns | limitTo:content.dns_limit">
 					<td>{{obj[0]}}</td>
 					<td>{{obj[1]}}</td>
 					<td>{{obj[2]}}</td>
 				</tr>
+				{% endfor %}
 			</table>
 		</div>
 	</div>
-
+	{% endif %}
+	
+	{% if content.subjects_info.length |length == 0 %}
 	<div class="panel panel-info" ng-if="content.malware.length > 0" ng-init="content.malware_limit = 5">
 		<div class="panel-heading">
 			<strong>Malware Info</strong>
 			<span class="pull-right" ng-if="::content.malware.length > 5">
-				<a ng-if="content.malware_limit == 5" href="" ng-click="content.malware_limit = content.malware.length">View All ({{::content.malware.length}})</a>
-				<a ng-if="content.malware_limit > 5" href="" ng-click="content.malware_limit = 5">View All ({{::content.malware.length}})</a>
+				<a ng-if="content.malware_limit == 5" href="" ng-click="content.malware_limit = content.malware.length">View All ({{content.malware.length}})</a>
+				<a ng-if="content.malware_limit > 5" href="" ng-click="content.malware_limit = 5">View All ({{content.malware.length}})</a>
 			</span>
 		</div>
 		<div class="panel-body">
@@ -121,6 +168,7 @@
 					<th>Origin</th>
 					<th>Families</th>
 				</tr>
+				{% for obj in content.malware %}
 				<tr ng-repeat="obj in content.malware | limitTo:content.malware_limit">
 					<td>{{obj.type}}</td>
 					<td>{{obj.count}}</td>
@@ -128,18 +176,25 @@
 					<td>{{obj.md5}}</td>
 					<td>{{obj.uri}}</td>
 					<td>{{obj.origin}}</td>
-					<td><span ng-repeat="fam in obj.family">{{fam}}<br/></span></td>
+					<td>
+						{% for fam in obj.family %}
+						<span ng-repeat="fam in obj.family">{{fam}}<br/></span>
+						{% endfor %}
+					</td>
 				</tr>
+				{% endfor %}
 			</table>
 		</div>
 	</div>
-
+	{% endif %}
+	
+	{% if content.subjects_info.length |length == 0 %}
 	<div class="panel panel-info" ng-if="content.history.length > 0" ng-init="content.history_limit = 5">
 		<div class="panel-heading">
 			<strong>History Info</strong>
 			<span class="pull-right" ng-if="::content.history.length > 5">
-				<a ng-if="content.history_limit == 5" href="" ng-click="content.history_limit = content.history.length">View All ({{::content.history.length}})</a>
-				<a ng-if="content.history_limit > 5" href="" ng-click="content.history_limit = 5">View All ({{::content.history.length}})</a>
+				<a ng-if="content.history_limit == 5" href="" ng-click="content.history_limit = content.history.length">View All ({{content.history.length}})</a>
+				<a ng-if="content.history_limit > 5" href="" ng-click="content.history_limit = 5">View All ({{content.history.length}})</a>
 			</span>
 		</div>
 		<div class="panel-body">
@@ -153,8 +208,12 @@
 					<th>Categories</th>
 					<th>Deleted</th>
 				</tr>
+				{% for obj in content.history %}
 				<tr ng-repeat="obj in content.history | limitTo:content.history_limit">
-					<td><h4><span class="label" ng-class="obj.score < 4 ? 'label-success' : obj.score < 7 ? 'label-warning' : 'label-danger'">{{obj.score}}</span><h4></td>
+					<td><h4>
+					<span class="label {% if obj.score < 4 %} label-success {% elif obj.score < 7 %} label-warning {% else %} label-danger {% endif %}">{{obj.score}}</span>
+					<h4>
+					</td>
 					<td>{{obj.day}}</td>
 					<td>{{obj.country}}</td>
 					<td>{{obj.ip}}</td>
@@ -162,18 +221,35 @@
 					<td><span ng-repeat="cat in obj.cats">{{cat.name}}: {{cat.score}}<br/></span></td>
 					<td>{{obj.deleted}}</td>
 				</tr>
+				{% endfor %}
 			</table>
 		</div>
 	</div>
 
 </div>
+{% endif %}
 
-<!-- Failure case -->
-<div class="panel panel-danger" ng-if="!success">
-    <div class="panel-heading">
-        <strong>{{artifact.data | fang}}</strong>
+     </div>
+     <div class="tab-pane fade" id="json_{{ artifact.id }}" role="tabpanel" aria-labelledby="json-tab_{{ artifact.id }}">
+        <pre>
+        <code>
+{{ artifact }}
+        </code>
+        </pre>
     </div>
-    <div class="panel-body">
-        {{artifact.report.errorMessage}}
+    </div> <!-- tab content -->
+    </div> <!-- card body -->
+</div>
+{% else %}
+<!-- General error -->
+<div class="card border-danger">
+        <div class="card-header alert alert-danger">
+                <strong>Error</strong>
+        </div>
+        <div class="card-body">
+                <strong>{{(artifact.data)}}</strong><br>
+                {{ artifact.report.errorMessage}}
+        </div>
     </div>
 </div>
+{% endif %}

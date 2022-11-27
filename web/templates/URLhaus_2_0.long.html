@@ -46,7 +46,7 @@
 		    {% if content.url_status == "offline" %}
                     <span class="badge bg-success">Offline</span>
 		    {% else %}
-                    <span class="badge bg-warning">Online</span>
+                    <span class="badge bg-warning"><img src="/images/flame.svg" alt="flame"> Online</span>
 		    {% endif %}
                 </dd>
                 <dt>Blacklists</dt>
@@ -173,7 +173,7 @@
                                 {% if url.url_status == "offline" %}
                                 <span class="badge bg-success">Offline</span>
                                 {% elif url.url_status == "online" %}
-                                <span class="badge bg-danger">Online</span>
+                                <span class="badge bg-danger"><img src="/images/flame.svg" alt="flame"> Online</span>
                                 {% else %}
                                 <span class="badge bg-secondary">Unknown</span>
                                 {% endif %}
@@ -251,7 +251,7 @@
                                 {% if url.url_status == "offline" %}
                                 <span class="badge bg-success">Offline</span>
                                 {% elif url.url_status == "online" %}
-                                <span class="badge bg-danger">Online</span>
+                                <span class="badge bg-danger"><img src="/images/flame.svg" alt="flame"> Online</span>
                                 {% else %}
                                 <span class="badge bg-secondary">Unknown</span>
                                 {% endif %}
@@ -310,7 +310,7 @@
 				{% if url.url_status == "offline" %}
                                 <span class="badge bg-success">Offline</span>
 				{% elif url.url_status == "online" %}
-                                <span class="badge bg-danger">Online</span>
+                                <span class="badge bg-danger"><img src="/images/flame.svg" alt="flame"> Online</span>
 				{% else %}
                                 <span class="badge bg-secondary">Unknown</span>
 				{% endif %}
