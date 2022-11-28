@@ -72,13 +72,16 @@ def getAnalisys():
    if os.path.exists(template_folder+report.analyzerName+".long.html"):
      print("Using report template: "+template_folder+report.analyzerName+".long.html")
 ####### Solo per debug
-     print(json.dumps(report.json(), indent=2))
-     return render_template(report.analyzerName+".long.html", artifact=report)
+#     print(json.dumps(report.json(), indent=2))
+#     return render_template(report.analyzerName+".long.html", artifact=report)
 #######################################
      try:
          return render_template(report.analyzerName+".long.html", artifact=report)
-     except:
-         return str(report.json())
+     except Exception as err:
+         print(f"Unexpected {err=}, {type(err)=}")
+         return str(report.json(), indent=2)
+#     except:
+#         return str(report.json())
    else:
      print("Report template: "+template_folder+report.analyzerName+".long.html not found")
      return report.json()
