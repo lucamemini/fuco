@@ -79,7 +79,8 @@ def getAnalisys():
          return render_template(report.analyzerName+".long.html", artifact=report)
      except Exception as err:
          print(f"Unexpected {err=}, {type(err)=}")
-         return str(report.json(), indent=2)
+         return "<pre><code>"+json.dumps(report.json(), indent=2)+"</code></pre>"
+#         return str(report.json(), indent=2)
 #     except:
 #         return str(report.json())
    else:
