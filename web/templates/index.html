@@ -7,6 +7,7 @@
     <meta name="author" content="colorlib.com">
     <link href="https://fonts.googleapis.com/css?family=Poppins" rel="stylesheet" />
     <link href="css/main.css" rel="stylesheet" />
+
 	<!-- Latest compiled and minified CSS -->
 	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/css/bootstrap.min.css" integrity="sha384-HSMxcRTRxnN+Bdg0JdbxYKrThecOKuH5zCYotlSAcp1+c8xmyTe9GYg1l9a69psu" crossorigin="anonymous">
 	<!-- Optional theme -->
@@ -18,8 +19,36 @@
 	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.2.0/css/fontawesome.min.css" integrity="sha384-z4tVnCr80ZcL0iufVdGQSUzNvJsKjEtqYZjiQrrYKlpGow+btDHDfQWkFjoaz/Zr" crossorigin="anonymous">
 
 	<link href="https://cdn.jsdelivr.net/npm/pretty-checkbox@3.0/dist/pretty-checkbox.min.css" rel="stylesheet" />  
+
+
    <style>
-	// todo
+.loader {
+  border: 8px solid #f3f3f3;
+  border-radius: 50%;
+  border-top: 8px solid #3498db;
+  width: 40px;
+  height: 40px;
+  -webkit-animation: spin 2s linear infinite; /* Safari */
+  animation: spin 2s linear infinite;
+  margin-right:10px;
+  float: left;
+}
+
+/* Safari */
+@-webkit-keyframes spin {
+  0% { -webkit-transform: rotate(0deg); }
+  100% { -webkit-transform: rotate(360deg); }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+.valign {
+  display: table-cell; 
+  vertical-align: middle;
+  height: 40px; 
+}
    </style>
    <script>
 	function getAnalyzer(selectObject) {
@@ -45,13 +74,36 @@
            	aa[i].checked = source.checked;
     	   }
         }
-
    </script>
 
   </head>
   <body>
-    <div class="s003">
-      <form action="/analysis" method="POST">
+<!--
+  <div class="row text-center">
+      <h3>The Basic Modal</h3> 
+      <a href="#" class="btn btn-lg btn-success" data-toggle="modal" data-target="#basicModal">Click to open Modal</a>
+  </div>
+-->
+<div class="modal fade" id="basicModal" tabindex="-1" role="dialog" aria-labelledby="basicModal" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+        <h4 class="modal-title" id="myModalLabel">Keep Calm, we working...</h4>
+      </div>
+      <div class="modal-body">
+	<div class="loader"></div>
+	<div id="randomtext" class="valign">Waiting for cortex</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+ 
+   <div class="s003">
+
+
+      <form action="/analysis" name="form" method="POST">
         <div class="inner-form">
 	 <img src="/images/abeja.png" style="transform: scaleX(-1);" width="80" height="60">
           <div class="input-field first-wrap">
@@ -80,7 +132,7 @@
             <input id="tosearch" name="tosearch" type="text" placeholder="Enter Keywords?" />
           </div>
           <div class="input-field third-wrap">
-            <button class="btn-search" type="submit">
+            <button class="btn-search" type="submit" data-toggle="modal" data-target="#basicModal">
               <svg class="svg-inline--fa fa-search fa-w-16" aria-hidden="true" data-prefix="fas" data-icon="search" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
                 <path fill="currentColor" d="M505 442.7L405.3 343c-4.5-4.5-10.6-7-17-7H372c27.6-35.3 44-79.7 44-128C416 93.1 322.9 0 208 0S0 93.1 0 208s93.1 208 208 208c48.3 0 92.7-16.4 128-44v16.3c0 6.4 2.5 12.5 7 17l99.7 99.7c9.4 9.4 24.6 9.4 33.9 0l28.3-28.3c9.4-9.4 9.4-24.6.1-34zM208 336c-70.7 0-128-57.2-128-128 0-70.7 57.2-128 128-128 70.7 0 128 57.2 128 128 0 70.7-57.2 128-128 128z"></path>
               </svg>
@@ -91,7 +143,13 @@
 	</div>
       </form>
     </div>
+    <script>
+	$("form").on('submit', function(){
+	   $('basicModal').show();
+	})
+    </script>
     <script src="js/extention/choices.js"></script>
+    <script src="js/sc.js"></script>
     <script>
       const choices = new Choices('[data-trigger]',
       {

@@ -10,11 +10,13 @@ from uuid import uuid1
 import json
 import pprint
 import time
+import jinja2
 
 from cortex4py.api import Api
 from cortex4py.query import *
 
 template_folder='web/templates/'
+
 
 import fucoconfig as cfg 
 api = Api(cfg.cortex["host"], cfg.cortex["apikey"])
@@ -23,6 +25,11 @@ app = app = Flask(__name__,
             static_url_path='',
             static_folder='web/static',
             template_folder=template_folder)
+
+@app.template_filter('fang')
+def fang():
+    """Custom filter"""
+    return input.upper()
 
 
 def get_analyzer_by_type(t):
@@ -71,6 +78,8 @@ def getAnalisys():
 
    if os.path.exists(template_folder+report.analyzerName+".long.html"):
      print("Using report template: "+template_folder+report.analyzerName+".long.html")
+     env = jinja2.Environment()
+     env.filters["fang"] = fang
 ####### Solo per debug
 #     print(json.dumps(report.json(), indent=2))
 #     return render_template(report.analyzerName+".long.html", artifact=report)
@@ -81,9 +90,6 @@ def getAnalisys():
 #         print(f"Unexpected {err=}, {type(err)=}")
          print("Unexpected error: "+str(err))
          return "<pre><code>"+json.dumps(report.json(), indent=2)+"</code></pre>"
-#         return str(report.json(), indent=2)
-#     except:
-#         return str(report.json())
    else:
      print("Report template: "+template_folder+report.analyzerName+".long.html not found")
      return report.json()
