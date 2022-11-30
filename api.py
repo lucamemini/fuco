@@ -89,10 +89,10 @@ def getAnalisys():
      except Exception as err:
 #         print(f"Unexpected {err=}, {type(err)=}")
          print("Unexpected error: "+str(err))
-         return "<pre><code>"+json.dumps(report.json(), indent=2)+"</code></pre>"
+         return "<pre>Template error: <code>"+json.dumps(report.json(), indent=2)+"</code></pre>"
    else:
      print("Report template: "+template_folder+report.analyzerName+".long.html not found")
-     return report.json()
+     return "<pre>Template not found: <code>"+json.dumps(report.json(), indent=2)+"</code></pre>"
 
 @app.route('/getShort', methods=['GET'])
 def getShort():
@@ -120,9 +120,13 @@ def getShort():
      elif level == "malicious": 
          taxonomies['css'] = "bg-danger";
      else:
-         taxonomies['css'] = "";
+         taxonomies['css'] = "bg-secondary";
    except:
      taxonomies = dict() 
+     taxonomies['css'] = "bg-secondary"
+     taxonomies['namespace'] = report.analyzerName
+     taxonomies['predicate'] = "Summary"
+     taxonomies['value'] = "NoData"
 
    if os.path.exists(template_folder+report.analyzerName+".short.html"):
      template = report.analyzerName+".short.html"
