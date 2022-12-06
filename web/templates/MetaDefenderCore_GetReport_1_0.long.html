@@ -63,11 +63,17 @@
             <dl class="dl-horizontal">
                 <dt>Search Result</dt>
                 <dd class="wrap">
+		    {% if content |length > 0 %}
                     <span class="label label-success">
 			{% for key, value in content.items() %}
 			{{ key }}: {{ value }}
 			{% endfor %}
                     </span>
+		    {% else %}
+                    <span class="label label-success">
+			Not found
+                    </span>
+		    {% endif %}
 		</dd>
 	   </dl>
 	   {% endif %}
