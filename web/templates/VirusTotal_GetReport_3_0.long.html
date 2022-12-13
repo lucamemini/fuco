@@ -218,7 +218,7 @@
                         <th>Scanner</th>
                         <th align="center">Detected</th>
                         <th>Result</th>
-                        <!-- <th>Details</th> -->
+                        <th>Details</th>
                         <th>Update</th>
                         <th>Version</th>
                     </tr>
@@ -243,13 +243,13 @@
 			    {% else %}
                              <td class="text-success" class="wrap">{{ result.result }}</td>
 			    {% endif %}
-<!--
                         <td>
-                            <a ng-href="{{result.detail}}" ng-if="result.detail" target="_blank">
+			    {% if result.detail %}
+                            <a href="{{result.detail}}" target="_blank">
                                 <i class="fa fa-search"></i>
                                 View details</a>
+			    {% endif %}
                         </td>
--->
                         <td>{{result.get('update')}}</td>
                         <td>{{result.version}}</td>
                     </tr>
