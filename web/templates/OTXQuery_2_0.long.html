@@ -45,6 +45,7 @@
 		<dl class="dl-horizontal" ng-if="content.pulse_count > 0">
 			<dt>Related Pulses: </dt>
 			<dd class="wrap">
+			{% for pulse in content.pulses %}
 			<div ng-repeat="pulse in content.pulses | limitTo:4">
 				<strong>Name: </strong><a ng-href="https://otx.alienvault.com/pulse/{{pulse.id}}/" target="_blank">{{pulse.name}}</a><br/>
 				<strong>Author: </strong>{{pulse.author.username}}<br/>
@@ -55,6 +56,7 @@
 				<strong>Indicators: </strong>{{pulse.indicator_count}}
 				<hr>
 			</div>
+			{% endfor %}
 			</dd>
 		</dl>
 		{% endif %}
@@ -62,7 +64,7 @@
 		<dl class="dl-horizontal">
 			<dt>Submit Pulse: </dt>
 			<dd class="wrap">
-				<i class="fa fa-bullhorn"></i> <a ng-href="https://otx.alienvault.com/pulse/create/" target="_blank">Create a Pulse</a>&nbsp;
+				<i class="fa fa-bullhorn"></i> <a href="https://otx.alienvault.com/pulse/create/" target="_blank">Create a Pulse</a>&nbsp;
 			</dd>
 		</dl>
 
