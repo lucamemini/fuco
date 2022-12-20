@@ -32,8 +32,21 @@
       <tbody>
         {% for key, value in content.items() %}
           <tr>
+            {% if key == 'results' %}
+                <td valign="top">{{ key }}</td>
+                <td>
+                {% for v in value %}
+                        {% for key2, value2 in v.items() %}
+                                <strong>{{ key2 }}</strong>: {{ value2 }}<br>
+                        {% endfor %}
+                        <hr>
+                {% endfor %}
+                </td>
+            {% else %}
+
             <td>{{ key }}</td>
             <td>{{ value }}</td>
+            {% endif %}
           </tr>
         {% endfor %}
       </tbody>
