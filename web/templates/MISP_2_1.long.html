@@ -1,79 +1,135 @@
 {% if artifact.status == "Success" %}
 {% set content = artifact.report.full %}
-<uib-tabset active="active">
-	<uib-tab index="$index" ng-repeat="res in content.results" heading="{{res.name}} - {{res.result.length}} results" disable="tab.disabled">
-		<div class="panel-body">
-			<div ng-if="res.result.errors.length > 0">
-				<dl class="dl-horizontal" ng-repeat="error in res.result.errors">
-					<dt><i class="fa fa-warning"></i> Error:</dt>
-					<dd>{{error}}</dd>
-				</dl>
-			</div>
-			<div ng-if="res.result.length == 0">
-				<dl class="dl-horizontal">
-					<dt><i class="fa fa-warning"></i> No results</dt>
-					<dd>No results from {{res.name}}</dd>
-				</dl>
-			</div>
-			<div ng-repeat="event in res.result">
-				<uib-accordion>
-					<div uib-accordion-group class="panel-primary" heading="{{event.id}} - {{event.info}}" is-open="false" is-disabled="status.isFirstDisabled">				
-					<dl class="dl-horizontal">
-						<dt>EventID:</dt>
-						<dd><a target="_blank" href="{{res.url}}/events/view/{{event.id}}">{{event.id}}</a></dd>
-					</dl>
-					<dl class="dl-horizontal">
-						<dt>Event info:</dt>
-						<dd>{{event.info}}</dd>
-					</dl>
-					<dl class="dl-horizontal">
-						<dt>UUID:</dt>
-						<dd>{{event.uuid}}</dd>
-					</dl>
-					<dl class="dl-horizontal">
-						<dt>From:</dt>
-						<dd>{{event.Orgc.name}}</dd>
-					</dl>
-					<dl class="dl-horizontal" ng-if="event.Tag.length > 0" >
-						<dt>Tags:</dt>
-						<dd ng-repeat="tag in event.Tag">
-							<span ng-if="tag.colour==='#ffffff'" class="label"
-							ng-style="{'border':'1px solid','color': '#000000', 'background-color': tag.colour}">{{tag.name}}
-							</span>
-							<span ng-if="tag.colour!=='#ffffff'" class="label"
-							ng-style="{'background-color': tag.colour}">{{tag.name}}
-							</span>
-						</dd>
-					</dl>
-					<dl class="dl-horizontal" ng-if="event.Galaxy.length > 0">
-						<dt>Cluster:</dt>
-						<dd>
-							<div ng-repeat="cluster in event.Galaxy">
-								<span ng-repeat="clusterentry in cluster.GalaxyCluster">{{clusterentry.name}}: {{clusterentry.value}}</span>
-							</div>
-						</dd>
-					</dl>
-					<dl class="dl-horizontal" ng-if="event.RelatedEvent.length > 0">
-						<dt>Related events:</dt>
-						<dd>
-							<div ng-repeat="rel in event.RelatedEvent">
-								<a target="_blank" href="{{res.url}}/events/view/{{rel.id}}">{{rel.info}}</a><br />
-							</div>
-						</dd>
-					</dl>
-				</uib-accordion>
-			</div>
-		</div>
-	</uib-tab>
-</uib-tabset>
-
-
-<!-- General error  -->
-<div class="panel panel-danger" ng-if="!success">
-    <div class="panel-heading">
-	<strong>{{(artifact.data)}}</strong>
+<div class="card border-success">
+    <div class="card-header">
+    <ul class="nav nav-tabs card-header-tabs">
+      <li class="nav-item">
+        <a class="nav-link active" class="nav-link active" id="home-tab_{{ artifact.id }}" data-bs-toggle="tab" data-bs-target="#home_{{ artifact.id }}" role="tab" aria-controls="home_{{ artifact.id }}" aria-selected="true">Result</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" id="json-tab_{{ artifact.id }}" data-bs-toggle="tab" data-bs-target="#json_{{ artifact.id }}" role="tab" aria-controls="json_{{ artifact.id }}" aria-selected="false">Json</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link disabled">Ext. Analisys
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-link-45deg" viewBox="0 0 16 16">
+          <path d="M4.715 6.542 3.343 7.914a3 3 0 1 0 4.243 4.243l1.828-1.829A3 3 0 0 0 8.586 5.5L8 6.086a1.002 1.002 0 0 0-.154.199 2 2 0 0 1 .861 3.337L6.88 11.45a2 2 0 1 1-2.83-2.83l.793-.792a4.018 4.018 0 0 1-.128-1.287z"/>
+          <path d="M6.586 4.672A3 3 0 0 0 7.414 9.5l.775-.776a2 2 0 0 1-.896-3.346L9.12 3.55a2 2 0 1 1 2.83 2.83l-.793.792c.112.42.155.855.128 1.287l1.372-1.372a3 3 0 1 0-4.243-4.243L6.586 4.672z"/>
+        </svg>
+        </a>
+      </li>
     </div>
-    <div class="panel-body">
-        {{artifact.report.errorMessage}}
+    <div class="card-body">
+    <div class="tab-content" id="myTabContent">
+     <div class="tab-pane fade show active" id="home_{{ artifact.id }}" role="tabpanel" aria-labelledby="home-tab_{{ artifact.id }}">
+
+{% for res in content.results %}
+  {% if res.result.errors | length > 0 %}
+		<div ng-if="res.result.errors.length > 0">
+			<dl class="dl-horizontal" ng-repeat="error in res.result.errors">
+				<dt><i class="fa fa-warning"></i> Error:</dt>
+				<dd>{{error}}</dd>
+			</dl>
+		</div>
+  {% elif res.result | length == 0 %}
+		<div ng-if="res.result.length == 0">
+			<dl class="dl-horizontal">
+				<dt><i class="fa fa-warning"></i> No results</dt>
+				<dd>No results from {{res.name}}</dd>
+			</dl>
+		</div>
+  {% else %}
+    <table>
+      <thead>
+	<tr>
+	   <th colspan="6">{{res.name}}</th>
+	<tr>
+        <tr>
+          <th>EventID</th>
+          <th>Info</th>
+          <th>From</th>
+          <th>Tag</th>
+          <th>Galaxy</th>
+          <th>Related Events</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for event in res.result %}
+          <tr>
+            <td><a target="_blank" href="{{res.url}}/events/view/{{event.id}}">{{event.id}}</a></td>
+            <td>{{ event.info }}</td>
+            <td>{{ event.Orgc.name }}</td>
+            <td>
+                {% if event.Tag | length > 0 %}
+			{% for tag in event.Tag %}
+			   {% if tag.is_galaxy == false %}
+			        {% if tag.colour == '#ffffff' %}
+				<span>
+        				<span class="badge" style="border:1px solid; color: #000000; background-color: {{ tag.colour }};">{{tag.name}}</span>
+        			</span>
+			        {% elif tag.colour == '#FFFFFF' %}
+				<span>
+        				<span class="badge" style="border:1px solid; color: #000000; background-color: {{ tag.colour }};">{{tag.name}}</span>
+        			</span>
+	        		{% else %}
+				<span>
+        			<span class="badge" style="background-color: {{ tag.colour }}">{{tag.name}}</span>
+        			</span>
+        			{% endif %}
+       			   {% endif %}
+                {% endfor %}
+                {% endif %}
+	    </td>
+            <td>
+		{% if event.Galaxy | length > 0 %}  
+        		{% for cluster in event.Galaxy %}
+        		<div ng-repeat="cluster in event.Galaxy">
+				{% for clusterentry in cluster.GalaxyCluster %}
+				<span>
+                		<span class="badge bg-primary">{{clusterentry.type}}: {{clusterentry.value}}</span>
+				<span>
+				{% endfor %}
+        		</div>
+        		{% endfor %}
+ 		{% endif %}
+	     </td>
+	     <td>
+		{% if event.RelatedEvent | length > 0 %}
+	                {% for rel in event.RelatedEvent %}
+	                <div ng-repeat="rel in event.RelatedEvent">
+	                        <a target="_blank" href="{{res.url}}/events/view/{{rel.id}}">{{rel.info}}</a><br />
+	                </div>
+	                {% endfor %}
+		{% endif %}
+	     </td>
+          </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    <hr>
+  {% endif %}
+{% endfor %}
+
+     </div>
+     <div class="tab-pane fade" id="json_{{ artifact.id }}" role="tabpanel" aria-labelledby="json-tab_{{ artifact.id }}">
+        <pre>
+        <code>
+{{ artifact }}
+        </code>
+        </pre>
+    </div>
+    </div> <!-- tab content -->
+    </div> <!-- card body -->
+</div>
+{% else %}
+<!-- General error -->
+<div class="card border-danger">
+        <div class="card-header alert alert-danger">
+                <strong>Error</strong>
+        </div>
+        <div class="card-body">
+                <strong>{{(artifact.data)}}</strong><br>
+                {{ artifact.report.errorMessage}}
+        </div>
     </div>
 </div>
+{% endif %}
