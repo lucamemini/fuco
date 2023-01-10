@@ -36,13 +36,18 @@ def get_analyzer_by_type(t):
     analyzers = api.analyzers.get_by_type(t)
     return analyzers
 
+# TLP / PAP
+# WHITE: 0
+# GREEN: 1
+# AMBER: 2
+# RED: 3
 def run_analisys(analizer,datatype,data):
    # Run an analyzer against a domain
    job = api.analyzers.run_by_name(analizer, {
        'data': data,
        'dataType': datatype,
-       'pap': 1,
-       'tlp': 1
+       'pap': 2,
+       'tlp': 2
    }, force=1)
    print('Task {} Question {} ({}) jobId {} Status {}'.format(analizer, data, datatype, job.id, job.status))
 #   print("JOB ANALISYS:")

@@ -1,3 +1,28 @@
+{% if artifact.status == "Success" %}
+{% set content = artifact.report.full %}
+<div class="card border-success">
+    <div class="card-header">
+    <ul class="nav nav-tabs card-header-tabs">
+      <li class="nav-item">
+        <a class="nav-link active" class="nav-link active" id="home-tab_{{ artifact.id }}" data-bs-toggle="tab" data-bs-target="#home_{{ artifact.id }}" role="tab" aria-controls="home_{{ artifact.id }}" aria-selected="true">Result</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" id="json-tab_{{ artifact.id }}" data-bs-toggle="tab" data-bs-target="#json_{{ artifact.id }}" role="tab" aria-controls="json_{{ artifact.id }}" aria-selected="false">Json</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link disabled">Ext. Analisys
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-link-45deg" viewBox="0 0 16 16">
+          <path d="M4.715 6.542 3.343 7.914a3 3 0 1 0 4.243 4.243l1.828-1.829A3 3 0 0 0 8.586 5.5L8 6.086a1.002 1.002 0 0 0-.154.199 2 2 0 0 1 .861 3.337L6.88 11.45a2 2 0 1 1-2.83-2.83l.793-.792a4.018 4.018 0 0 1-.128-1.287z"/>
+          <path d="M6.586 4.672A3 3 0 0 0 7.414 9.5l.775-.776a2 2 0 0 1-.896-3.346L9.12 3.55a2 2 0 1 1 2.83 2.83l-.793.792c.112.42.155.855.128 1.287l1.372-1.372a3 3 0 1 0-4.243-4.243L6.586 4.672z"/>
+        </svg>
+        </a>
+      </li>
+    </div>
+    <div class="card-body">
+    <div class="tab-content" id="myTabContent">
+     <div class="tab-pane fade show active" id="home_{{ artifact.id }}" role="tabpanel" aria-labelledby="home-tab_{{ artifact.id }}">
+
+
 <div class="panel panel-info" ng-if="success">
     <div class="panel-heading">
         DomainMailSPF_DMARC information for <strong>{{artifact.data}}</strong>
@@ -18,20 +43,37 @@
             </dl>
             <dl class="dl-horizontal" ng-if="content.DomainMailSPFDMARC.ns.hostnames.length > 0">
                 <dt class="text-bold">[NS] Hostnames</dt>
-                <dd>{{content.DomainMailSPFDMARC.ns.hostnames.join(', ') }}</dd>
+                <dd>{{content.DomainMailSPFDMARC.ns.hostnames | join(', ') }}</dd>
             </dl>
             <dl class="dl-horizontal" ng-if="content.DomainMailSPFDMARC.ns.warnings.length > 0">
                 <dt class="text-bold">[NS] Warnings</dt>
-                <dd>{{content.DomainMailSPFDMARC.ns.warnings.join('\n') }}</dd>
+                <dd><pre>{{content.DomainMailSPFDMARC.ns.warnings | join('\n') }}</pre></dd>
             </dl>
 
             <dl class="dl-horizontal" ng-if="content.DomainMailSPFDMARC.mx.hosts.length > 0">
                 <dt class="text-bold">[MX] Hosts</dt>
-                <dd>{{content.DomainMailSPFDMARC.mx.hosts.join(', ') }}</dd>
+<!--                <dd>{{content.DomainMailSPFDMARC.mx.hosts | join(', ') }}</dd>-->
+		{% for row in content.DomainMailSPFDMARC.mx.hosts %}
+		 {% for key, value in row.items() %}
+		   {% if key == 'preference' %}
+				<dl>- {{key}}: {{value}}</dl>
+		   {% elif key == 'addresses' %}
+				<dd>Addresses:
+				<ul TYPE="square">
+			{% for v in value %}
+				<li>{{ v }}</li>
+			{% endfor %}
+				</ul>
+				</dd>
+		   {% else %}
+				<dd>{{key}}: {{value}}</dd>
+		   {% endif %}
+		 {% endfor %}
+		{% endfor %}
             </dl>
             <dl class="dl-horizontal" ng-if="content.DomainMailSPFDMARC.mx.warnings.length > 0">
                 <dt class="text-bold">[MX] Warnings</dt>
-                <dd>{{content.DomainMailSPFDMARC.mx.warnings.join('\n')}}</dd>
+                <dd><pre>{{content.DomainMailSPFDMARC.mx.warnings | join('\n')}}</pre></dd>
             </dl>
         </div>
     </div>
@@ -82,24 +124,42 @@
             </dl>                        
             <dl class="dl-horizontal" ng-if="content.DomainMailSPFDMARC.dmarc.warnings.length > 0">
                 <dt class="text-bold">Warnings</dt>
-                <dd>{{content.DomainMailSPFDMARC.dmarc.warnings.join('\n')}}</dd>
+                <dd>{{content.DomainMailSPFDMARC.dmarc.warnings | join('\n')}}</dd>
             </dl>      
             <hr>
             <h4 >Tags</h4>
+	    {% for tag,value in content.DomainMailSPFDMARC.dmarc.tags %}
             <dl class="dl-horizontal" ng-repeat="(tag, value) in content.DomainMailSPFDMARC.dmarc.tags">
                 <dt>{{tag}}</dt>
                 <dd>{{value.value}} <span ng-if="value.explicit">[Explicit]</span></dd>
             </dl>
+	    {% endfor %}
         </div>
     </div>
 </div>
 
-<!-- General error -->
-<div class="panel panel-danger" ng-if="!success">
-    <div class="panel-heading">
-        <strong>{{artifact.data | fang}}</strong>
+
+     </div>
+     <div class="tab-pane fade" id="json_{{ artifact.id }}" role="tabpanel" aria-labelledby="json-tab_{{ artifact.id }}">
+        <pre>
+        <code>
+{{ artifact }}
+        </code>
+        </pre>
     </div>
-    <div class="panel-body">
-        {{artifact.report.errorMessage}}
+    </div> <!-- tab content -->
+    </div> <!-- card body -->
+</div>
+{% else %}
+<!-- General error -->
+<div class="card border-danger">
+        <div class="card-header alert alert-danger">
+                <strong>Error</strong>
+        </div>
+        <div class="card-body">
+                <strong>{{(artifact.data)}}</strong><br>
+                {{ artifact.report.errorMessage}}
+        </div>
     </div>
 </div>
+{% endif %}
