@@ -1,3 +1,23 @@
-<span class="ms-1 badge {{ t.css }}">
+{% for t in taxonomies %}
+{% if t.level == "info" %}
+<span class="ms-1 badge bg-info">
     {{ t.namespace }}:{{ t.predicate }}={{ t.value }}
 </span>
+{% elif t.level == "safe" %}
+<span class="ms-1 badge bg-success">
+    {{ t.namespace }}:{{ t.predicate }}={{ t.value }}
+</span>
+{% elif t.level == "suspicious" %}
+<span class="ms-1 badge bg-warning">
+    {{ t.namespace }}:{{ t.predicate }}={{ t.value }}
+</span>
+{% elif t.level == "malicious" %}
+<span class="ms-1 badge bg-danger">
+    {{ t.namespace }}:{{ t.predicate }}={{ t.value }}
+</span>
+{% else %}
+<span class="ms-1 badge bg-secondary">
+    {{ t.namespace }}:{{ t.predicate }}={{ t.value }}
+</span>
+{% endif %}
+{% endfor %}

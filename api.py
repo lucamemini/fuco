@@ -86,8 +86,8 @@ def getAnalisys():
      env = jinja2.Environment()
      env.filters["fang"] = fang
 ####### Solo per debug
-#     print(json.dumps(report.json(), indent=2))
-#     return render_template(report.analyzerName+".long.html", artifact=report)
+     print(json.dumps(report.json(), indent=2))
+     return render_template(report.analyzerName+".long.html", artifact=report)
 #######################################
      try:
          return render_template(report.analyzerName+".long.html", artifact=report)
@@ -113,40 +113,34 @@ def getShort():
      i += 1
      time.sleep(i)
 
+   t = list()
+
    try:
-     taxonomies = report.report['summary']['taxonomies'][0]
-     level = taxonomies.get("level")
-     if level == "info": 
-         taxonomies['css'] = "bg-info";
-     elif level == "safe": 
-         taxonomies['css'] = "bg-success";
-     elif level == "suspicious": 
-         taxonomies['css'] = "bg-warning";
-     elif level == "malicious": 
-         taxonomies['css'] = "bg-danger";
-     else:
-         taxonomies['css'] = "bg-secondary";
+    t = report.report['summary']['taxonomies']
    except:
-     taxonomies = dict() 
-     taxonomies['css'] = "bg-secondary"
-     taxonomies['namespace'] = report.analyzerName
-     taxonomies['predicate'] = "Summary"
-     taxonomies['value'] = "NoData"
+    taxonomies = dict()
+    taxonomies['level'] = "undef"
+    taxonomies['namespace'] = report.analyzerName
+    taxonomies['predicate'] = "Summary"
+    taxonomies['value'] = "NoData"
+    t.append(taxonomies)
 
    if os.path.exists(template_folder+report.analyzerName+".short.html"):
      template = report.analyzerName+".short.html"
      print("Using custom short template: "+template)
      try:
-         return render_template(template, t=taxonomies)
-     except:
-         return taxonomies
+         return render_template(template, taxonomies=t)
+     except Exception as err:
+         print("Unexpected error: "+str(err))
+         return t
    elif os.path.exists(template_folder+"generic.short.html"):
      template = "generic.short.html"
      print("Using generic short template: "+template)
      try:
-         return render_template(template, t=taxonomies)
-     except:
-         return taxonomies
+         return render_template(template, taxonomies=t)
+     except Exception as err:
+         print("Unexpected error: "+str(err)) 
+         return t
    else:
      print("Report short template not found")
      return taxonomies

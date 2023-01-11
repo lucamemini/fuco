@@ -56,7 +56,7 @@
 		{% for row in content.DomainMailSPFDMARC.mx.hosts %}
 		 {% for key, value in row.items() %}
 		   {% if key == 'preference' %}
-				<dl>- {{key}}: {{value}}</dl>
+				<dl>{{key}}: {{value}}</dl>
 		   {% elif key == 'addresses' %}
 				<dd>Addresses:
 				<ul TYPE="square">
@@ -69,6 +69,7 @@
 				<dd>{{key}}: {{value}}</dd>
 		   {% endif %}
 		 {% endfor %}
+		<hr>
 		{% endfor %}
             </dl>
             <dl class="dl-horizontal" ng-if="content.DomainMailSPFDMARC.mx.warnings.length > 0">
@@ -127,13 +128,30 @@
                 <dd>{{content.DomainMailSPFDMARC.dmarc.warnings | join('\n')}}</dd>
             </dl>      
             <hr>
-            <h4 >Tags</h4>
-	    {% for tag,value in content.DomainMailSPFDMARC.dmarc.tags %}
+            <h4>Tags</h4>
+	    {% if content.DomainMailSPFDMARC.dmarc.tags | count != 0 %}
+	    {% for t in content.DomainMailSPFDMARC.dmarc.tags.items() %}
+	    {% for tag in t %}
+	    {% if tag.explicit %}
             <dl class="dl-horizontal" ng-repeat="(tag, value) in content.DomainMailSPFDMARC.dmarc.tags">
-                <dt>{{tag}}</dt>
-                <dd>{{value.value}} <span ng-if="value.explicit">[Explicit]</span></dd>
+                <dt>{{t[0]}}</dt>
+		{% if tag.value is string  %}
+	                <dd>{{tag.value}}</dd>
+		{% else %}
+			<dd><ul TYPE="square">
+			{% for val in tag.value %}
+			{% for a,b in val.items() %}
+                	<li>{{a}}: {{b}}</li>
+			{% endfor %}
+			{% endfor %}
+			</ul>
+			</dd>
+		{% endif %}			
             </dl>
+	    {% endif %}
 	    {% endfor %}
+	    {% endfor %}
+	    {% endif %}
         </div>
     </div>
 </div>
