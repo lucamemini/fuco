@@ -48,17 +48,17 @@
 		{% if content.categories %}
                 <dl class="dl-horizontal" ng-if="content.categories">
                     <dt>Categories</dt>
-                    <dd class="wrap">{{content.categories.join(', ')}}</dd>
+                    <dd class="wrap">{{content.categories| join(', ')}}</dd>
                 </dl>
 		{% endif %}
 		{% if content.subdomains %}
                 <dl class="dl-horizontal" ng-if="content.subdomains">
                     <dt>Sub domains</dt>
-                    <dd class="wrap">{{content.subdomains.join(', ')}}</dd>
+                    <dd class="wrap">{{content.subdomains| join(', ')}}</dd>
                 </dl>
 		{% endif %}
 		{% if content.resolutions %}
-		{% if content.resolution | lenght > 0 %}
+		{% if content.resolution | count > 0 %}
                 <dl class="dl-horizontal" ng-if="content.resolutions && content.resolutions.length > 0">
                     <dt>Resolutions</dt>
                     <dd>
