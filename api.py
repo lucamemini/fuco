@@ -86,8 +86,8 @@ def getAnalisys():
      env = jinja2.Environment()
      env.filters["fang"] = fang
 ####### Solo per debug
-     print(json.dumps(report.json(), indent=2))
-     return render_template(report.analyzerName+".long.html", artifact=report)
+#     print(json.dumps(report.json(), indent=2))
+#     return render_template(report.analyzerName+".long.html", artifact=report)
 #######################################
      try:
          return render_template(report.analyzerName+".long.html", artifact=report)
