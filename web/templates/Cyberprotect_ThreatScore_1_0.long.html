@@ -1,0 +1,195 @@
+{% if artifact.status == "Success" %}
+{% set content = artifact.report.full %}
+<div class="card border-success">
+    <div class="card-header">
+    <ul class="nav nav-tabs card-header-tabs">
+      <li class="nav-item">
+        <a class="nav-link active" class="nav-link active" id="home-tab_{{ artifact.id }}" data-bs-toggle="tab" data-bs-target="#home_{{ artifact.id }}" role="tab" aria-controls="home_{{ artifact.id }}" aria-selected="true">Result</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" id="json-tab_{{ artifact.id }}" data-bs-toggle="tab" data-bs-target="#json_{{ artifact.id }}" role="tab" aria-controls="json_{{ artifact.id }}" aria-selected="false">Json</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="tps://console.threatscore.cyberprotect.cloud/search?query={{artifact.data}}" target="_blank" >Ext. Analisys
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-link-45deg" viewBox="0 0 16 16">
+          <path d="M4.715 6.542 3.343 7.914a3 3 0 1 0 4.243 4.243l1.828-1.829A3 3 0 0 0 8.586 5.5L8 6.086a1.002 1.002 0 0 0-.154.199 2 2 0 0 1 .861 3.337L6.88 11.45a2 2 0 1 1-2.83-2.83l.793-.792a4.018 4.018 0 0 1-.128-1.287z"/>
+          <path d="M6.586 4.672A3 3 0 0 0 7.414 9.5l.775-.776a2 2 0 0 1-.896-3.346L9.12 3.55a2 2 0 1 1 2.83 2.83l-.793.792c.112.42.155.855.128 1.287l1.372-1.372a3 3 0 1 0-4.243-4.243L6.586 4.672z"/>
+        </svg>
+        </a>
+      </li>
+    </div>
+    <div class="card-body">
+    <div class="tab-content" id="myTabContent">
+     <div class="tab-pane fade show active" id="home_{{ artifact.id }}" role="tabpanel" aria-labelledby="home-tab_{{ artifact.id }}">
+
+<!-- Success: Summary -->
+<div class="panel panel-info" ng-if="success">
+  <div class="panel-heading">
+    Cyberprotect Threatscore <a href="https://console.threatscore.cyberprotect.cloud/search?query={{artifact.data}}" target="_blank"><i class="fa fa-external-link"></i></a>
+    <br/>
+    Report for <strong>{{artifact.data }}</strong>
+  </div>
+  {% if content.error != ""  %}
+  <div class="panel-body" ng-if="content.error">
+    <h2>{{content.error.message}}</h2>
+  </div>
+  {% else %}
+  <div class="panel-body" ng-if="!content.error">
+    <p>
+      {% if content.threatscore.categories | count > 0 %}
+      <span ng-if="content.threatscore.categories.length > 0">
+        Categories:&nbsp;
+	{% for category in content.threatscore.categories %}
+        <span ng-repeat="category in content.threatscore.categories">
+          <span class="label label-default">
+            {{category | replace("_"," ") | upper }}
+          </span>&nbsp;
+        </span>
+	{% endfor %}
+        <br/>
+      </span>
+      {% endif  %}
+      Indicators:&nbsp;
+      <span class="label" ng-class="{{'label-danger' if content.threatscore.indicators.blocklist else 'label-default'}}">
+	{% if content.threatscore.indicators.blocklist %}
+        <span ng-if="content.threatscore.indicators.blocklist">
+          Blocklist
+        </span>
+	{% else %}
+        <del ng-if="!content.threatscore.indicators.blocklist">
+          Blocklist
+        </del>
+	{% endif %}
+      </span>&nbsp;
+      <span class="label" ng-class="{{'label-danger' if content.threatscore.indicators.attack else 'label-default'}}">
+	{% if content.threatscore.indicators.attack %}
+        <span ng-if="content.threatscore.indicators.attack">
+          Attack
+        </span>
+	{% else %}
+        <del ng-if="!content.threatscore.indicators.attack">
+          Attack
+        </del>
+	{% endif %}
+      </span>&nbsp;
+      <span class="label" ng-class="{{'label-danger' if content.threatscore.indicators.scan else 'label-default'}}">
+	{% if content.threatscore.indicators.scan  %}
+        <span ng-if="content.threatscore.indicators.scan">
+          Scan
+        </span>
+	{% else %}
+        <del ng-if="!content.threatscore.indicators.scan">
+          Scan
+        </del>
+	{% endif %}
+      </span>&nbsp;
+      <span class="label" ng-class="{{'label-danger' if content.threatscore.indicators.compromission else 'label-default'}}">
+	{% if content.threatscore.indicators.compromission %}
+        <span ng-if="content.threatscore.indicators.compromission">
+          Compromission
+        </span>
+	{% else %}
+        <del ng-if="!content.threatscore.indicators.compromission">
+          Compromission
+        </del>
+	{% endif %}
+      </span>
+      <br/>
+      <span ng-if="content.observable.geo && content.observable.geo.country_name">
+        Location:&nbsp;
+        <span ng-if="content.observable.geo && content.observable.geo.city_name">{{content.observable.geo.city_name}},
+        </span>{{content.observable.geo.country_name}}
+        <br/>
+      </span>
+      {% if content.observable.as %}
+      <span ng-if="content.observable.as">
+        AS:&nbsp;{{content.observable.as.asn}}
+        <span ng-if="content.observable.as.organization_name">&nbsp;({{content.observable.as.organization_name}})</span>
+        <br/>
+      </span>
+      {% endif %}
+      {% if content.observable.last_seen %}
+      <span ng-if="content.observable.last_seen">
+        First seen:&nbsp;<span title="first seen">{{content.observable.first_seen }}</span>
+        <br/>
+        Last seen:&nbsp;<span title="last seen">{{content.observable.last_seen }}</span>
+      </span>
+      {% endif %}
+    </p>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Success: Analysis -->
+<div class="panel panel-info" ng-if="success && !content.error">
+  <div class="panel-heading">
+    Analysis
+  </div>
+  {% if content.analysis | count > 0 %}
+  <div class="panel-body" ng-if="content.analysis && content.analysis.length > 0">
+    <h3 ng-if="content.threatscore.level">
+     {% if content.threatscore.level == "safe" %}
+      Threat score of <span ng-class="">{{ content.threatscore.value * 100 }}%</span>
+     {% elif content.threatscore.level == "suspicius"  %}
+      Threat score of <span ng-class="text-warning">{{ content.threatscore.value * 100 }}%</span>
+     {% elif content.threatscore.level == "malicius" %}
+      Threat score of <span ng-class="text-danger">{{ content.threatscore.value * 100 }}%</span>
+     {% endif %}
+    </h3>
+    <br />
+    <table class="table table-bordered panel">
+      <thead>
+        <th>ID</th>
+        <th>Date</th>
+        <th>Threat Level</th>
+      </thead>
+      <tbody>
+	{% for a in content.analysis %}
+        <tr ng-repeat="a in content.analysis">
+          <td>{{a.id}}</td>
+          <td>{{a.date}}</td>
+          <td ng-if="!a.score && a.score !== 0" class="text-info"><strong>Info</strong></td>
+          <td ng-if="a.score || a.score === 0">
+            <span class="text-success" ng-if="a.score < 0.25"><strong>Safe</strong></span>
+            <span class="text-warning" ng-if="a.score >= 0.25 && a.score < 0.5"><strong>Suspicious</strong></span>
+            <span class="text-danger" ng-if="a.score >= 0.5"><strong>Malicious</span>
+          </td>
+        </tr>
+	{% endfor  %}	
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="panel-body" ng-if="!content.analysis || content.analysis.length == 0">
+    <h2>Not analyzed yet</h2>
+  </div>
+  {% endif %}
+</div>
+
+
+
+
+     </div>
+     <div class="tab-pane fade" id="json_{{ artifact.id }}" role="tabpanel" aria-labelledby="json-tab_{{ artifact.id }}">
+        <pre>
+        <code>
+{{ artifact }}
+        </code>
+        </pre>
+    </div>
+    </div> <!-- tab content -->
+    </div> <!-- card body -->
+</div>
+{% else %}
+<!-- General error -->
+<div class="card border-danger">
+        <div class="card-header alert alert-danger">
+                <strong>Error</strong>
+        </div>
+        <div class="card-body">
+                <strong>{{(artifact.data)}}</strong><br>
+                {{ artifact.report.errorMessage}}
+        </div>
+    </div>
+</div>
+{% endif %}
