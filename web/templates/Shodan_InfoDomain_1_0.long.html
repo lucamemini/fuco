@@ -22,48 +22,88 @@
     <div class="tab-content" id="myTabContent">
      <div class="tab-pane fade show active" id="home_{{ artifact.id }}" role="tabpanel" aria-labelledby="home-tab_{{ artifact.id }}">
 
-
-
 <div class="panel panel-info" ng-if="success">
     <div class="panel-heading">
-        Host Information of  <strong>{{artifact.data }}</strong>
+        Domain Information of  <strong>{{artifact.data }}</strong>
     </div>
     <div class="panel-body">
         <dl class="dl-horizontal">
             <dt>ASN</dt>
-            <dd>{{content.host.asn}}</dd>
+            <dd>
+                {{content.info_domain.asn| join(', ')}}
+            </dd>
         </dl>
         <dl class="dl-horizontal">
             <dt>ISP</dt>
-            <dd>{{content.host.isp}}</dd>
+            <dd>
+		{% if content.info_domain.isp | length == 0 %}
+                <span ng-if="content.info_domain.isp.length === 0">-</span>
+		{% else %}
+                <ul class="list-unstyled">
+		{% for i in content.info_domain.isp %}
+                    <li data-ng-repeat=" i in content.info_domain.isp">{{i}}</li>
+		{% endfor %}
+                </ul>
+		{% endif %}
+            </dd>
         </dl>
         <dl class="dl-horizontal">
-            <dt>Hostnames</dt>
-            <dd>{{content.host.hostnames| join(', ') }}</dd>
-        </dl>
-        <dl class="dl-horizontal">
-            <dt>Country</dt>
-            <dd>{{content.host.country_name}} (<strong>{{content.host.country_code}}</strong>)</dd>
+            <dt>Domains</dt>
+            <dd>
+		{% if content.info_domain.all_domains | length == 0 %}
+                <span ng-if="content.info_domain.all_domains.length === 0">-</span>
+		{% else %}
+                <ul class="list-unstyled">
+		    {% for i in content.info_domain.all_domains %}
+                    <li data-ng-repeat="i in content.info_domain.all_domains">{{i }}</li>
+		    {% endfor %}
+                </ul>
+		{% endif %}
+            </dd>
         </dl>
         <dl class="dl-horizontal">
             <dt>Ports</dt>
-            <dd>{{content.host.ports| join(', ')}}</dd>
-        </dl>
-        <dl class="dl-horizontal">
-            <dt>Last update</dt>
-            <dd>{{content.host.last_update}}</dd>
-        </dl>
-
-        <dl class="dl-horizontal">
-            <dt>Geolocation</dt>
             <dd>
-                <strong>Latitude:</strong> {{content.host.latitude}}, <strong>Longitude:</strong> {{content.host.longitude}} <br>
-                <a ng-href="http://google.com/maps/place/{{content.host.latitude}},{{content.host.longitude}}" target="_blank">Open in Google Maps</a>
+                {{content.info_domain.ports| join(', ') }}
             </dd>
         </dl>
+        <dl class="dl-horizontal">
+            <dt>Orgs</dt>
+            <dd>
+		{% if content.info_domain.orgs | length == 0 %}
+                <span ng-if="content.info_domain.orgs.length === 0">-</span>
+		{% else %}
+                <ul class="list-unstyled">
+		    {% for i in content.info_domain.orgs %}
+                    <li data-ng-repeat="i in content.info_domain.orgs">{{i}}</li>
+		    {% endfor %}
+                </ul>
+		{% endif %}
+            </dd>
+        </dl>
+        <dl class="dl-horizontal">
+            <dt>Transports</dt>
+            <dd>
+                {{content.info_domain.transports| join(', ')}}
+            </dd>
+        </dl>
+        <dl class="dl-horizontal">
+            <dt>IPs</dt>
+            <dd>
+		{% if content.info_domain.ips | length == 0 %}
+                <span ng-if="content.info_domain.ips.length === 0">-</span>
+		{% else %}
+                <ul class="list-unstyled">
+		    {% for i in content.info_domain.ips %}
+                    <li data-ng-repeat="i in content.info_domain.ips">{{i}}</li>
+		    {% endfor %}
+                </ul>
+		{% endif %}
+            </dd>
+        </dl>
+
     </div>
 </div>
-
 
      </div>
      <div class="tab-pane fade" id="json_{{ artifact.id }}" role="tabpanel" aria-labelledby="json-tab_{{ artifact.id }}">

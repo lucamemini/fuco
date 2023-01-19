@@ -22,48 +22,34 @@
     <div class="tab-content" id="myTabContent">
      <div class="tab-pane fade show active" id="home_{{ artifact.id }}" role="tabpanel" aria-labelledby="home-tab_{{ artifact.id }}">
 
-
-
-<div class="panel panel-info" ng-if="success">
+<div class="panel panel-info" ng-if="content.indicator.results" ng-init="results_limit = 20">
     <div class="panel-heading">
-        Host Information of  <strong>{{artifact.data }}</strong>
+        urlscan.io search results:
+        <span class="pull-right" ng-show="content.indicator.results.length > 20">
+            ({{content.indicator.results | count}})
+        </span>
     </div>
     <div class="panel-body">
-        <dl class="dl-horizontal">
-            <dt>ASN</dt>
-            <dd>{{content.host.asn}}</dd>
-        </dl>
-        <dl class="dl-horizontal">
-            <dt>ISP</dt>
-            <dd>{{content.host.isp}}</dd>
-        </dl>
-        <dl class="dl-horizontal">
-            <dt>Hostnames</dt>
-            <dd>{{content.host.hostnames| join(', ') }}</dd>
-        </dl>
-        <dl class="dl-horizontal">
-            <dt>Country</dt>
-            <dd>{{content.host.country_name}} (<strong>{{content.host.country_code}}</strong>)</dd>
-        </dl>
-        <dl class="dl-horizontal">
-            <dt>Ports</dt>
-            <dd>{{content.host.ports| join(', ')}}</dd>
-        </dl>
-        <dl class="dl-horizontal">
-            <dt>Last update</dt>
-            <dd>{{content.host.last_update}}</dd>
-        </dl>
-
-        <dl class="dl-horizontal">
-            <dt>Geolocation</dt>
-            <dd>
-                <strong>Latitude:</strong> {{content.host.latitude}}, <strong>Longitude:</strong> {{content.host.longitude}} <br>
-                <a ng-href="http://google.com/maps/place/{{content.host.latitude}},{{content.host.longitude}}" target="_blank">Open in Google Maps</a>
-            </dd>
-        </dl>
+        <table class="table table-hover">
+            <tr>
+                <th>URL</th>
+                <th>Result</th>
+                <th>Time</th>
+                <th>ScreenShot</th>
+            </tr>
+	    {% for r in content.indicator.results %}
+            <tr ng-repeat="r in content.indicator.results | limitTo:results_limit | orderBy:'-task.time'">
+                <td>{{r.page.url}}</td>
+                <td>
+                    <a href="https://urlscan.io/result/{{r._id}}" target="_blank">View Report</a>
+                </td>
+                <td>{{r.task.time}}</td>
+                <td><img src="{{r.screenshot}}" width="150" height="112"></td>
+            </tr>
+	    {% endfor %}
+        </table>
     </div>
 </div>
-
 
      </div>
      <div class="tab-pane fade" id="json_{{ artifact.id }}" role="tabpanel" aria-labelledby="json-tab_{{ artifact.id }}">

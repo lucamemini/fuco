@@ -22,48 +22,74 @@
     <div class="tab-content" id="myTabContent">
      <div class="tab-pane fade show active" id="home_{{ artifact.id }}" role="tabpanel" aria-labelledby="home-tab_{{ artifact.id }}">
 
+<!-- Success case -->
+<div ng-if="success">
+    <div class="panel panel-info">
+        <div class="panel-heading">
+            <strong>Owner Details</strong>
+        </div>
+        <div class="panel-body">
+            <dl class="dl-horizontal">
+                <dt>Location</dt>
+                <dd>{{content.country}}</dd>
+            </dl>
 
+            <dl class="dl-horizontal">
+                <dt>IP Address</dt>
+                <dd>{{content.ip}}</dd>
+            </dl>
 
-<div class="panel panel-info" ng-if="success">
-    <div class="panel-heading">
-        Host Information of  <strong>{{artifact.data }}</strong>
+            <dl class="dl-horizontal">
+                <dt>Fwd/Rev DNS Match</dt>
+                <dd>{{content.dnsmatch == 1 && 'Yes' || 'No'}}</dd>
+            </dl>
+
+            <dl class="dl-horizontal">
+                <dt>Hostname</dt>
+                <dd>{{content.hostname}}</dd>
+            </dl>
+
+            <dl class="dl-horizontal">
+                <dt>Domain</dt>
+                <dd>{{content.domain}}</dd>
+            </dl>
+
+            <dl class="dl-horizontal">
+                <dt>Network Owner</dt>
+                <dd>{{content.organization}}</dd>
+            </dl>
+        </div>
     </div>
-    <div class="panel-body">
-        <dl class="dl-horizontal">
-            <dt>ASN</dt>
-            <dd>{{content.host.asn}}</dd>
-        </dl>
-        <dl class="dl-horizontal">
-            <dt>ISP</dt>
-            <dd>{{content.host.isp}}</dd>
-        </dl>
-        <dl class="dl-horizontal">
-            <dt>Hostnames</dt>
-            <dd>{{content.host.hostnames| join(', ') }}</dd>
-        </dl>
-        <dl class="dl-horizontal">
-            <dt>Country</dt>
-            <dd>{{content.host.country_name}} (<strong>{{content.host.country_code}}</strong>)</dd>
-        </dl>
-        <dl class="dl-horizontal">
-            <dt>Ports</dt>
-            <dd>{{content.host.ports| join(', ')}}</dd>
-        </dl>
-        <dl class="dl-horizontal">
-            <dt>Last update</dt>
-            <dd>{{content.host.last_update}}</dd>
-        </dl>
+    <div class="panel panel-info">
+        <div class="panel-heading">
+            <strong>Reputation Details</strong>
+        </div>
+        <div class="panel-body">
+            <dl class="dl-horizontal">
+                <dt>Email Reputation</dt>
+                <dd>{{content.email_score_name}}</dd>
+            </dl>
 
-        <dl class="dl-horizontal">
-            <dt>Geolocation</dt>
-            <dd>
-                <strong>Latitude:</strong> {{content.host.latitude}}, <strong>Longitude:</strong> {{content.host.longitude}} <br>
-                <a ng-href="http://google.com/maps/place/{{content.host.latitude}},{{content.host.longitude}}" target="_blank">Open in Google Maps</a>
-            </dd>
-        </dl>
+            <dl class="dl-horizontal">
+                <dt>Web Reputation</dt>
+                <dd>{{content.web_score_name}}</dd>
+            </dl>
+        </div>
+    </div>
+    <div class="panel panel-info">
+        <div class="panel-heading">
+            <strong>Blacklists</strong>
+        </div>
+        <div class="panel-body">
+	    {% for key,value in content.blacklists.items() %}
+            <dl class="dl-horizontal" ng-repeat="(key,value) in content.blacklists">
+                <dt>{{key}}</dt>
+                <dd>{{value.rules | length > 0 && 'Listed' || 'Not Listed'}}</dd>
+            </dl>
+	    {% endfor %}
+        </div>
     </div>
 </div>
-
 
      </div>
      <div class="tab-pane fade" id="json_{{ artifact.id }}" role="tabpanel" aria-labelledby="json-tab_{{ artifact.id }}">

@@ -32,6 +32,7 @@
         
 <div class="report-EmergingThreats" ng-if="success">
 
+    {% if content.reputation != '-' %}
     <div class="panel panel-info" ng-if="content.reputation && content.reputation != '-' && content.reputation != 'Error'">
         <div class="panel-heading">
             <strong>Reputation</strong>
@@ -45,7 +46,9 @@
 	    {% endfor %}
         </div>
     </div>
+    {% endif %}
 
+    {% if content.events != '-' %}
     <div class="panel panel-info" ng-if="content.events && content.events != '-' && content.events != 'Error'">
         <div class="panel-heading">
             <strong>Events</strong>
@@ -73,7 +76,9 @@
             </table>
         </div>
     </div>
+    {% endif %}
 
+    {% if content.geoloc != '-' %}
     <div class="panel panel-info" ng-if="content.geoloc && content.geoloc != '-' && content.geoloc != 'Error'">
         <div class="panel-heading">
             <strong>Geoloc</strong>
@@ -134,7 +139,9 @@
 -->
         </div>
     </div>
+    {% endif %}
 
+    {% if content.ips != '-'%}
     <div class="panel panel-info" ng-if="content.ips && content.ips != '-' && content.ips != 'Error'">
         <div class="panel-heading">
             <strong>IPs</strong>
@@ -156,7 +163,9 @@
             </table>
         </div>
     </div>
+    {% endif %}
 
+    {% if content.domains != '-' %}
     <div class="panel panel-info" ng-if="content.domains && content.domains != '-' && content.domains != 'Error'">
         <div class="panel-heading">
             <strong>Domains</strong>
@@ -178,7 +187,9 @@
             </table>
         </div>
     </div>
+    {% endif %}
 
+    {% if content.samples != '-' %}
     <div class="panel panel-info" ng-if="content.samples && content.samples != '-' && content.samples != 'Error'">
         <div class="panel-heading">
             <strong>Samples</strong>
@@ -200,7 +211,8 @@
             </table>
         </div>
     </div>
-
+    {% endif %}
+    {% if content.nameservers != '-' %}
     <div class="panel panel-info" ng-if="content.nameservers && content.nameservers != '-' && content.nameservers != 'Error'">
         <div class="panel-heading">
             <strong>Nameservers</strong>
@@ -222,7 +234,8 @@
             </table>
         </div>
     </div>
-
+    {% endif %}
+    {% if content.reputation != '-' %}
     <div class="panel panel-info" ng-if="content.reputation && content.reputation != '-' && content.reputation != 'Error'">
         <div class="panel-heading">
             <strong>Urls</strong>
@@ -235,7 +248,9 @@
 	    {% endfor %}
         </div>
     </div>
+    {% endif %}
 
+    {% if content.whois != '-' %}
     <div class="panel panel-info" ng-if="content.whois && content.whois != '-' && content.whois != 'Error'">
         <div class="panel-heading">
             <strong>Whois</strong>
@@ -273,6 +288,7 @@
             </dl>
         </div>
     </div>
+    {% endif %}
 </div>
 
      </div>

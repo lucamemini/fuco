@@ -325,7 +325,16 @@
         </div>
 	{% endif %}
 
+{% else %}
+        <div>
+            <dl class="dl-horizontal">
+                <dt>query_status</dt>
+                <dd class="wrap">{{content.query_status}}</dd>
+	     </dl>
+	</div>
 {% endif %}
+
+
      </div>
      <div class="tab-pane fade" id="json_{{ artifact.id }}" role="tabpanel" aria-labelledby="json-tab_{{ artifact.id }}">
         <pre>
