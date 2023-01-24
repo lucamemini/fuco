@@ -104,11 +104,13 @@
           <strong>Threat Feeds</strong>
       </div>
       <div class="panel-body">
+	  {% if content.threatfeedscount == 0 %}
           <div ng-if="content[artifact.threatfeeds].length === 0">
               No threat feed found
           </div>
+	  {% else %}
           <div>
-	    {% for key, value in content.threatfeeds %}
+	    {% for key,value in content.threatfeeds.items() %}
             <dl class="dl-horizontal" ng-repeat="(key, value) in content.threatfeeds">
               <dt>{{key}}</dt>
               <dd class="wrap">First Seen: {{value.firstseen}}</dd>
@@ -116,6 +118,7 @@
             </dl>
 	    {% endfor %}
           </div>
+	  {% endif %}
       </div>
   </div>
 

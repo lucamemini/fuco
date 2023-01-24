@@ -1,52 +1,113 @@
+{% if artifact.status == "Success" %}
+{% set content = artifact.report.full %}
+<div class="card border-success">
+    <div class="card-header">
+    <ul class="nav nav-tabs card-header-tabs">
+      <li class="nav-item">
+        <a class="nav-link active" class="nav-link active" id="home-tab_{{ artifact.id }}" data-bs-toggle="tab" data-bs-target="#home_{{ artifact.id }}" role="tab" aria-controls="home_{{ artifact.id }}" aria-selected="true">Result</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" id="json-tab_{{ artifact.id }}" data-bs-toggle="tab" data-bs-target="#json_{{ artifact.id }}" role="tab" aria-controls="json_{{ artifact.id }}" aria-selected="false">Json</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="{{content.nerd_url}}" target="_blank">Ext. Analisys
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-link-45deg" viewBox="0 0 16 16">
+          <path d="M4.715 6.542 3.343 7.914a3 3 0 1 0 4.243 4.243l1.828-1.829A3 3 0 0 0 8.586 5.5L8 6.086a1.002 1.002 0 0 0-.154.199 2 2 0 0 1 .861 3.337L6.88 11.45a2 2 0 1 1-2.83-2.83l.793-.792a4.018 4.018 0 0 1-.128-1.287z"/>
+          <path d="M6.586 4.672A3 3 0 0 0 7.414 9.5l.775-.776a2 2 0 0 1-.896-3.346L9.12 3.55a2 2 0 1 1 2.83 2.83l-.793.792c.112.42.155.855.128 1.287l1.372-1.372a3 3 0 1 0-4.243-4.243L6.586 4.672z"/>
+        </svg>
+        </a>
+      </li>
+    </div>
+    <div class="card-body">
+    <div class="tab-content" id="myTabContent">
+     <div class="tab-pane fade show active" id="home_{{ artifact.id }}" role="tabpanel" aria-labelledby="home-tab_{{ artifact.id }}">
+
+
 <div class="panel panel-info" ng-if="success">
     <div class="panel-heading">
         NERD information for <strong>{{artifact.data}}</strong>
     </div>
+    {% if content.message %}
     <div class="panel-body" ng-if="content.message">
         <p>{{content.message}}</p>
         <p>Current info at: <a href="{{content.nerd_url}}" target="_blank">{{content.nerd_url}}</a></p>
     </div>
+    {% else %}
     <div class="panel-body" ng-if="!content.message">
         <dl class="dl-horizontal">
             <dt class="text-bold">
                 Reputation score
                 <sup style="color: #999" title="A score computed from the number of recent alerts, their age, and the number of distinct sources (0.0 = no alerts, 1.0 = lots of alerts from multiple sources)">(?)</sup>
             </dt>
-            <dd><span style="color: hsl({{ (100 - 100*content.rep | number: 2) }}, 85%, 50%); margin-right: 5px">&#x2B24;</span>{{content.rep | number: 3}}</dd>
+            <dd>
+		<span style="margin-right: 5px">&#x2B24;</span>{{ content.rep }}
+	    </dd>
         </dl>
         <dl class="dl-horizontal">
             <dt class="text-bold">Hostname</dt>
-            <dd>{{content.hostname || "&mdash;"}}</dd>
+            <dd>{{content.hostname}}</dd>
         </dl>
         <dl class="dl-horizontal">
             <dt class="text-bold">Blacklists</dt>
-            <dd>{{content.blacklists.join(", ") || "&mdash;"}}</dd>
+            <dd>
+		{% for bl in content.blacklists %} <span class="ms-1 badge bg-dark" style="margin-right: 5px">{{bl}}</span>{% endfor %}
+	    </dd>
         </dl>
         <dl class="dl-horizontal">
             <dt class="text-bold">Tags</dt>
             <dd>
-                <span ng-repeat="t in content.translated_tags" class="label" style="margin-right: 5px" ng-class="{'info': 'label-info', 'safe': 'label-success', 'suspicious': 'label-warning', 'malicious':'label-danger'}[t[1]]">{{t[0]}}</span>
+		{% if content.translated_tags | count > 0 %}
+		{% for t in content.translated_tags %}
+		   {% if t[1] == "info" %}
+	                <span class="ms-1 badge bg-info" style="margin-right: 5px">{{t[0]}}</span>
+		   {% elif t[1] == "safe" %}
+	                <span class="ms-1 badge bg-success" style="margin-right: 5px">{{t[0]}}</span>
+		   {% elif t[1] == "suspicious" %}
+	                <span class="ms-1 badge bg-warning" style="margin-right: 5px">{{t[0]}}</span>
+		   {% elif t[1] == "malicious" %}
+	                <span class="ms-1 badge bg-danger" style="margin-right: 5px">{{t[0]}}</span>
+		   {% endif %}
+		{% endfor %} 
+		{% else %} 
                 <span ng-if="!content.translated_tags.length">&mdash;</span>
+		{% endif %} 
             </dd>
         </dl>
         <dl class="dl-horizontal">
             <dt class="text-bold">ASN</dt>
-            <dd>{{content.asn.join(", ") || "unknown"}}</dd>
+            <dd>{{content.asn | join(", ")}}</dd>
         </dl>
         <dl class="dl-horizontal">
             <dt class="text-bold">Country</dt>
-            <dd>{{content.country || "unknown"}}</dd>
+            <dd>{{content.country}}</dd>
         </dl>
         <p>Full info at: <a href="{{content.nerd_url}}" target="_blank">{{content.nerd_url}}</a></p>
     </div>
+    {% endif %}
 </div>
 
-<!-- General error -->
-<div class="panel panel-danger" ng-if="!success">
-    <div class="panel-heading">
-        <strong>{{artifact.data}}</strong>
+
+     </div>
+     <div class="tab-pane fade" id="json_{{ artifact.id }}" role="tabpanel" aria-labelledby="json-tab_{{ artifact.id }}">
+        <pre>
+        <code>
+{{ artifact }}
+        </code>
+        </pre>
     </div>
-    <div class="panel-body">
-        {{artifact.report.errorMessage}}
+    </div> <!-- tab content -->
+    </div> <!-- card body -->
+</div>
+{% else %}
+<!-- General error -->
+<div class="card border-danger">
+        <div class="card-header alert alert-danger">
+                <strong>Error</strong>
+        </div>
+        <div class="card-body">
+                <strong>{{(artifact.data)}}</strong><br>
+                {{ artifact.report.errorMessage}}
+        </div>
     </div>
 </div>
+{% endif %}

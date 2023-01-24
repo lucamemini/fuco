@@ -22,29 +22,57 @@
     <div class="tab-content" id="myTabContent">
      <div class="tab-pane fade show active" id="home_{{ artifact.id }}" role="tabpanel" aria-labelledby="home-tab_{{ artifact.id }}">
 
-
-<!-- Node found -->
-{% if content.node %}
-<div class="panel panel-warning" ng-if="success && content.node">
+<div class="panel panel-warning" ng-if="success">
 	<div class="panel-heading">
-		Tor Project - <strong>{{artifact.data}}</strong>
+		StopForumSpam - {{artifact.data }}
 	</div>
 	<div class="panel-body">
-		Exit node found: {{content.node}} updated at {{content.last_status}}
+		<div class="panel panel-default">
+      <div class="panel-heading">
+        {{(artifact.data) }} - {{content.frequency}} occurrences
+      </div>
+      {% if content.appears %}
+      {% if artifact.dataType == 'ip' %}
+      <div class="panel-body" ng-if="content.appears && artifact.dataType == 'ip'">
+        <dl class="dl-horizontal">
+					<dt>Last seen</dt>
+					<dd>{{content.lastseen * 1000 }}</dd>
+          <dt>SPAM scoring</dt>
+          <dd>{{content.confidence}}</dd>
+          <dt>ASN</dt>
+          <dd>{{content.asn}}</dd>
+          <dt>Country</dt>
+          <dd>{{content.country}}</dd>
+        </dl>
+        <span>
+          <i class="fa fa-search"></i>
+          <a ng-href="http://stopforumspam.com/ipcheck/{{artifact.data}}" target="_blank">StopForumSpam IP check</a>
+        </span>
+      </div>
+      {% endif %}
+      {% if artifact.dataType == 'mail' %}
+      <div class="panel-body" ng-if="content.appears && artifact.dataType == 'mail'">
+        <dl class="dl-horizontal">
+					<dt>Last seen</dt>
+					<dd>{{content.lastseen * 1000 }}</dd>
+          <dt>SPAM scoring</dt>
+          <dd>{{content.confidence}}</dd>
+        </dl>
+        <span>
+          <i class="fa fa-search"></i>
+          <a ng-href="http://stopforumspam.com/search" target="_blank">Search in StopForumSpam</a>
+        </span>
+      </div>
+      {% endif %}
+      {% else %}
+      <div class="panel-body" ng-if="!content.appears">
+	Data not found in StopForumSpam database.
+      </div>
+      {% endif %}
+    </div>
 	</div>
 </div>
 
-{% else %}
-<!-- Empty result -->
-<div class="panel panel-success" ng-if="success && !content.node">
-	<div class="panel-heading">
-		Tor Project - <strong>{{artifact.data}}</strong>
-	</div>
-	<div class="panel-body">
-		<b>Not a known exit node.</b>
-	</div>
-</div>
-{% endif %}
 
      </div>
      <div class="tab-pane fade" id="json_{{ artifact.id }}" role="tabpanel" aria-labelledby="json-tab_{{ artifact.id }}">

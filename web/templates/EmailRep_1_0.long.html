@@ -22,29 +22,60 @@
     <div class="tab-content" id="myTabContent">
      <div class="tab-pane fade show active" id="home_{{ artifact.id }}" role="tabpanel" aria-labelledby="home-tab_{{ artifact.id }}">
 
-
-<!-- Node found -->
-{% if content.node %}
-<div class="panel panel-warning" ng-if="success && content.node">
-	<div class="panel-heading">
-		Tor Project - <strong>{{artifact.data}}</strong>
-	</div>
-	<div class="panel-body">
-		Exit node found: {{content.node}} updated at {{content.last_status}}
-	</div>
+{% if content.status == 'fail' %}
+<div class="report-SecurityTrails" ng-if="success">
+  <div class="panel panel-info">
+    <div class="panel-heading">
+      emailrep.io lookup error
+    </div>
+    <div class="panel-body">
+      <div>
+        {{ content.reason }}
+      </div>
+  </div>
 </div>
-
 {% else %}
-<!-- Empty result -->
-<div class="panel panel-success" ng-if="success && !content.node">
-	<div class="panel-heading">
-		Tor Project - <strong>{{artifact.data}}</strong>
-	</div>
-	<div class="panel-body">
-		<b>Not a known exit node.</b>
-	</div>
+<div class="report-SecurityTrails" ng-if="success">
+  <div class="panel panel-info">
+    <div class="panel-heading">
+      emailrep.io lookup ({{ content.email }})
+    </div>
+    <div class="panel-body">
+      <div ng-if="(content | json) === '{}'">
+        No data found
+      </div>
+      <div ng-if="(content | json) !== '{}'">
+        <dl class=" dl-horizontal">
+          <dt>Reputation:</dt>
+          <dd class="wrap">{{ content.reputation }}</dd>
+        </dl>
+        <dl class=" dl-horizontal">
+          <dt>Suspicious:</dt>
+          <dd class="wrap">{{ content.suspicious }}</dd>
+        </dl>
+        <dl class="dl-horizontal">
+          <dt>References:</dt>
+          <dd class="wrap">{{ content.references }}</dd>
+        </dl>
+        <dl class="dl-horizontal" ng-if="content.details.profiles.length !== 0">
+          <dt>Profiles:</dt>
+          <dd class="wrap">
+            <ul ng-repeat="profile in content.details.profiles">
+              <li>{{ profile }}</li>
+            </ul>
+          </dd>
+        </dl>
+        <dl class="dl-horizontal">
+          <dt>Summary:</dt>
+          <dd class="wrap">{{ content.summary }}</dd>
+        </dl>
+      </div>
+    </div>
+  </div>
 </div>
 {% endif %}
+
+
 
      </div>
      <div class="tab-pane fade" id="json_{{ artifact.id }}" role="tabpanel" aria-labelledby="json-tab_{{ artifact.id }}">

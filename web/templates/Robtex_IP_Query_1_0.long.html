@@ -69,6 +69,7 @@
             </tr>
             </tbody>
         </table>
+        {% if content.ip %}
         <table class="table">
             <thead>
             <th>Type</th>
@@ -76,28 +77,48 @@
             <th>Timestamp</th>
             </thead>
             <tbody>
+	    {% if content.ip.pas | count > 0 %}
+	    {% for hit in content.ip.pas %}
             <tr ng-repeat="hit in content.ip.pas">
                 <td>PAS</td>
                 <td>{{hit.o}}</td>
-                <td>{{hit.t * 1000 | date:'yyyy-MM-dd HH:mm:ss Z'}}</td>
+                <td>{{hit.t }}</td>
             </tr>
+	    {% endfor %}
+	    {% endif %}
+
+	    {% if content.ip.pash | count > 0 %}
+	    {% for hit in content.ip.pash %}
             <tr ng-repeat="hit in content.ip.pash">
                 <td>PASH</td>
                 <td>{{hit.o}}</td>
-                <td>{{hit.t * 1000 | date:'yyyy-MM-dd HH:mm:ss Z'}}</td>
+                <td>{{hit.t }}</td>
             </tr>
+	    {% endfor %}
+	    {% endif %}
+
+	    {% if content.ip.act | count > 0 %}
+	    {% for hit in content.ip.act %}
             <tr ng-repeat="hit in content.ip.act">
                 <td>ACT</td>
                 <td>{{hit.o}}</td>
-                <td>{{hit.t * 1000 | date:'yyyy-MM-dd HH:mm:ss Z'}}</td>
+                <td>{{hit.t }}</td>
             </tr>
+	    {% endfor %}
+	    {% endif %}
+
+	    {% if content.ip.acth |count > 0 %}
+	    {% for hit in content.ip.acth %}
             <tr ng-repeat="hit in content.ip.acth">
                 <td>ACTH</td>
                 <td>{{hit.o}}</td>
-                <td>{{hit.t * 1000 | date:'yyyy-MM-dd HH:mm:ss Z'}}</td>
+                <td>{{hit.t }}</td>
             </tr>
+	    {% endfor %}
+	    {% endif %}
             </tbody>
         </table>
+        {% endif %}
         <dl class="dl-horizontal">
             <table class="table">
 

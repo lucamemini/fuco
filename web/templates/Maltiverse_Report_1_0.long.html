@@ -115,7 +115,7 @@
     </div>
 
 
-
+    {% if content.blacklist != '-' %}
     <div class="panel panel-info" ng-if="content.blacklist" ng-init="blacklists_limit = 5">
         <div class="panel-heading">
             <strong>Blacklists ({{content.blacklist | count}})</strong>
@@ -142,6 +142,7 @@
             </table>
         </div>
     </div>
+    {% endif %}
 </div>
 
      </div>
