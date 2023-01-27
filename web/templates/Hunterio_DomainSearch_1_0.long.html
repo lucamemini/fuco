@@ -85,6 +85,12 @@
 		{% endfor %}
             </table>
         </div>
+	{% elif content.errors %}
+        <div class="panel-body">
+            Error code: {{ content.errors[0].code }}<br>
+	    id: {{ content.errors[0].id }}<br>
+	    Details: {{ content.errors[0].details }} 
+        </div>
 	{% else %}
         <div class="panel-body" ng-if="!content.meta">
             No results found
