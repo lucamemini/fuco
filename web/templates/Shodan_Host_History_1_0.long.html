@@ -71,13 +71,15 @@
 	{% if content.host.vulns %}
 	{% for data in content.host.data %}
         <span ng-repeat="data in content.host.data" ng-if="content.host.vulns">
+  	   {% if data.vulns %}
             <dl class="dl-horizontal">
-		{% for vuln,info in data.vulns %}
-                <dt ng-repeat-start="(vuln, info) in data.vulns"><a href="https://cve.mitre.org/cgi-bin/cvename.cgi?name={{vuln}}" target="_blank">{{vuln}}</a></dt>
-                <dd ng-repeat-end=>{{info.summary}}</dd>
+		{% for v,info in data.vulns.items() %}
+                <dt ng-repeat-start="(vuln, info) in data.vulns"><a href="https://cve.mitre.org/cgi-bin/cvename.cgi?name={{v}}" target="_blank">{{v}}</a></dt>
+               	<dd>{{ info.summary }}</dd>
 		{% endfor %}
             </dl>
         </span>
+	{% endif %}
 	{% endfor %}
 	{% endif %}
     </div>

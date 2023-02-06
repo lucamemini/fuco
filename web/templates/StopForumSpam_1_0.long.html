@@ -36,7 +36,7 @@
       <div class="panel-body" ng-if="content.appears && artifact.dataType == 'ip'">
         <dl class="dl-horizontal">
 					<dt>Last seen</dt>
-					<dd>{{content.lastseen * 1000 }}</dd>
+					<dd>{{content.lastseen.strftime('%d-%m-%Y') }}</dd>
           <dt>SPAM scoring</dt>
           <dd>{{content.confidence}}</dd>
           <dt>ASN</dt>
@@ -54,7 +54,7 @@
       <div class="panel-body" ng-if="content.appears && artifact.dataType == 'mail'">
         <dl class="dl-horizontal">
 					<dt>Last seen</dt>
-					<dd>{{content.lastseen * 1000 }}</dd>
+					<dd>{{content.lastseen.strftime('%d-%m-%Y') }}</dd>
           <dt>SPAM scoring</dt>
           <dd>{{content.confidence}}</dd>
         </dl>
