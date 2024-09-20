@@ -8,7 +8,7 @@ from urllib.parse import quote
 from uuid import uuid1
 
 import json
-import pprint
+from pprint import pprint
 import time
 import jinja2
 
@@ -55,17 +55,49 @@ def run_analisys(analizer,datatype,data):
    return job.json()
 
 @app.route('/')
+#def home():
+#    result = get_analyzer_by_type("domain")
+#    return render_template('index.html', data=result)
+##    return app.send_static_file('index.html')
 def home():
-    result = get_analyzer_by_type("domain")
-    return render_template('index.html', data=result)
-#    return app.send_static_file('index.html')
-
+    q_param = request.args.get('q')
+    type_param = request.args.get('t')
+    if q_param and type_param:
+        # Eseguire le operazioni desiderate con i parametri q e type
+        return render_template('index.html', q=q_param, t=type_param)
+    else:
+        result = get_analyzer_by_type("domain")
+        return render_template('index.html', t=result)
 
 @app.route('/getAnalyzer', methods=['GET'])
 def getAnalyzer():
    t = str(request.args.get('type')) 
    result = get_analyzer_by_type(t)
    return render_template('analyzer.html', data=result)
+
+@app.route('/lastAnalisys', methods=['GET'])
+def lastAnalisis():
+   query = And(Eq('status', 'Success'))
+   jobs = api.jobs.find_all(query, range='0-150', sort='-createdAt')
+   organized_data = {}
+
+   for item in jobs:
+       data_value = item.data
+       if data_value not in organized_data:
+          organized_data[data_value] = []
+       organized_data[data_value].append(item)
+
+#   for data_value, items in organized_data.items():
+#         pprint(data_value)
+#         for job in items:
+#             pprint(job)
+
+#        print(f"Dati per '{data_value}':")
+#        for job in items:
+#            report = api.jobs.get_report(job.id).report
+#            print('   Result {}'.format(json.dumps(report.get('summary', {}))))
+   
+   return render_template('lastAnalisys.html', data=organized_data)
 
 @app.route('/getAnalisys', methods=['GET'])
 def getAnalisys():
