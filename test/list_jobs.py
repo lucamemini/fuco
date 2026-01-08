@@ -39,6 +39,8 @@ for item in jobs:
 for data_value, items in organized_data.items():
     print(f"Dati per '{data_value}':")
     for job in items:
-        report = api.jobs.get_report(job.id).report
-        print('  Report {} Result {}'.format(job.analyzerName, json.dumps(report.get('summary', {}))))
-        #print(item)
+        r = api.jobs.get_report(job.id)
+        #report = api.jobs.get_report(job.id).report
+        #print('  Report {} Result {}'.format(job.analyzerName, json.dumps(report.get('summary', {}))))
+        print(r)
+        #json.dumps(report)
