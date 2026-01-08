@@ -17,24 +17,46 @@ from cortex4py.query import *
 
 template_folder='web/templates/'
 
-
 import fucoconfig as cfg 
 api = Api(cfg.cortex["host"], cfg.cortex["apikey"])
 
-app = app = Flask(__name__,
+app = Flask(__name__,
             static_url_path='',
             static_folder='web/static',
             template_folder=template_folder)
-
+ 
 @app.template_filter('fang')
-def fang():
-    """Custom filter"""
-    return input.upper()
+def fang(s):
+    """Custom filter: upper-case a string"""
+    try:
+        return s.upper()
+    except Exception:
+        return s
+
+@app.template_filter('urlencode')
+def urlencode_filter(s):
+    return quote(str(s))
 
 
 def get_analyzer_by_type(t):
     analyzers = api.analyzers.get_by_type(t)
     return analyzers
+
+def get_recent_searches():
+    query = And(Eq('status', 'Success'))
+    jobs = api.jobs.find_all(query, range='0-50', sort='-createdAt')
+    recent = {}
+    for job in jobs:
+        dt = job.dataType
+        if dt not in recent:
+            recent[dt] = {}
+        data = job.data
+        if data not in recent[dt]:
+            if len(recent[dt]) < 10:
+                recent[dt][data] = []
+        if data in recent[dt]:
+            recent[dt][data].append(job.id)
+    return recent
 
 # TLP / PAP
 # WHITE: 0
@@ -67,7 +89,8 @@ def home():
         return render_template('index.html', q=q_param, t=type_param)
     else:
         result = get_analyzer_by_type("domain")
-        return render_template('index.html', t=result)
+        recent = get_recent_searches()
+        return render_template('index.html', t=result, recent=recent)
 
 @app.route('/getAnalyzer', methods=['GET'])
 def getAnalyzer():
@@ -85,19 +108,22 @@ def lastAnalisis():
        data_value = item.data
        if data_value not in organized_data:
           organized_data[data_value] = []
-       organized_data[data_value].append(item)
 
-#   for data_value, items in organized_data.items():
-#         pprint(data_value)
-#         for job in items:
-#             pprint(job)
+       # Get taxonomies like in getShort
+       report = api.jobs.get_report(item.id)
+       t = []
+       try:
+           t = report.report['summary']['taxonomies']
+       except:
+           taxonomies = {}
+           taxonomies['level'] = "undef"
+           taxonomies['namespace'] = report.analyzerName
+           taxonomies['predicate'] = "Summary"
+           taxonomies['value'] = "NoData"
+           t.append(taxonomies)
+       organized_data[data_value].append(t)
 
-#        print(f"Dati per '{data_value}':")
-#        for job in items:
-#            report = api.jobs.get_report(job.id).report
-#            print('   Result {}'.format(json.dumps(report.get('summary', {}))))
-   
-   return render_template('lastAnalisys.html', data=organized_data)
+   return organized_data
 
 @app.route('/getAnalisys', methods=['GET'])
 def getAnalisys():
