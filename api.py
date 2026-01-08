@@ -7,7 +7,6 @@ from subprocess import Popen
 from urllib.parse import quote
 from uuid import uuid1
 
-import json
 from pprint import pprint
 import time
 import jinja2
@@ -447,6 +446,9 @@ def getAnalisys():
      print("Report template: "+template_folder+report.analyzerName+".long.html not found")
      return "<pre>Template not found: <code>"+json.dumps(report.json(), indent=2)+"</code></pre>"
 
+
+# valutare refactoring con asyncio e aiohttp per migliorare performance
+# usare anche threading per parallelizzare le chiamate di polling
 @app.route('/getShort', methods=['GET'])
 def getShort():
    JobId = str(request.args.get('JobId')) 
@@ -473,15 +475,15 @@ def getShort():
     taxonomies['value'] = "NoData"
     t.append(taxonomies)
 
-   if os.path.exists(template_folder+report.analyzerName+".short.html"):
+   if os.path.exists(os.path.join(app.root_path, template_folder, report.analyzerName+".short.html")):
      template = report.analyzerName+".short.html"
      print("Using custom short template: "+template)
      try:
          return render_template(template, taxonomies=t)
      except Exception as err:
          print("Unexpected error: "+str(err))
-         return t
-   elif os.path.exists(template_folder+"generic.short.html"):
+         return "<p>Errore nel caricamento delle taxonomies.</p>"
+   elif os.path.exists(os.path.join(app.root_path, template_folder, "generic.short.html")):
      template = "generic.short.html"
      print("Using generic short template: "+template)
      try:
