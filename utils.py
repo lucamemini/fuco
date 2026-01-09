@@ -124,6 +124,87 @@ def extract_taxonomies(report) -> list:
 def render_short_template(taxonomies: list, analyzer_name: str, app_root_path: str) -> str:
     """
     Renderizza il template short per le taxonomies.
+
+    Contratto template:
+      - riceve SEMPRE una lista: taxonomies
+      - ogni elemento ha: level, namespace, predicate, value, css
+
+    Args:
+        taxonomies: lista di taxonomies
+        analyzer_name: nome analyzer per template specifico
+        app_root_path: root path applicazione Flask
+
+    Returns:
+        HTML renderizzato
+    """
+    try:
+        # Path template (OS-agnostic)
+        template_dir = os.path.join(app_root_path, config.TEMPLATE_FOLDER)
+        short_template_dir = os.path.join(template_dir, "short")
+
+        logger.debug(f"Short template dir: {short_template_dir}")
+
+        # Ambiente Jinja2 coerente e sicuro
+        env = Environment(
+            loader=FileSystemLoader(short_template_dir),
+            autoescape=True,
+            trim_blocks=True,
+            lstrip_blocks=True,
+        )
+
+        # Normalizza taxonomies + CSS
+        normalized_taxonomies = []
+        for taxonomy in taxonomies:
+            level = taxonomy.get("level", "").lower()
+
+            css_class = "bg-secondary"
+            if level == "info":
+                css_class = "bg-info text-dark"
+            elif level == "safe":
+                css_class = "bg-success"
+            elif level == "suspicious":
+                css_class = "bg-warning text-dark"
+            elif level == "malicious":
+                css_class = "bg-danger"
+
+            t = taxonomy.copy()
+            t["css"] = css_class
+            normalized_taxonomies.append(t)
+
+        # Se non ci sono taxonomies, esci pulito
+        if not normalized_taxonomies:
+            logger.debug("Nessuna taxonomy da renderizzare")
+            return ""
+
+        # Template specifico analyzer
+        specific_template_name = f"{analyzer_name}.short.html"
+        specific_template_path = os.path.join(short_template_dir, specific_template_name)
+
+        if os.path.exists(specific_template_path):
+            logger.info(f"Usando template short specifico: {specific_template_name}")
+            template = env.get_template(specific_template_name)
+        else:
+            logger.info("Template specifico non trovato, uso generic.short.html")
+            template = env.get_template("generic.short.html")
+
+        # Render UNICO (niente concatenazioni manuali)
+        html = template.render(taxonomies=normalized_taxonomies)
+
+        logger.debug("Rendering short template completato")
+        return html
+
+    except FileNotFoundError as e:
+        logger.error(f"Template non trovato: {e}")
+        return "<p>Errore nel caricamento delle taxonomies (template non trovato).</p>"
+
+    except Exception as e:
+        logger.exception("Errore nel rendering short template")
+        return "<p>Errore nel caricamento delle taxonomies.</p>"
+
+
+def OLD_render_short_template(taxonomies: list, analyzer_name: str, app_root_path: str) -> str:
+    """
+    Renderizza il template short per le taxonomies.
     
     Args:
         taxonomies: Lista delle taxonomies da renderizzare
@@ -164,14 +245,14 @@ def render_short_template(taxonomies: list, analyzer_name: str, app_root_path: s
                 elif taxonomy.get('level') == "malicious":
                     css_class = "bg-danger"
                 
-                #taxonomy_with_css = taxonomy.copy()
-                #taxonomy_with_css['css'] = css_class
-                #html += template.render(taxonomies=taxonomy_with_css)
-                html = template.render(taxonomies=taxonomies)
+                taxonomy_with_css = taxonomy.copy()
+                taxonomy_with_css['css'] = css_class
+                html += template.render(t=taxonomy_with_css)
+                #html = template.render(t=taxonomies)
         else:
             logger.info(f"Template specifico non trovato ({specific_template_path}), usando template generico")
             template = env.get_template("generic.short.html")
-            html = template.render(taxonomies=taxonomies)
+            html = template.render(t=taxonomies)
         
         logger.debug(f"Template renderizzato con successo")
         return html
