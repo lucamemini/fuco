@@ -140,17 +140,17 @@ def render_short_template(taxonomies: list, analyzer_name: str, app_root_path: s
         logger.debug(f"Template directory: {template_dir}")
         
         # Crea l'ambiente Jinja2
-        env = Environment(loader=FileSystemLoader(template_dir))
+        env = Environment(loader=FileSystemLoader(short_template_dir))
         
-        # Prova il template specifico dell'analyzer nella cartella short/
+        # Prova il template specifico dell'analyzer nella cartella template
         template_name = f"{analyzer_name}.short.html"
         specific_template_path = os.path.join(short_template_dir, template_name)
         
         html = ""
         if os.path.exists(specific_template_path):
-            logger.info(f"Usando template specifico: short/{template_name}")
+            logger.info(f"Usando template specifico: {specific_template_path}")
             # Jinja2 vuole sempre forward slash nei percorsi dei template
-            template = env.get_template(f"short/{template_name}")
+            template = env.get_template(f"{template_name}")
             # Renderizza ogni tassonomia con il template specifico
             for taxonomy in taxonomies:
                 # Aggiungi il colore CSS basato sul level
@@ -164,11 +164,12 @@ def render_short_template(taxonomies: list, analyzer_name: str, app_root_path: s
                 elif taxonomy.get('level') == "malicious":
                     css_class = "bg-danger"
                 
-                taxonomy_with_css = taxonomy.copy()
-                taxonomy_with_css['css'] = css_class
-                html += template.render(t=taxonomy_with_css)
+                #taxonomy_with_css = taxonomy.copy()
+                #taxonomy_with_css['css'] = css_class
+                #html += template.render(taxonomies=taxonomy_with_css)
+                html = template.render(taxonomies=taxonomies)
         else:
-            logger.info(f"Template specifico non trovato (short/{template_name}), usando template generico")
+            logger.info(f"Template specifico non trovato ({specific_template_path}), usando template generico")
             template = env.get_template("generic.short.html")
             html = template.render(taxonomies=taxonomies)
         
@@ -196,16 +197,17 @@ def render_long_template(report, app_root_path: str) -> str:
     try:
         # Costruisci il percorso della directory template in modo OS-agnostic
         template_dir = os.path.join(app_root_path, config.TEMPLATE_FOLDER)
+        long_template_dir = os.path.join(template_dir, 'long')
         logger.debug(f"Cercando template long in: {template_dir}")
         
         template_name = f"{report.analyzerName}.long.html"
-        template_path = os.path.join(template_dir, template_name)
+        template_path = os.path.join(long_template_dir, template_name)
         
         if os.path.exists(template_path):
             logger.info(f"Template long trovato: {template_name}")
             return f"TEMPLATE:{template_name}"  # Marcatore per routes.py
         else:
-            logger.warning(f"Template long non trovato: {template_name} in {template_dir}")
+            logger.warning(f"Template long non trovato: {template_name} in {long_template_dir}")
             return None
     except Exception as e:
         logger.error(f"Errore nel controllo del template long: {str(e)}")
