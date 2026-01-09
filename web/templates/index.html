@@ -16,7 +16,8 @@
 	<!-- Latest compiled and minified JavaScript -->
 	<script src="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/js/bootstrap.min.js" integrity="sha384-aJ21OjlMXNL5UyIl/XNwTMqvzeRMZH2w8c5cRVpzpU8Y5bApTppSuUkhZXN0VxHd" crossorigin="anonymous"></script>
 
-	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.2.0/css/fontawesome.min.css" integrity="sha384-z4tVnCr80ZcL0iufVdGQSUzNvJsKjEtqYZjiQrrYKlpGow+btDHDfQWkFjoaz/Zr" crossorigin="anonymous">
+	<!-- FontAwesome complete CSS -->
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/css/all.min.css" integrity="sha512-MV7K8+y+gLIBoVD59lQIYicR65iaqukzvf/nwasF0nqhPay5w/9lJmVM2hMDcnK1OnMGCdVK+iQrJ7lzPJQd1w==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
 	<link href="https://cdn.jsdelivr.net/npm/pretty-checkbox@3.0/dist/pretty-checkbox.min.css" rel="stylesheet" />  
 
@@ -155,11 +156,30 @@
       <div class="recent-searches mt-4 p-3 bg-light rounded" style="width: 100%; max-width: 790px;">
         <h4 class="mb-3 text-center">Recent Searches</h4>
         {% for dtype, datas in recent.items() %}
-        <h5 class="text-muted">{{ dtype | title }}</h5>
+        <h5 class="text-muted">
+          {%- if dtype == 'ip' -%}
+            <i class="fas fa-globe" style="margin-right: 8px;"></i>
+          {%- elif dtype == 'domain' -%}
+            <i class="fas fa-link" style="margin-right: 8px;"></i>
+          {%- elif dtype == 'url' -%}
+            <i class="fas fa-external-link-alt" style="margin-right: 8px;"></i>
+          {%- elif dtype == 'hash' -%}
+            <i class="fas fa-hashtag" style="margin-right: 8px;"></i>
+          {%- elif dtype == 'mail' -%}
+            <i class="fas fa-envelope" style="margin-right: 8px;"></i>
+          {%- elif dtype == 'fqdn' -%}
+            <i class="fas fa-sitemap" style="margin-right: 8px;"></i>
+          {%- else -%}
+            <i class="fas fa-file" style="margin-right: 8px;"></i>
+          {%- endif -%}
+          {{ dtype | title }}
+        </h5>
         <ul class="list-unstyled">
           {% for data, jobids in datas.items() %}
           <li>
-            <span class="text-decoration-none d-block p-1">{{ data }}</span>
+            <a href="/allReports?observable={{ data|urlencode }}&datatype={{ dtype }}" style="text-decoration: none; color: inherit;">
+              <strong style="display: block; padding: 8px 4px; font-size: 1.05em; color: #333;">{{ data }}</strong>
+            </a>
             <div class="mt-1" id="taxonomies-{{ data|replace('.', '_')|replace('/', '_') }}">
               {% for jobid in jobids %}
               <script>

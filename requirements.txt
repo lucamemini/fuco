@@ -4,3 +4,5 @@ Jinja2
 cortex4py
 flask_apscheduler
 wheel
+python-magic-bin
+pydantic
