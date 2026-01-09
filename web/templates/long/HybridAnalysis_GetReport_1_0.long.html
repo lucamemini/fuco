@@ -1,0 +1,156 @@
+{% if artifact.status == "Success" %}
+{% set content = artifact.report.full %}
+<div class="card border-success">
+    <div class="card-header">
+    <ul class="nav nav-tabs card-header-tabs">
+      <li class="nav-item">
+        <a class="nav-link active" id="home-tab_{{ artifact.id }}" data-bs-toggle="tab" data-bs-target="#home_{{ artifact.id }}" role="tab" aria-controls="home_{{ artifact.id }}" aria-selected="true">Result</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" id="json-tab_{{ artifact.id }}" data-bs-toggle="tab" data-bs-target="#json_{{ artifact.id }}" role="tab" aria-controls="json_{{ artifact.id }}" aria-selected="false">Json</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link disabled">Ext. Analisys
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-link-45deg" viewBox="0 0 16 16">
+          <path d="M4.715 6.542 3.343 7.914a3 3 0 1 0 4.243 4.243l1.828-1.829A3 3 0 0 0 8.586 5.5L8 6.086a1.002 1.002 0 0 0-.154.199 2 2 0 0 1 .861 3.337L6.88 11.45a2 2 0 1 1-2.83-2.83l.793-.792a4.018 4.018 0 0 1-.128-1.287z"/>
+          <path d="M6.586 4.672A3 3 0 0 0 7.414 9.5l.775-.776a2 2 0 0 1-.896-3.346L9.12 3.55a2 2 0 1 1 2.83 2.83l-.793.792c.112.42.155.855.128 1.287l1.372-1.372a3 3 0 1 0-4.243-4.243L6.586 4.672z"/>
+        </svg>
+        </a>
+      </li>
+    </div>
+    <div class="card-body">
+    <div class="tab-content" id="myTabContent">
+     <div class="tab-pane fade show active" id="home_{{ artifact.id }}" role="tabpanel" aria-labelledby="home-tab_{{ artifact.id }}">
+
+<div class="panel panel-info" ng-if="success">
+  <div class="panel-heading">
+    <!-- HybridAnalysis Sandbox Hash Report Public API: Related Reports -->
+    Related Reports
+  </div>
+  <!-- Hash and File (also hash) -->
+  <div class="panel-body">
+    <div ng-if="!content.results.response.result" ng-repeat="r in ::content.results.response">
+      <dl class="dl-horizontal" ng-if="r.verdict">
+        <strong>Verdict: </strong>
+        <span class="label" ng-class="{'no specific threat': 'label-info', 'whitelisted': 'label-success', 'suspicious': 'label-warning', 'malicious':'label-danger'}[r.verdict]">
+            {{r.verdict}}
+        </span><br/>
+      </dl>
+      <dl class="dl-horizontal" ng-if="r.threatscore">
+          <strong>Threat Score: </strong> {{r.threatscore}}<br/>
+      </dl>
+      <dl class="dl-horizontal" ng-if="r.classification_tags.length > 0">
+          <strong>Tagged as:</strong>
+          <span class="tags-list flexwrap" ng-repeat="tag in ::r.classification_tags ">
+            {{tag}}
+          </span>
+      </dl>
+      <dl class="dl-horizontal" ng-if="r.submitname">
+        <strong>Submitted filename: </strong> {{r.submitname}}<br/>
+      </dl>
+      <dl class="dl-horizontal" ng-if="r.analysis_start_time">
+        <strong>Analysis Start Time: </strong> {{r.analysis_start_time}}<br/>
+      </dl>
+      <dl class="dl-horizontal" ng-if="r.md5">
+        <strong>MD5: </strong> {{r.md5}}<br/>
+      </dl>
+      <dl class="dl-horizontal" ng-if="r.sha1">
+        <strong>SHA1: </strong> {{r.sha1}}<br/>
+      </dl>
+      <dl class="dl-horizontal" ng-if="r.sha256">
+        <strong>SHA256: </strong> {{r.sha256}}<br/>
+      </dl>
+      <dl class="dl-horizontal" ng-if="r.type">
+        <strong>File Description: </strong> {{r.type}}<br/>
+      </dl>
+      <dl class="dl-horizontal" ng-if="r.avdetect">
+        <strong>AVdetect Score: </strong> {{r.avdetect}}<br/>
+      </dl>
+      <dl class="dl-horizontal" ng-if="r.vxfamily">
+        <strong>VxFamily: </strong> {{r.vxfamily}}<br/>
+      </dl>
+      <dl class="dl-horizontal" ng-if="r.total_signatures">
+        <strong>Total Signatures: </strong> {{r.total_signatures}}<br/>
+      </dl>
+      <dl class="dl-horizontal" ng-if="r.environmentDescription">
+        <strong>Environment Description: </strong> {{r.environmentDescription}}<br/>
+      </dl>
+      <dl class="dl-horizontal" ng-if="r.domains.length > 0">
+        <strong>DNS requests:</strong><ul><li ng-repeat="domain in ::r.domains">{{domain}}</li></ul>
+      </dl>
+      <dl class="dl-horizontal" ng-if="r.hosts.length > 0">
+        <strong>Contacted Hosts:</strong><ul><li ng-repeat="host in ::r.hosts">{{host}}</li></ul>
+      </dl>
+      <dl class="dl-horizontal" ng-if="r.sha256">
+          <strong>Online report:</strong>
+          <a href="https://www.hybrid-analysis.com/sample/{{r.sha256}}">https://www.hybrid-analysis.com/sample/{{r.sha256}}</a>
+        </dl>
+      <hr>
+    </div>
+  </div>
+  <!-- Filename -->
+  <div class="panel-body">
+    <div ng-if="content.results.response.result" ng-repeat="r in ::content.results.response.result">
+    <dl class="dl-horizontal" ng-if="r.verdict">
+        <strong>Verdict: </strong>
+        <span class="label" ng-class="{'no specific threat': 'label-info', 'whitelisted': 'label-success', 'suspicious': 'label-warning', 'malicious':'label-danger'}[r.verdict]">
+            {{r.verdict}}
+        </span><br/>
+      </dl>
+      <dl class="dl-horizontal" ng-if="r.submitname">
+        <strong>Submitted filename: </strong> {{r.submitname}}<br/>
+      </dl>
+      <dl class="dl-horizontal" ng-if="r.threatscore">
+          <strong>Threat Score: </strong> {{r.threatscore}}<br/>
+      </dl>
+      <dl class="dl-horizontal" ng-if="r.sha256">
+        <strong>SHA256: </strong> {{r.sha256}}<br/>
+      </dl>
+      <dl class="dl-horizontal" ng-if="r.type_short">
+        <strong>File type: </strong>{{r.type_short}} <br/>
+      </dl>
+      <dl class="dl-horizontal" ng-if="r.type">
+        <strong>File Description: </strong> {{r.type}}<br/>
+      </dl>
+      <dl class="dl-horizontal" ng-if="r.avdetect">
+        <strong>AVdetect Score: </strong> {{r.avdetect}}<br/>
+      </dl>
+      <dl class="dl-horizontal" ng-if="r.vxfamily">
+        <strong>VxFamily: </strong> {{r.vxfamily}}<br/>
+      </dl>
+      <dl class="dl-horizontal" ng-if="r.environmentDescription">
+        <strong>Environment Description: </strong> {{r.environmentDescription}}<br/>
+      </dl>
+      <dl class="dl-horizontal" ng-if="r.sha256">
+        <strong>Online report:</strong>
+        <a href="https://www.hybrid-analysis.com/sample/{{r.sha256}}">https://www.hybrid-analysis.com/sample/{{r.sha256}}</a>
+      </dl>
+      <hr>
+    </div>
+  </div>
+</div>
+
+     </div>
+     <div class="tab-pane fade" id="json_{{ artifact.id }}" role="tabpanel" aria-labelledby="json-tab_{{ artifact.id }}">
+        <pre>
+        <code>
+{{ artifact }}
+        </code>
+        </pre>
+    </div>
+    </div> <!-- tab content -->
+    </div> <!-- card body -->
+</div>
+{% else %}
+<!-- General error -->
+<div class="card border-danger">
+        <div class="card-header alert alert-danger">
+                <strong>Error</strong>
+        </div>
+        <div class="card-body">
+                <strong>{{(artifact.data)}}</strong><br>
+                {{ artifact.report.errorMessage}}
+        </div>
+    </div>
+</div>
+{% endif %}

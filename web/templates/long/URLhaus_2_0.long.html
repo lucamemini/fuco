@@ -1,0 +1,359 @@
+{% if artifact.status == "Success" %}
+{% set content = artifact.report.full %}
+<div class="card border-success">
+    <div class="card-header">
+    <ul class="nav nav-tabs card-header-tabs">
+      <li class="nav-item">
+        <a class="nav-link active" class="nav-link active" id="home-tab_{{ artifact.id }}" data-bs-toggle="tab" data-bs-target="#home_{{ artifact.id }}" role="tab" aria-controls="home_{{ artifact.id }}" aria-selected="true">Result</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" id="json-tab_{{ artifact.id }}" data-bs-toggle="tab" data-bs-target="#json_{{ artifact.id }}" role="tab" aria-controls="json_{{ artifact.id }}" aria-selected="false">Json</a>
+      </li>
+      <li class="nav-item">
+	{% if content.data_type == "hash" %}
+	<a class="nav-link disabled">Ext. Analisys
+	{% else %}
+        <a href="{{content.urlhaus_reference}}" target="_blank" class="nav-link">Ext. Analisys
+	{% endif %}
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-link-45deg" viewBox="0 0 16 16">
+          <path d="M4.715 6.542 3.343 7.914a3 3 0 1 0 4.243 4.243l1.828-1.829A3 3 0 0 0 8.586 5.5L8 6.086a1.002 1.002 0 0 0-.154.199 2 2 0 0 1 .861 3.337L6.88 11.45a2 2 0 1 1-2.83-2.83l.793-.792a4.018 4.018 0 0 1-.128-1.287z"/>
+          <path d="M6.586 4.672A3 3 0 0 0 7.414 9.5l.775-.776a2 2 0 0 1-.896-3.346L9.12 3.55a2 2 0 1 1 2.83 2.83l-.793.792c.112.42.155.855.128 1.287l1.372-1.372a3 3 0 1 0-4.243-4.243L6.586 4.672z"/>
+        </svg>
+        </a>
+      </li>
+    </div>
+    <div class="card-body">
+    <div class="tab-content" id="myTabContent">
+     <div class="tab-pane fade show active" id="home_{{ artifact.id }}" role="tabpanel" aria-labelledby="home-tab_{{ artifact.id }}">
+
+{% if content.query_status == "ok" %}
+        {% if content.data_type == "url" %}
+        <div>
+            <dl class="dl-horizontal">
+                <dt>ID</dt>
+                <dd class="wrap">{{content.id}}</dd>
+                <dt>URLhaus reference</dt>
+                <dd class="wrap"><a href="{{content.urlhaus_reference}}" target="_blank">Open URLhaus entry
+                    {{content.id}}</a></dd>
+                <dt>URL</dt>
+                <dd class="wrap">{{content.url }}</dd>
+                <dt>Threat</dt>
+                <dd><span class="badge bg-danger">{{content.threat}}</span></dd>
+                <dt>Date added (UTC)</dt>
+                <dd>{{content.date_added}}</dd>
+                <dt>Status</dt>
+                <dd class="wrap">
+		    {% if content.url_status == "offline" %}
+                    <span class="badge bg-success">Offline</span>
+		    {% else %}
+                    <span class="badge bg-warning"><img src="/images/flame.svg" alt="flame"> Online</span>
+		    {% endif %}
+                </dd>
+                <dt>Blacklists</dt>
+                <dd>
+		    {% for bl, status in content.blacklists.items() %}
+                    <span>
+			    {% if status == "not listed" %}
+                            <span class="badge bg-success">{{bl}}: {{status}}</span>
+			    {% else %}
+                            <span class="badge bg-warning">{{bl}}: {{status}}</span>
+			    {% endif %}
+				{{b}}
+                    </span>
+		    {% endfor %}
+                </dd>
+                <dt>Tags</dt>
+                <dd>
+                  {% if content.tags[0] |length > 0 %}
+                   {% for tag in content.tags %}
+                    <span>
+                        <span class="badge bg-info">{{tag}}</span>
+                    </span>
+                   {% endfor %}
+                  {% endif %}
+                </dd>
+                <dt>Reporter</dt>
+                <dd>
+                    {% if content.reporter == "unknown" %}
+                    <span class="badge bg-secondary">Unknown</span>
+                    {% else %}
+                    <a href="https://twitter.com/{{content.reporter}}" target="_blank">
+                    <span class="badge bg-primary">@{{content.reporter}}</span>
+                    </a>
+                    {% endif %}
+                </dd>
+                <dt>Payloads</dt>
+                <dd>
+                    {% if content.payloads.length |length == 0 %}
+                    <span>None</span>
+                    {% else %}
+                    <table>
+                        <thead>
+                        <th>First seen</th>
+                        <th>Filename</th>
+                        <th>Filetype</th>
+                        <th>Size</th>
+                        <th>Hashes</th>
+                        <th>VirusTotal</th>
+                        </thead>
+                        <tbody ng-repeat="payload in content.payloads">
+			{% for payload in content.payloads %}
+                        <tr>
+                            <td>{{payload.firstseen}}</td>
+                            <td>{{payload.filename}}</td>
+                            <td>{{payload.content_type}}</td>
+                            <td>{{payload.response_size}}</td>
+                            <td>md5: {{payload.response_md5}}<br/>sha256: {{payload.response_sha256}}</td>
+                            <td><a href="{{payload.virustotal.link}}" target="_blank">{{payload.virustotal.result}}</a>
+                            </td>
+                        </tr>
+			{% endfor %}
+                        </tbody>
+                    </table>
+                    {% endif %}
+                </dd>
+            </dl>
+        </div>
+        {% endif %}
+        
+        {% if content.data_type == "domain" %}
+        <div>
+            <dl class="dl-horizontal">
+                <dt>URLhaus reference</dt>
+                <dd class="wrap"><a href="{{content.urlhaus_reference}}" target="_blank">Open URLhaus entry
+                    {{content.id}}</a></dd>
+                <dt>Host</dt>
+                <dd>{{content.host }}</dd>
+                <dt>First seen (UTC)</dt>
+                <dd>{{content.firstseen}}</dd>
+                <dt>Blacklists</dt>
+                <dd>
+                    {% for bl, status in content.blacklists.items() %}
+                    <span>
+                            {% if status == "not listed" %}
+                            <span class="badge bg-success">{{bl}}: {{status}}</span>
+                            {% else %}
+                            <span class="badge bg-warning">{{bl}}: {{status}}</span>
+                            {% endif %}
+                                {{b}}
+                    </span>
+                    {% endfor %}
+                </dd>
+                <dt>URLs</dt>
+                <dd>
+		    {% if content.urls |length == 0 %}
+                    <span ng-if="content.urls.length == 0">None</span>
+		    {% else %}
+                    <table class="table" ng-if="content.urls.length > 0">
+                        <thead>
+                        <th>Date added</th>
+                        <th>URL</th>
+                        <th>Tags</th>
+                        <th>Threat</th>
+			<th>Status</th>
+                        <th>Reporter</th>
+                        <th>URLhaus ref</th>
+                        </thead>
+                        <tbody ng-repeat="url in content.urls">
+			{% for url in content.urls %}
+                        <tr>
+                            <td>{{url.date_added}}</td>
+                            <td>{{url.url}}</td>
+                            <td>
+                                {% if url.tags[0] |length > 0 %}
+                                {% for tag in url.tags %}
+                                <div>
+                                    <span class="badge bg-info">{{tag}}</span>
+                                </div>
+                                {% endfor %}
+                                {% endif %}
+                            </td>
+                            <td><span ng-if="url.threat" class="badge bg-danger">{{url.threat}}</span></td>
+                            <td>
+                                {% if url.url_status == "offline" %}
+                                <span class="badge bg-success">Offline</span>
+                                {% elif url.url_status == "online" %}
+                                <span class="badge bg-danger"><img src="/images/flame.svg" alt="flame"> Online</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Unknown</span>
+                                {% endif %}
+			    </td>
+                            <td>
+                                {% if url.reporter == "anonymous" %}
+                                <span class="badge bg-secondary">Anonymous</span>
+				{% else %}
+                                <a href="https://twitter.com/{{url.reporter}}" target="_blank"><span
+                                        class="badge bg-primary">@{{url.reporter}}</span></a>
+				{% endif %}
+                            </td>
+                            <td><a href="{{url.urlhaus_reference}}" target="_blank">{{url.id}}</a></td>
+                        </tr>
+			{% endfor %}
+                        </tbody>
+                    </table>
+		    {% endif %}
+                </dd>
+            </dl>
+        </div>
+        {% endif %}
+
+        {% if content.data_type == "ip" %}
+        <div ng-if="content.query_status === 'ok' && (content.data_type === 'domain' || content.data_type === 'ip')">
+            <dl class="dl-horizontal">
+                <dt>URLhaus reference</dt>
+                <dd class="wrap"><a href="{{content.urlhaus_reference}}" target="_blank">Open URLhaus entry
+                    {{content.id}}</a></dd>
+                <dt>Host</dt>
+                <dd>{{content.host }}</dd>
+                <dt>First seen (UTC)</dt>
+                <dd>{{content.firstseen}}</dd>
+                <dt>Blacklists</dt>
+                <dd>
+                    {% for bl, status in content.blacklists.items() %}
+                    <span>
+                            {% if status == "not listed" %}
+                            <span class="badge bg-success">{{bl}}: {{status}}</span>
+                            {% else %}
+                            <span class="badge bg-warning">{{bl}}: {{status}}</span>
+                            {% endif %}
+                                {{b}}
+                    </span>
+                    {% endfor %}
+                </dd>
+                <dt>URLs</dt>
+                <dd>
+                    <span ng-if="content.urls.length == 0">None</span>
+                    <table class="table" ng-if="content.urls.length > 0">
+                        <thead>
+                        <th>Date added</th>
+                        <th>URL</th>
+                        <th>Tags</th>
+                        <th>Threat</th>
+                        <th>Status</th>
+                        <th>Reporter</th>
+                        <th>URLhaus ref.</th>
+                        </thead>
+                        <tbody ng-repeat="url in content.urls">
+			{% for url in content.urls %}
+                        <tr>
+                            <td>{{url.date_added}}</td>
+                            <td>{{url.url}}</td>
+                            <td>
+                              {% if url.tags[0] |length > 0 %}
+                                {% for tag in url.tags %}
+                                <div>
+                                    <span class="badge bg-info">{{tag}}</span>
+                                </div>
+                                {% endfor %}
+                              {% endif %}                            </td>
+                            <td><span ng-if="url.threat" class="badge bg-danger">{{url.threat}}</span></td>
+                            <td>
+                                {% if url.url_status == "offline" %}
+                                <span class="badge bg-success">Offline</span>
+                                {% elif url.url_status == "online" %}
+                                <span class="badge bg-danger"><img src="/images/flame.svg" alt="flame"> Online</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Unknown</span>
+                                {% endif %}
+			   </td>
+                            <td>
+                                <span ng-if="url.reporter === 'anonymous'"
+                                      class="badge bg-secondary">Anonymous</span>
+                                <a href="https://twitter.com/{{url.reporter}}" target="_blank"><span
+                                        class="badge bg-primary">@{{url.reporter}}</span></a>
+                            </td>
+                            <td><a href="{{url.urlhaus_reference}}" target="_blank">{{url.id}}</a></td>
+                        </tr>
+			{% endfor %}
+                        </tbody>
+                    </table>
+                </dd>
+            </dl>
+        </div>
+        {% endif %}
+        
+        {% if content.data_type == "hash" %} 
+        <div ng-if="content.query_status === 'ok' && content.data_type === 'hash'">
+            <dl class="dl-horizontal">
+                <dt>Hashes</dt>
+                <dd class="wrap">md5: {{content.md5_hash}}<br />sha256: {{content.sha256_hash}}</dd>
+                <dt>First seen (UTC)</dt>
+                <dd>{{content.firstseen}}</dd>
+                <dt>Last seen (UTC)</dt>
+                <dd>{{content.lastseen}}</dd>
+                <dt>Filetype</dt>
+                <dd>{{content.content_type}}</dd>
+                <dt>Signature</dt>
+                <dd><span class="badge bg-primary">{{content.signature}}</span></dd>
+                <dt>VirusTotal</dt>
+                <dd><a href="{{content.virustotal.link}}" target="_blank">{{content.virustotal.result}}</a></dd>
+                <dt>URLs</dt>
+                <dd>
+                    <span ng-if="content.urls.length == 0">None</span>
+                    <table class="table" ng-if="content.urls.length > 0">
+                        <thead>
+                        <th>First seen</th>
+                        <th>Last seen</th>
+                        <th>Filename</th>
+                        <th>URL</th>
+                        <th>Status</th>
+                        <th>URLhaus ref.</th>
+                        </thead>
+                        <tbody ng-repeat="url in content.urls">
+			{% for url in content.urls %}
+                        <tr>
+                            <td>{{url.firstseen}}</td>
+                            <td>{{url.lastseen}}</td>
+                            <td>{{url.filename}}</td>
+                            <td>{{url.url}}</td>
+                            <td>
+				{% if url.url_status == "offline" %}
+                                <span class="badge bg-success">Offline</span>
+				{% elif url.url_status == "online" %}
+                                <span class="badge bg-danger"><img src="/images/flame.svg" alt="flame"> Online</span>
+				{% else %}
+                                <span class="badge bg-secondary">Unknown</span>
+				{% endif %}
+                            </td>
+                            <td><a href="{{url.urlhaus_reference}}" target="_blank">{{url.url_id}}</a></td>
+                        </tr>
+			{% endfor %}
+                        </tbody>
+                    </table>
+                </dd>
+            </dl>
+        </div>
+	{% endif %}
+
+{% else %}
+        <div>
+            <dl class="dl-horizontal">
+                <dt>query_status</dt>
+                <dd class="wrap">{{content.query_status}}</dd>
+	     </dl>
+	</div>
+{% endif %}
+
+
+     </div>
+     <div class="tab-pane fade" id="json_{{ artifact.id }}" role="tabpanel" aria-labelledby="json-tab_{{ artifact.id }}">
+        <pre>
+        <code>
+{{ artifact }}
+        </code>
+
+        </pre>
+    </div>
+    </div> <!-- tab content -->
+    </div> <!-- card body -->
+</div>
+{% else %}
+<!-- General error -->
+<div class="card border-danger">
+        <strong>{{(artifact.data)}}</strong>
+    </div>
+    <div class="card-body">
+        {{artifact.report.errorMessage}}
+    </div>
+</div>
+{% endif %}
