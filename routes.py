@@ -6,11 +6,12 @@ import logging
 from typing import List, Optional
 from urllib.parse import quote
 
-from flask import render_template, request, jsonify, Blueprint, current_app
+from flask import render_template, request, jsonify, Blueprint, current_app, abort
 from pydantic import BaseModel, Field, validator
 
 import utils
 import config
+
 
 # Configurazione logging
 logger = logging.getLogger(__name__)
@@ -376,31 +377,37 @@ def last_analysis():
 
 @routes_bp.route('/getAnalisys', methods=['GET'])
 def get_analysis():
-    """Restituisce il report lungo per un job specifico."""
-    try:
-        job_id = str(request.args.get('JobId'))
-        if not job_id:
-            return error_response("Parametro 'JobId' mancante", 400)
-        
-        report = utils.poll_job(job_id, config.API_SHORT_MAX_ATTEMPTS, config.API_SHORT_INITIAL_DELAY)
-        if not report:
-            return error_response("Job non completato o timeout", 408)
-        
-        long_template_marker = utils.render_long_template(report, current_app.root_path)
-        if long_template_marker and long_template_marker.startswith("TEMPLATE:"):
-            template_name = long_template_marker.replace("TEMPLATE:", "")
-            try:
-                return render_template(template_name, artifact=report)
-            except Exception as e:
-                logger.error(f"Errore nel rendering del template long: {str(e)}")
-                return f"<pre>Template error: <code>{json.dumps(report.json(), indent=2)}</code></pre>"
-        else:
-            return f"<pre>Template not found: <code>{json.dumps(report.json(), indent=2)}</code></pre>"
-    
-    except Exception as e:
-        logger.error(f"Errore in get_analysis(): {str(e)}")
-        return error_response(str(e), 500)
+    analysis_id = request.args.get('JobId')
+    if not analysis_id:
+        abort(400, "Missing analysis id")
 
+    report = utils.cortex_api.jobs.get_report(analysis_id)
+
+    template_name = utils.resolve_long_template(report, current_app.root_path)
+    generic_template = "long/generic.long.html"
+
+    if not template_name:
+        logger.warning("Template specifico non trovato, uso generico")
+        template_name = generic_template
+
+    try:
+        return render_template(template_name, artifact=report)
+
+    except Exception as e:
+        logger.error(
+            "Errore rendering template %s, fallback su generico",
+            template_name,
+            exc_info=True
+        )
+
+        try:
+            return render_template(generic_template, artifact=report)
+        except Exception:
+            logger.critical(
+                "Errore anche nel template generico",
+                exc_info=True
+            )
+            abort(500, "Template rendering failed")
 
 @routes_bp.route('/getShort', methods=['GET'])
 def get_short():

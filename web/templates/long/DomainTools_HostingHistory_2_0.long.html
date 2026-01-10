@@ -1,137 +1,170 @@
 {% if artifact.status == "Success" %}
 {% set content = artifact.report.full %}
+
 <div class="card border-success">
-    <div class="card-header">
+  <div class="card-header">
     <ul class="nav nav-tabs card-header-tabs">
       <li class="nav-item">
-        <a class="nav-link active" class="nav-link active" id="home-tab_{{ artifact.id }}" data-bs-toggle="tab" data-bs-target="#home_{{ artifact.id }}" role="tab" aria-controls="home_{{ artifact.id }}" aria-selected="true">Result</a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link" id="json-tab_{{ artifact.id }}" data-bs-toggle="tab" data-bs-target="#json_{{ artifact.id }}" role="tab" aria-controls="json_{{ artifact.id }}" aria-selected="false">Json</a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link disabled">Ext. Analisys
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-link-45deg" viewBox="0 0 16 16">
-          <path d="M4.715 6.542 3.343 7.914a3 3 0 1 0 4.243 4.243l1.828-1.829A3 3 0 0 0 8.586 5.5L8 6.086a1.002 1.002 0 0 0-.154.199 2 2 0 0 1 .861 3.337L6.88 11.45a2 2 0 1 1-2.83-2.83l.793-.792a4.018 4.018 0 0 1-.128-1.287z"/>
-          <path d="M6.586 4.672A3 3 0 0 0 7.414 9.5l.775-.776a2 2 0 0 1-.896-3.346L9.12 3.55a2 2 0 1 1 2.83 2.83l-.793.792c.112.42.155.855.128 1.287l1.372-1.372a3 3 0 1 0-4.243-4.243L6.586 4.672z"/>
-        </svg>
+        <a class="nav-link active"
+           id="home-tab_{{ artifact.id }}"
+           data-bs-toggle="tab"
+           data-bs-target="#home_{{ artifact.id }}"
+           role="tab"
+           aria-controls="home_{{ artifact.id }}"
+           aria-selected="true">
+          Result
         </a>
       </li>
-    </div>
-    <div class="card-body">
-    <div class="tab-content" id="myTabContent">
-     <div class="tab-pane fade show active" id="home_{{ artifact.id }}" role="tabpanel" aria-labelledby="home-tab_{{ artifact.id }}">
+      <li class="nav-item">
+        <a class="nav-link"
+           id="json-tab_{{ artifact.id }}"
+           data-bs-toggle="tab"
+           data-bs-target="#json_{{ artifact.id }}"
+           role="tab"
+           aria-controls="json_{{ artifact.id }}"
+           aria-selected="false">
+          Json
+        </a>
+      </li>
+      <li class="nav-item">
+        <span class="nav-link disabled">
+          Ext. Analysis
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+               fill="currentColor" class="bi bi-link-45deg" viewBox="0 0 16 16">
+            <path d="M4.715 6.542 3.343 7.914a3 3 0 1 0 4.243 4.243l1.828-1.829A3 3 0 0 0 8.586 5.5L8 6.086a1.002 1.002 0 0 0-.154.199 2 2 0 0 1 .861 3.337L6.88 11.45a2 2 0 1 1-2.83-2.83l.793-.792a4.018 4.018 0 0 1-.128-1.287z"/>
+            <path d="M6.586 4.672A3 3 0 0 0 7.414 9.5l.775-.776a2 2 0 0 1-.896-3.346L9.12 3.55a2 2 0 1 1 2.83 2.83l-.793.792c.112.42.155.855.128 1.287l1.372-1.372a3 3 0 1 0-4.243-4.243L6.586 4.672z"/>
+          </svg>
+        </span>
+      </li>
+    </ul>
+  </div>
 
+  <div class="card-body">
+    <div class="tab-content">
 
-<div class="panel panel-info" ng-if="success">
-    <div class="panel-heading">
-        <strong>{{artifact.data }}</strong>
-    </div>
-    <div class="panel-body">
-        <p>
-            Registrar History
-        </p>
-        <table class="table">
-            <thead>
+      <!-- ================= TAB RESULT ================= -->
+      <div class="tab-pane fade show active"
+           id="home_{{ artifact.id }}"
+           role="tabpanel"
+           aria-labelledby="home-tab_{{ artifact.id }}">
+
+        <div class="panel panel-info">
+          <div class="panel-heading">
+            <strong>{{ artifact.data }}</strong>
+          </div>
+          <div class="panel-body">
+
+            {% if content.registrar_history %}
+            <h6>Registrar History</h6>
+            <table class="table table-striped">
+              <thead>
                 <tr>
-                    <th>domain</th>
-                    <th>registrar</th>
-                    <th>date_created</th>
-                    <th>date_updated</th>
-                    <th>date_expires</th>
+                  <th>Domain</th>
+                  <th>Registrar</th>
+                  <th>Created</th>
+                  <th>Updated</th>
+                  <th>Expires</th>
                 </tr>
-            </thead>
-            <tbody ng-repeat="row in content.registrar_history">
-	    {% for row in content.registrar_history %}
-		<tr>
-                <td>{{row.domain}}</td>
-                <td>{{row.registrar}}</td>
-                <td>{{row.date_created}}</td>
-                <td>{{row.date_updated}}</td>
-                <td>{{row.date_expires}}</td>
-		</tr>
-	    {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    <div class="panel-body">
-        <p>
-            IP History
-        </p>
-        <table class="table">
-            <thead>
+              </thead>
+              <tbody>
+                {% for row in content.registrar_history %}
                 <tr>
-                    <th>domain</th>
-                    <th>actiondate</th>
-                    <th>action</th>
-                    <th>pre_ip</th>
-                    <th>post_ip</th>
+                  <td>{{ row.domain }}</td>
+                  <td>{{ row.registrar }}</td>
+                  <td>{{ row.date_created }}</td>
+                  <td>{{ row.date_updated }}</td>
+                  <td>{{ row.date_expires }}</td>
                 </tr>
-            </thead>
-            <tbody ng-repeat="row in content.ip_history">
-	    {% for row in content.ip_history %}
-	    <tr>
-                <td>{{row.domain}}</td>
-                <td>{{row.actiondate}}</td>
-                <td>{{row.action_in_words}}</td>
-                <td>{{row.pre_ip}}</td>
-                <td>{{row.post_ip}}</td>
-	    <tr>
-	    {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    <div class="panel-body">
-        <p>
-            NameServer History
-        </p>
-        <table class="table">
-            <thead>
+                {% endfor %}
+              </tbody>
+            </table>
+            {% endif %}
+
+            {% if content.ip_history %}
+            <h6 class="mt-4">IP History</h6>
+            <table class="table table-striped">
+              <thead>
                 <tr>
-                    <th>domain</th>
-                    <th>actiondate</th>
-                    <th>action</th>
-                    <th>pre_mns</th>
-                    <th>post_mns</th>
+                  <th>Domain</th>
+                  <th>Date</th>
+                  <th>Action</th>
+                  <th>Previous IP</th>
+                  <th>New IP</th>
                 </tr>
-            </thead>
-            <tbody ng-repeat="row in content.nameserver_history">
-            {% for row in content.nameserver_history %}
-            <tr>
-                <td>{{row.domain}}</td>
-                <td>{{row.actiondate}}</td>
-                <td>{{row.action_in_words}}</td>
-                <td>{{row.pre_mns}}</td>
-                <td>{{row.post_mns}}</td>
-            <tr>
-            {% endfor %}
-            </tbody>
-        </table>
+              </thead>
+              <tbody>
+                {% for row in content.ip_history %}
+                <tr>
+                  <td>{{ row.domain }}</td>
+                  <td>{{ row.actiondate }}</td>
+                  <td>{{ row.action_in_words }}</td>
+                  <td>{{ row.pre_ip }}</td>
+                  <td>{{ row.post_ip }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            {% endif %}
+
+            {% if content.nameserver_history %}
+            <h6 class="mt-4">NameServer History</h6>
+            <table class="table table-striped">
+              <thead>
+                <tr>
+                  <th>Domain</th>
+                  <th>Date</th>
+                  <th>Action</th>
+                  <th>Previous NS</th>
+                  <th>New NS</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in content.nameserver_history %}
+                <tr>
+                  <td>{{ row.domain }}</td>
+                  <td>{{ row.actiondate }}</td>
+                  <td>{{ row.action_in_words }}</td>
+                  <td>{{ row.pre_mns }}</td>
+                  <td>{{ row.post_mns }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            {% endif %}
+
+            {% if not content.registrar_history
+                  and not content.ip_history
+                  and not content.nameserver_history %}
+              <div class="alert alert-warning">
+                No historical data available.
+              </div>
+            {% endif %}
+
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ================= TAB JSON ================= -->
+        <div class="tab-pane fade"
+            id="json_{{ artifact.id }}"
+            role="tabpanel"
+            aria-labelledby="json-tab_{{ artifact.id }}">
+        <pre><code>{{ artifact.report.full | tojson(indent=2) }}</code></pre>
+        </div>
+
     </div>
+  </div>
 </div>
 
-
-     </div>
-     <div class="tab-pane fade" id="json_{{ artifact.id }}" role="tabpanel" aria-labelledby="json-tab_{{ artifact.id }}">
-        <pre>
-        <code>
-{{ artifact }}
-        </code>
-        </pre>
-    </div>
-    </div> <!-- tab content -->
-    </div> <!-- card body -->
-</div>
 {% else %}
-<!-- General error -->
 <div class="card border-danger">
-        <div class="card-header alert alert-danger">
-                <strong>Error</strong>
-        </div>
-        <div class="card-body">
-                <strong>{{(artifact.data)}}</strong><br>
-                {{ artifact.report.errorMessage}}
-        </div>
-    </div>
+  <div class="card-header alert alert-danger">
+    <strong>Error</strong>
+  </div>
+  <div class="card-body">
+    <strong>{{ artifact.data }}</strong><br>
+    {{ artifact.report.errorMessage }}
+  </div>
 </div>
 {% endif %}

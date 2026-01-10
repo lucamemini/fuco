@@ -1,0 +1,15 @@
+{% if artifact.status == "Success" %}
+<div class="card">
+  <div class="card-header">
+    {{ artifact.analyzerName }}
+  </div>
+  <div class="card-body">
+    <pre><code>{{ artifact.report | tojson(indent=2) }}</code></pre>
+  </div>
+</div>
+{% else %}
+<div class="alert alert-danger">
+  <strong>{{ artifact.data }}</strong><br>
+  {{ artifact.report.errorMessage }}
+</div>
+{% endif %}

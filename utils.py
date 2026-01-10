@@ -201,105 +201,45 @@ def render_short_template(taxonomies: list, analyzer_name: str, app_root_path: s
         logger.exception("Errore nel rendering short template")
         return "<p>Errore nel caricamento delle taxonomies.</p>"
 
-
-def OLD_render_short_template(taxonomies: list, analyzer_name: str, app_root_path: str) -> str:
+def resolve_long_template(report, app_root_path: str) -> str | None:
     """
-    Renderizza il template short per le taxonomies.
-    
+    Risolve il template LONG corretto per l'analyzer.
+
+    NON renderizza HTML.
+    Ritorna solo il nome del template LONG da usare.
+
     Args:
-        taxonomies: Lista delle taxonomies da renderizzare
-        analyzer_name: Nome dell'analyzer per trovare il template specifico
-        app_root_path: Root path dell'app Flask
-    
+        report: oggetto report/analyzer result
+        app_root_path: root path dell'app Flask
+
     Returns:
-        HTML renderizzato
+        Nome del template LONG o None
     """
     try:
-        # Costruisci il percorso della directory template in modo OS-agnostic
-        template_dir = os.path.join(app_root_path, config.TEMPLATE_FOLDER)
-        short_template_dir = os.path.join(template_dir, 'short')
-        logger.debug(f"Template directory: {template_dir}")
-        
-        # Crea l'ambiente Jinja2
-        env = Environment(loader=FileSystemLoader(short_template_dir))
-        
-        # Prova il template specifico dell'analyzer nella cartella template
-        template_name = f"{analyzer_name}.short.html"
-        specific_template_path = os.path.join(short_template_dir, template_name)
-        
-        html = ""
-        if os.path.exists(specific_template_path):
-            logger.info(f"Usando template specifico: {specific_template_path}")
-            # Jinja2 vuole sempre forward slash nei percorsi dei template
-            template = env.get_template(f"{template_name}")
-            # Renderizza ogni tassonomia con il template specifico
-            for taxonomy in taxonomies:
-                # Aggiungi il colore CSS basato sul level
-                css_class = "bg-secondary"
-                if taxonomy.get('level') == "info":
-                    css_class = "bg-info text-dark"
-                elif taxonomy.get('level') == "safe":
-                    css_class = "bg-success"
-                elif taxonomy.get('level') == "suspicious":
-                    css_class = "bg-warning text-dark"
-                elif taxonomy.get('level') == "malicious":
-                    css_class = "bg-danger"
-                
-                taxonomy_with_css = taxonomy.copy()
-                taxonomy_with_css['css'] = css_class
-                html += template.render(t=taxonomy_with_css)
-                #html = template.render(t=taxonomies)
-        else:
-            logger.info(f"Template specifico non trovato ({specific_template_path}), usando template generico")
-            template = env.get_template("generic.short.html")
-            html = template.render(t=taxonomies)
-        
-        logger.debug(f"Template renderizzato con successo")
-        return html
-    except FileNotFoundError as e:
-        logger.error(f"File di template non trovato: {str(e)}")
-        return "<p>Errore nel caricamento delle taxonomies (file non trovato).</p>"
-    except Exception as e:
-        logger.error(f"Errore nel rendering del template short: {str(e)}")
-        return "<p>Errore nel caricamento delle taxonomies.</p>"
-
-
-def render_long_template(report, app_root_path: str) -> str:
-    """
-    Renderizza il template long per il report completo.
-    
-    Args:
-        report: Report dell'analisi
-        app_root_path: Root path dell'app Flask
-    
-    Returns:
-        HTML renderizzato o messaggio di errore
-    """
-    try:
-        # Costruisci il percorso della directory template in modo OS-agnostic
-        template_dir = os.path.join(app_root_path, config.TEMPLATE_FOLDER)
-        long_template_dir = os.path.join(template_dir, 'long')
-        logger.debug(f"Cercando template long in: {template_dir}")
-
-        # Ambiente Jinja2 coerente e sicuro
-        env = Environment(
-            loader=FileSystemLoader(long_template_dir),
-            autoescape=True,
-            trim_blocks=True,
-            lstrip_blocks=True,
+        template_dir = os.path.join(
+            app_root_path,
+            config.TEMPLATE_FOLDER,
+            "long"
         )
-        
-        template_name = f"{report.analyzerName}.long.html"
-        template_path = os.path.join(long_template_dir, template_name)
-        
-        if os.path.exists(template_path):
-            logger.info(f"Template long trovato: {template_name}")
-            return f"TEMPLATE:{template_name}"  # Marcatore per routes.py
-        else:
-            logger.warning(f"Template long non trovato: {template_name} in {long_template_dir}")
+
+        analyzer_name = getattr(report, "analyzerName", None)
+        if not analyzer_name:
+            logger.warning("report.analyzerName mancante")
             return None
+
+        template_name = f"{analyzer_name}.long.html"
+        template_path = os.path.join(template_dir, template_name)
+
+        if os.path.isfile(template_path):
+            logger.info(f"Template LONG trovato: {template_name}")
+            return f"long/{template_name}"
+            # return template_name
+
+        logger.info(f"Template LONG specifico non trovato: {template_name}")
+        return None
+
     except Exception as e:
-        logger.error(f"Errore nel controllo del template long: {str(e)}")
+        logger.exception("Errore nella risoluzione del template LONG")
         return None
 
 

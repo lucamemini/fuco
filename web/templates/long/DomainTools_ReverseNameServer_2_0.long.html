@@ -1,43 +1,59 @@
-<div class="panel panel-danger" ng-if="!success">
-    <div class="panel-heading">
-        <strong>{{artifact.data | fang}}</strong>
-    </div>
-    <div class="panel-body">
-        {{artifact.report.errorMessage}}
-    </div>
-</div>
-<div class="panel panel-info" ng-if="success">
-    <div class="panel-heading">
-        <strong>{{artifact.data | fang}}</strong>
-    </div>
-    <div class="panel-body">
-		<dl class="dl-horizontal">
-			<dt>Name Server</dt>
-			<dd>{{content.name_server.hostname}}</dd>
-		</dl>
-		<dl class="dl-horizontal">
-			<dt>Primary domains</dt>
-			<dd>
-				{{content.name_server.primary}}<br>
-				<a href ng-click="isPCollapsed = !isPCollapsed">Show all</a>
-			</dd>
-		</dl>
-		<dl class="dl-horizontal">
-			<dt>Secondary domains</dt>
-			<dd>
-				{{content.name_server.secondary}}<br>
-				<a href ng-click="isSCollapsed = !isSCollapsed">Show all</a>
-			</dd>
-		</dl>
+{% if artifact.status != "Success" %}
 
-		<div ng-if="isPCollapsed">
-			<h5>Primary Domains List</h5>
-			<pre style="height: 300px">{{content.primary_domains | json}}</pre>
-		</div>
-		<div ng-if="isSCollapsed">
-			<h5>Secondary Domains List</h5>
-			<pre style="height: 300px">{{content.secondary_domains | json}}</pre>
-		</div>
-
-    </div>
+<div class="panel panel-danger">
+  <div class="panel-heading">
+    <strong>{{ artifact.data | fang }}</strong>
+  </div>
+  <div class="panel-body">
+    {{ artifact.report.errorMessage }}
+  </div>
 </div>
+
+{% else %}
+{% set content = artifact.report.full %}
+
+<div class="panel panel-info">
+  <div class="panel-heading">
+    <strong>{{ artifact.data | fang }}</strong>
+  </div>
+  <div class="panel-body">
+
+    {% if content.name_server %}
+    <dl class="dl-horizontal">
+      <dt>Name Server</dt>
+      <dd>{{ content.name_server.hostname }}</dd>
+    </dl>
+
+    <dl class="dl-horizontal">
+      <dt>Primary domains</dt>
+      <dd>{{ content.name_server.primary }}</dd>
+    </dl>
+
+    <dl class="dl-horizontal">
+      <dt>Secondary domains</dt>
+      <dd>{{ content.name_server.secondary }}</dd>
+    </dl>
+    {% endif %}
+
+    {% if content.primary_domains %}
+    <details class="mt-3">
+      <summary><strong>Primary Domains List</strong></summary>
+      <pre style="max-height:300px; overflow:auto;">
+{{ content.primary_domains | tojson(indent=2) }}
+      </pre>
+    </details>
+    {% endif %}
+
+    {% if content.secondary_domains %}
+    <details class="mt-3">
+      <summary><strong>Secondary Domains List</strong></summary>
+      <pre style="max-height:300px; overflow:auto;">
+{{ content.secondary_domains | tojson(indent=2) }}
+      </pre>
+    </details>
+    {% endif %}
+
+  </div>
+</div>
+
+{% endif %}
