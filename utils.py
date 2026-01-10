@@ -280,6 +280,14 @@ def render_long_template(report, app_root_path: str) -> str:
         template_dir = os.path.join(app_root_path, config.TEMPLATE_FOLDER)
         long_template_dir = os.path.join(template_dir, 'long')
         logger.debug(f"Cercando template long in: {template_dir}")
+
+        # Ambiente Jinja2 coerente e sicuro
+        env = Environment(
+            loader=FileSystemLoader(long_template_dir),
+            autoescape=True,
+            trim_blocks=True,
+            lstrip_blocks=True,
+        )
         
         template_name = f"{report.analyzerName}.long.html"
         template_path = os.path.join(long_template_dir, template_name)
