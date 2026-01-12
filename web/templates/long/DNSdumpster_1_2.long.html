@@ -20,7 +20,7 @@
   <div class="card-body">
     <div class="tab-content">
 
-      <!-- =================== TAB RESULT =================== -->
+      <!-- == TAB RESULT == -->
       <div class="tab-pane fade show active" id="home_{{ artifact.id }}" role="tabpanel" aria-labelledby="home-tab_{{ artifact.id }}">
 
         <div class="panel panel-info mb-3">
@@ -112,7 +112,7 @@
       </div> <!-- end TAB Result -->
 
 
-      <!-- =================== TAB JSON =================== -->
+      <!-- == TAB JSON == -->
       <div class="tab-pane fade" id="json_{{ artifact.id }}" role="tabpanel" aria-labelledby="json-tab_{{ artifact.id }}">
       <pre><code>{{ artifact.report | tojson(indent=2) }}</code></pre>
       </div>

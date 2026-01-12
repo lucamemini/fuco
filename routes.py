@@ -9,6 +9,8 @@ from urllib.parse import quote
 from flask import render_template, request, jsonify, Blueprint, current_app, abort
 from pydantic import BaseModel, Field, validator
 
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
 import utils
 import config
 
@@ -18,7 +20,6 @@ logger = logging.getLogger(__name__)
 
 # Blueprint per le route
 routes_bp = Blueprint('routes', __name__)
-
 
 # ============ Modelli Pydantic per validazione ============
 
@@ -43,9 +44,9 @@ class AnalysisRequest(BaseModel):
 
 
 # ============ Funzioni helper ============
-
+"""
 def fang(s):
-    """Custom filter: upper-case a string"""
+    # Custom filter: upper-case a string
     try:
         return s.upper()
     except Exception:
@@ -53,15 +54,14 @@ def fang(s):
 
 
 def urlencode_filter(s):
-    """Custom filter: URL encode a string"""
+    #Custom filter: URL encode a string
     return quote(str(s))
-
+"""
 
 def error_response(message: str, code: int = 500):
     """Helper per generare risposte di errore JSON."""
     logger.error(f"Errore ({code}): {message}")
     return jsonify({"error": message}), code
-
 
 # ============ Route HTML ============
 
@@ -81,6 +81,9 @@ def home():
         logger.error(f"Errore in home(): {str(e)}")
         return error_response(str(e))
 
+@routes_bp.route("/favicon.ico")
+def favicon():
+    return "", 204
 
 @routes_bp.route('/getAnalyzer', methods=['GET'])
 def get_analyzer():
@@ -94,9 +97,127 @@ def get_analyzer():
         return error_response(str(e))
 
 
-@routes_bp.route('/analysis', methods=['POST'])
+@routes_bp.route("/analysis", methods=["POST"])
 def analysis():
-    """Route tradizionale per form submissions (non API)."""
+    """
+    Renderizza IMMEDIATAMENTE la pagina report.
+    I job vengono sottomessi via AJAX dal browser.
+    """
+    try:
+        data = request.form.get('tosearch')
+        if not data:
+            return error_response("Parametro 'tosearch' mancante", 400)
+        
+        datatype = request.form.get('DataType')
+        if not datatype:
+            return error_response("Parametro 'DataType' mancante", 400)
+        
+        analyzer_list = request.form.getlist('analyzer')
+        if not analyzer_list:
+            return error_response("Nessun analyzer selezionato", 400)
+        
+        logger.info(f"Richiesta analisi per '{data}' ({datatype}) con {len(analyzer_list)} analyzer")
+        
+        # Prepara i dati per il template (SENZA sottomettere job)
+        result = {
+            'fuco': {
+                'question': data,
+                'datatype': datatype
+            },
+            'analyzers': analyzer_list  # Passiamo solo la lista di analyzer
+        }
+        
+        # Renderizza IMMEDIATAMENTE (< 50ms)
+        logger.info("Rendering immediato della pagina report")
+        return render_template('report_async.html', data=result)
+        
+    except Exception as e:
+        logger.error(f"Errore in analysis(): {str(e)}", exc_info=True)
+        return error_response(str(e))
+
+
+@routes_bp.route('/api/submit_job', methods=['POST'])
+def api_submit_job():
+    """
+    API per sottomettere UN SINGOLO job a Cortex.
+    Chiamata via AJAX dal browser.
+    """
+    try:
+        request_data = request.get_json()
+        if not request_data:
+            return error_response("Nessun dato JSON fornito", 400)
+        
+        analyzer = request_data.get('analyzer')
+        datatype = request_data.get('datatype')
+        data = request_data.get('data')
+        
+        if not all([analyzer, datatype, data]):
+            return error_response("Parametri mancanti (analyzer, datatype, data)", 400)
+        
+        logger.info(f"Sottomissione job: {analyzer} per {data}")
+        
+        # Sottometti il job a Cortex
+        job_result = utils.run_analysis(analyzer, datatype, data)
+        
+        return jsonify({
+            'status': 'success',
+            'job_id': job_result['id'],
+            'analyzer': analyzer
+        })
+        
+    except Exception as e:
+        logger.error(f"Errore in api_submit_job(): {str(e)}", exc_info=True)
+        return jsonify({
+            'status': 'error',
+            'error': str(e)
+        }), 500
+
+
+@routes_bp.route('/api/poll_job/<job_id>', methods=['GET'])
+def api_poll_job(job_id):
+    """
+    API per il polling di un singolo job.
+    Restituisce lo stato corrente del job.
+    """
+    try:
+        # Polling con max_attempts=1 (controlla solo lo stato attuale)
+        report = utils.poll_job(job_id, max_attempts=1, initial_delay=0)
+        
+        if not report:
+            return jsonify({
+                'status': 'pending',
+                'job_id': job_id
+            })
+        
+        if report.status == "Success":
+            return jsonify({
+                'status': 'success',
+                'job_id': job_id,
+                'analyzer_name': report.analyzerName
+            })
+        elif report.status == "InProgress" or report.status == "Waiting":
+            return jsonify({
+                'status': 'pending',
+                'job_id': job_id
+            })
+        else:
+            # Failure, Timeout, ecc.
+            return jsonify({
+                'status': 'failed',
+                'job_id': job_id,
+                'report_status': report.status
+            })
+            
+    except Exception as e:
+        logger.error(f"Errore polling job {job_id}: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'job_id': job_id,
+            'error': str(e)
+        }), 500
+"""
+def analysis():
+    # Route tradizionale per form submissions (non API).
     try:
         data = request.form.get('tosearch')
         if not data:
@@ -149,6 +270,7 @@ def analysis():
         logger.error(f"Errore in analysis(): {str(e)}")
         return error_response(str(e))
 
+"""
 
 # ============ Route API ============
 
@@ -348,33 +470,6 @@ def api_get_analyzer():
 
 # ============ Route di supporto ============
 
-@routes_bp.route('/lastAnalisys', methods=['GET'])
-def last_analysis():
-    """Restituisce le ultime analisi organizzate per osservabile."""
-    try:
-        from cortex4py.query import And, Eq
-        from utils import cortex_api
-        
-        query = And(Eq('status', 'Success'))
-        jobs = cortex_api.jobs.find_all(query, range=config.LAST_ANALYSIS_RANGE, sort='-createdAt')
-        organized_data = {}
-        
-        for item in jobs:
-            data_value = item.data
-            if data_value not in organized_data:
-                organized_data[data_value] = []
-            
-            report = utils.poll_job(item.id, max_attempts=1)
-            if report:
-                t = utils.extract_taxonomies(report)
-                organized_data[data_value].extend(t)
-        
-        return jsonify(organized_data)
-    except Exception as e:
-        logger.error(f"Errore in last_analysis(): {str(e)}")
-        return error_response(str(e), 500)
-
-
 @routes_bp.route('/getAnalisys', methods=['GET'])
 def get_analysis():
     analysis_id = request.args.get('JobId')
@@ -429,10 +524,12 @@ def get_short():
         logger.error(f"Errore in get_short(): {str(e)}")
         return error_response(str(e), 500)
 
-
 @routes_bp.route('/allReports', methods=['GET'])
 def all_reports():
-    """Visualizza tutti i report per un osservabile specifico."""
+    """
+    Visualizza tutti i report già esistenti per un osservabile specifico.
+    Recupera dalla cache di Cortex SENZA risubmittare le analisi.
+    """
     try:
         observable = request.args.get('observable')
         datatype = request.args.get('datatype')
@@ -442,61 +539,76 @@ def all_reports():
         if not datatype:
             return error_response("Parametro 'datatype' mancante", 400)
         
-        logger.info(f"Ricerca di tutti i report per: {observable} (tipo: {datatype})")
+        logger.info(f"Ricerca report esistenti per: {observable} (tipo: {datatype})")
         
-        # Interroga Cortex per trovare tutti i job associati a questo osservabile
-        from cortex4py.query import And, Eq
         from utils import cortex_api
         
-        # Cerca job con questo osservabile - cortex usa 'data' per l'osservabile
-        # Prova con query semplice (solo data)
+        # Query semplice senza filtri (cortex4py ha problemi con And/Eq)
+        # Recuperiamo tutti i job recenti e filtriamo manualmente
         try:
-            query = Eq('data', observable)
-            logger.debug(f"Query Cortex: {query}")
-            jobs = list(cortex_api.jobs.find_all(query, range=config.LAST_ANALYSIS_RANGE, sort='-createdAt'))
-            logger.info(f"Trovati {len(jobs)} job per {observable}")
+            logger.info("Recupero job recenti da Cortex")
+            all_jobs = list(cortex_api.jobs.find_all(
+                {},  # Query vuota
+                range=config.LAST_ANALYSIS_RANGE, 
+                sort='-createdAt'
+            ))
+            logger.info(f"Recuperati {len(all_jobs)} job totali")
+            
+            # Filtro manuale per observable e datatype
+            jobs = []
+            for job in all_jobs:
+                if (hasattr(job, 'data') and job.data == observable and 
+                    hasattr(job, 'dataType') and job.dataType == datatype and
+                    hasattr(job, 'status') and job.status == 'Success'):
+                    jobs.append(job)
+            
+            logger.info(f"Trovati {len(jobs)} job Success per {observable} ({datatype})")
+            
         except Exception as e:
-            logger.error(f"Errore nella query Cortex: {str(e)}")
-            logger.warning(f"Ritento senza filtro dataType")
-            # Se la query fallisce, usa solo 'data'
+            logger.error(f"Errore nella query Cortex: {str(e)}", exc_info=True)
             jobs = []
         
-        result = {}
-        result['analysis'] = []
-        result['fuco'] = {}
-        result['fuco']['question'] = observable
-        result['fuco']['datatype'] = datatype
-        
-        # Per ogni job trovato, recupera il report
-        for job in jobs:
-            try:
-                # Verifica che il job abbia il datatype corretto
-                if hasattr(job, 'dataType') and job.dataType != datatype:
-                    logger.debug(f"Job {job.id} ha datatype {job.dataType}, cerco {datatype} - SKIP")
-                    continue
-                
-                report = utils.poll_job(job.id, max_attempts=1)
-                if report and report.status == "Success":
-                    result['analysis'].append(report.json())
-                else:
-                    status = report.status if report else "Timeout"
-                    logger.warning(f"Job {job.id} completato con status: {status}")
-                    result['analysis'].append({
-                        "id": job.id,
-                        "status": status,
-                        "error": "Analisi non completata con successo"
-                    })
-            except Exception as e:
-                logger.error(f"Errore nel recupero del report {job.id}: {str(e)}")
-                continue
-        
-        if not result['analysis']:
+        if not jobs:
             logger.info(f"Nessun report trovato per {observable}")
+            
+            # Debug: mostra quali job esistono per capire il problema
+            try:
+                logger.info("DEBUG: Recupero ultimi 10 job per debug")
+                all_recent = list(cortex_api.jobs.find_all({}, range='0-10', sort='-createdAt'))
+                for j in all_recent:
+                    logger.debug(f"Job disponibile: data={j.data}, dataType={j.dataType}, status={j.status}, id={j.id}")
+            except Exception as e:
+                logger.error(f"Errore debug: {str(e)}")
+            
+            return render_template('no_reports.html', 
+                                 observable=observable, 
+                                 datatype=datatype)
         
-        return render_template('report.html', data=result)
+        # Prepara la struttura dati per il template
+        result = {
+            'fuco': {
+                'question': observable,
+                'datatype': datatype
+            },
+            'jobs': []  # Lista di job con metadata
+        }
+        
+        # Raccoglie i job con le loro informazioni
+        for job in jobs:
+            job_info = {
+                'id': job.id,
+                'analyzer': job.workerName if hasattr(job, 'workerName') else 'Unknown',
+                'status': job.status,
+                'createdAt': job.createdAt if hasattr(job, 'createdAt') else None,
+                'startDate': job.startDate if hasattr(job, 'startDate') else None,
+                'endDate': job.endDate if hasattr(job, 'endDate') else None,
+                'createdBy': job.createdBy if hasattr(job, 'createdBy') else None,
+            }
+            result['jobs'].append(job_info)
+        
+        logger.info(f"Rendering {len(result['jobs'])} report per {observable}")
+        return render_template('all_reports.html', data=result)
     
     except Exception as e:
-        logger.error(f"Errore in all_reports(): {str(e)}")
+        logger.error(f"Errore in all_reports(): {str(e)}", exc_info=True)
         return error_response(str(e), 500)
-
-

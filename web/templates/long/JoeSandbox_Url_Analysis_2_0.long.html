@@ -1,4 +1,4 @@
-<div class="report-JoeSandbox" ng-if="success">
+<div class="report-JoeSandbox" >
     <style>
         .report-JoeSandbox dl {
             margin-bottom: 2px;
@@ -15,7 +15,7 @@
 
             <h4>Joe Sandbox</h4>
                 <br>
-                <dl class="dl-horizontal" ng-if="content.version">
+                <dl class="dl-horizontal" >
                     <dt>Version</dt>
                     <dd>{{content.version}}</dd>
                 </dl>
@@ -27,11 +27,11 @@
                     <dt>System</dt>
                     <dd>{{content.system}}</dd>
                 </dl>
-                <dl class="dl-horizontal" ng-if="content.cookbook">
+                <dl class="dl-horizontal" >
                     <dt>Cookbook</dt>
                     <dd>{{content.cookbook}}</dd>
                 </dl>
-                <dl class="dl-horizontal" ng-if="content.startdate">
+                <dl class="dl-horizontal" >
                     <dt>Start date and time</dt>
                     <dd>{{content.startdate}} {{content.starttime}} (Joe Sandbox time)</dd>
                 </dl>
@@ -48,45 +48,45 @@
             <div >
                 <h4>Signatures</h4>
                 <br>
-                <dl ng-if="content.signatures.signare && content.signatures.signare.entries" class="dl-horizontal" ng-repeat="l in content.signatures.signare track by $index">
+                <dl  class="dl-horizontal" >
                     <dd>{{l}}<dd>
                 </dl>
-                <dl ng-if="content.signatures.signare && !content.signatures.signare.entries" class="dl-horizontal">
+                <dl  class="dl-horizontal">
                     <dd>{{content.signatures.signare}}<dd>
                 </dl>
             </div>
-            <div ng-if="!content.signatures">
+            <div >
                 No suspicious signature reported
             </div>
             <hr>
-            <div ng-if="content.contacted">
+            <div >
                 <h4>Remote connections</h4>
                 <br>
-                <div ng-repeat="(k,v) in content.contacted">
-                    <div ng-if="k == 'domains'">
+                <div >
+                    <div >
                         <h5>domains</h5>
-                        <dl class="dl-horizontal" ng-repeat="e in v.domain">
-                            <dt ng-if="e.ip">{{e.ip}}</dt>
-                            <dd ng-if="e.name">{{e.name}}</dd>
+                        <dl class="dl-horizontal" >
+                            <dt >{{e.ip}}</dt>
+                            <dd >{{e.name}}</dd>
                         </dl>
                     </div>
 
-                    <div ng-if="k === 'ips'">
+                    <div >
                         <h5>IP addresses</h5>
-                        <dl class="dl-horizontal" ng-if="v.ip.substr">
+                        <dl class="dl-horizontal" >
                             <dd>
                                 {{v.ip}}
                             </dd>
                         </dl>
-                        <dl class="dl-horizontal" ng-if="!v.ip.substr" ng-repeat="ip in v.ip">
-                            <dd ng-if="!ip.substr">
-                                <span ng-if="ip['@malicious'] === 'true'" class="text-danger"><i class="fa fa-thumbs-down"></i>
+                        <dl class="dl-horizontal"  >
+                            <dd >
+                                <span  class="text-danger"><i class="fa fa-thumbs-down"></i>
                                 </span>
-                                <span ng-if="ip['@malicious'] === 'false'" class="text-success"><i class="fa fa-thumbs-up"></i>
+                                <span  class="text-success"><i class="fa fa-thumbs-up"></i>
                                 </span>
                                 {{ip.$}}
                             </dd>
-                            <dd ng-if="ip.substr">
+                            <dd >
                                 {{ip}}
                             </dd>
                         </dl>
@@ -98,20 +98,20 @@
             <div >
                 <h4>Dropped files</h4>
                 <br>
-                <div ng-if="content.dropped.file" ng-repeat="f in content.dropped.file">
+                <div  >
                     <h5>{{f.name}}</h5>
-                    <dl class="dl-horizontal" ng-repeat="(k,v) in f" ng-if="k !== 'name'">
+                    <dl class="dl-horizontal"  >
                         <dt>{{k}}</dt>
                         <dd>{{v}}</dd>
                     </dl>
                 </div>
-                <div ng-if="!content.dropped.file">
+                <div >
                     No dropped file reported
                 </div>
             </div>
 
             <hr>
-            <div ng-if="content.confidence">
+            <div >
                 <h4>Confidence</h4>
                 <br>
                 <dl class="dl-horizontal">
@@ -122,22 +122,22 @@
             <hr>
             <br>
 
-            <div ng-if="content.detection">
+            <div >
                 <h4>Maliciousness</h4>
                 <br>
                 <dl class="dl-horizontal">
                     <dt>Score</dt>
                     <dd>{{content.detection.score}}/{{content.detection.maxscore}}</dd>
                     <dd>
-                        <div ng-repeat="(k,v) in content.detection">
+                        <div >
                             <span ng-switch="k">
-                                <span ng-switch-when="clean" class="label label-success" ng-if="v === true">
+                                <span ng-switch-when="clean" class="label label-success" >
                                     Clean
                                 </span>
-                                <span ng-switch-when="malicious" class="label label-danger" ng-if="v === true">
+                                <span ng-switch-when="malicious" class="label label-danger" >
                                     Malicious
                                 </span>
-                                <span ng-switch-when="suspicious" class="label label-danger" ng-if="v === true">
+                                <span ng-switch-when="suspicious" class="label label-danger" >
                                     Suspicious
                                 </span>
                             </span>
@@ -149,7 +149,7 @@
     </div>
 
 
-    <div class="panel panel-info" ng-if="content.htmlreport || content.pdfreport">
+    <div class="panel panel-info" >
         <div class="panel-heading">
             <strong>Reports</strong>
         </div>
@@ -169,7 +169,7 @@
 
 
 <!-- General error  -->
-<div class="panel panel-danger" ng-if="!success">
+<div class="panel panel-danger" >
     <div class="panel-heading">
         <strong>{{(artifact.data || artifact.attachment.name) | fang}}</strong>
     </div>

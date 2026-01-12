@@ -30,16 +30,16 @@
         </style>
 -->
         
-<div class="report-EmergingThreats" ng-if="success">
+<div class="report-EmergingThreats" >
 
     {% if content.reputation != '-' %}
-    <div class="panel panel-info" ng-if="content.reputation && content.reputation != '-' && content.reputation != 'Error'">
+    <div class="panel panel-info" >
         <div class="panel-heading">
             <strong>Reputation</strong>
         </div>
         <div class="panel-body">
 	    {% for reputation in content.reputation %}
-            <dl class="dl-horizontal" ng-repeat="reputation in content.reputation track by $index">
+            <dl class="dl-horizontal" >
                 <dt>{{ reputation.category }}</dt>
                 <dd class="wrap">{{ reputation.score }}</dd>
             </dl>
@@ -49,7 +49,7 @@
     {% endif %}
 
     {% if content.events != '-' %}
-    <div class="panel panel-info" ng-if="content.events && content.events != '-' && content.events != 'Error'">
+    <div class="panel panel-info" >
         <div class="panel-heading">
             <strong>Events</strong>
         </div>
@@ -64,7 +64,7 @@
                     <th>Source</th>
                 </tr>
 		{% for events in content.events %}
-                <tr ng-repeat="events in content.events track by $index">
+                <tr >
                     <td align="right">{{ loop.index }}</td>
                     <td>{{ events.date }}</td>
                     <td align="center">{{ events.domain }} </td>
@@ -79,14 +79,14 @@
     {% endif %}
 
     {% if content.geoloc != '-' %}
-    <div class="panel panel-info" ng-if="content.geoloc && content.geoloc != '-' && content.geoloc != 'Error'">
+    <div class="panel panel-info" >
         <div class="panel-heading">
             <strong>Geoloc</strong>
         </div>
       
         <div class="panel-body">
 	    {% for geo in content.geoloc %}
-            <div ng-repeat="geo in content.geoloc track by $index">
+            <div >
                 <dl class="dl-horizontal">
                     <dt>City</dt>
                     <dd class="wrap">{{ geo.city }}</dd>
@@ -142,7 +142,7 @@
     {% endif %}
 
     {% if content.ips != '-'%}
-    <div class="panel panel-info" ng-if="content.ips && content.ips != '-' && content.ips != 'Error'">
+    <div class="panel panel-info" >
         <div class="panel-heading">
             <strong>IPs</strong>
         </div>
@@ -154,7 +154,7 @@
                     <th>Last seen</th>
                 </tr>
 		{% for ip in content.ips %}
-                <tr ng-repeat="ip in content.ips  | orderBy:'-last_seen'">
+                <tr >
                     <td>{{ ip.ip }}</td>
                     <td>{{ ip.first_seen }}</td>
                     <td>{{ ip.last_seen }}</td>
@@ -166,7 +166,7 @@
     {% endif %}
 
     {% if content.domains != '-' %}
-    <div class="panel panel-info" ng-if="content.domains && content.domains != '-' && content.domains != 'Error'">
+    <div class="panel panel-info" >
         <div class="panel-heading">
             <strong>Domains</strong>
         </div>
@@ -178,7 +178,7 @@
                     <th>Last seen</th>
                 </tr>
 		{% for domain in content.domains %}
-                <tr ng-repeat="domain in content.domains  | orderBy:'-last_seen'">
+                <tr >
                     <td>{{ domain.domain }}</td>
                     <td>{{ domain.first_seen }}</td>
                     <td>{{ domain.last_seen }}</td>
@@ -190,7 +190,7 @@
     {% endif %}
 
     {% if content.samples != '-' %}
-    <div class="panel panel-info" ng-if="content.samples && content.samples != '-' && content.samples != 'Error'">
+    <div class="panel panel-info" >
         <div class="panel-heading">
             <strong>Samples</strong>
         </div>
@@ -202,7 +202,7 @@
                     <th>Last seen</th>
                 </tr>
 		{% for sample in content.samples %}
-                <tr ng-repeat="sample in content.samples | orderBy:'-last_seen'">
+                <tr >
                     <td>{{ sample.source }}</td>
                     <td>{{ sample.first_seen }}</td>
                     <td>{{ sample.last_seen }}</td>
@@ -213,7 +213,7 @@
     </div>
     {% endif %}
     {% if content.nameservers != '-' %}
-    <div class="panel panel-info" ng-if="content.nameservers && content.nameservers != '-' && content.nameservers != 'Error'">
+    <div class="panel panel-info" >
         <div class="panel-heading">
             <strong>Nameservers</strong>
         </div>
@@ -225,7 +225,7 @@
                     <th>Last seen</th>
                 </tr>
 		{% for nameserver in content.nameservers %}
-                <tr ng-repeat="nameserver in content.nameservers | orderBy:'-last_seen' ">
+                <tr >
                     <td>{{ nameserver.server }}</td>
                     <td>{{ nameserver.first_seen }}</td>
                     <td>{{ nameserver.last_seen }}</td>
@@ -236,13 +236,13 @@
     </div>
     {% endif %}
     {% if content.reputation != '-' %}
-    <div class="panel panel-info" ng-if="content.reputation && content.reputation != '-' && content.reputation != 'Error'">
+    <div class="panel panel-info" >
         <div class="panel-heading">
             <strong>Urls</strong>
         </div>
         <div class="panel-body">
 	    {% for url in content.urls %}
-            <dl class="dl-horizontal" ng-repeat="url in content.urls track by $index">
+            <dl class="dl-horizontal" >
                 <dd class="wrap">{{ url }}</dd>
             </dl>
 	    {% endfor %}
@@ -251,7 +251,7 @@
     {% endif %}
 
     {% if content.whois != '-' %}
-    <div class="panel panel-info" ng-if="content.whois && content.whois != '-' && content.whois != 'Error'">
+    <div class="panel panel-info" >
         <div class="panel-heading">
             <strong>Whois</strong>
         </div>
@@ -295,7 +295,7 @@
      <div class="tab-pane fade" id="json_{{ artifact.id }}" role="tabpanel" aria-labelledby="json-tab_{{ artifact.id }}">
         <pre>
         <code>
-{{ artifact }}
+{{ artifact | string }}
         </code>
         </pre>
     </div>

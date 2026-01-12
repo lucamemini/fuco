@@ -1,69 +1,74 @@
-{% if artifact.status == "Success" %}
-{% set content = artifact.report.full %}
+{% if artifact.get('status') == "Success" %}
+{% set content = artifact.get('report', {}).get('full', {}) %}
 
 <div class="container-fluid">
 
-{% if content.query_status == "ok" %}
+  {% if content.get('query_status') == "ok" %}
 
-  {% if content.data_type == "url" %}
-  <dl class="dl-horizontal">
-    <dt>ID</dt>
-    <dd>{{ content.id }}</dd>
+    {% if content.get('data_type') == "url" %}
+    <dl class="dl-horizontal">
+      <dt>ID</dt>
+      <dd>{{ content.get('id') }}</dd>
 
-    <dt>URL</dt>
-    <dd class="wrap">{{ content.url }}</dd>
+      <dt>URL</dt>
+      <dd class="wrap">{{ content.get('url') }}</dd>
 
-    <dt>Status</dt>
-    <dd>
-      {% if content.url_status == "offline" %}
-        <span class="badge bg-success">Offline</span>
-      {% else %}
-        <span class="badge bg-danger">Online</span>
+      <dt>Status</dt>
+      <dd>
+        {% if content.get('url_status') == "offline" %}
+          <span class="badge bg-success">Offline</span>
+        {% else %}
+          <span class="badge bg-danger">Online</span>
+        {% endif %}
+      </dd>
+
+      {% if content.get('threat') %}
+      <dt>Threat</dt>
+      <dd>
+        <span class="badge bg-danger">{{ content.get('threat') }}</span>
+      </dd>
       {% endif %}
-    </dd>
+    </dl>
 
-    <dt>Threat</dt>
-    <dd><span class="badge bg-danger">{{ content.threat }}</span></dd>
-  </dl>
+    {% set payloads = content.get('payloads', []) %}
+    {% if payloads | length > 0 %}
+    <h6>Payloads</h6>
+    <table class="table table-sm table-striped">
+      <thead>
+        <tr>
+          <th>First Seen</th>
+          <th>Filename</th>
+          <th>Type</th>
+          <th>Hashes</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in payloads %}
+        <tr>
+          <td>{{ p.get('firstseen') }}</td>
+          <td>{{ p.get('filename') }}</td>
+          <td>{{ p.get('content_type') }}</td>
+          <td>
+            md5: {{ p.get('response_md5') }}<br>
+            sha256: {{ p.get('response_sha256') }}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+    {% endif %}
 
-  {% if content.payloads %}
-  <h6>Payloads</h6>
-  <table class="table table-sm table-striped">
-    <thead>
-      <tr>
-        <th>First Seen</th>
-        <th>Filename</th>
-        <th>Type</th>
-        <th>Hashes</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for p in content.payloads %}
-      <tr>
-        <td>{{ p.firstseen }}</td>
-        <td>{{ p.filename }}</td>
-        <td>{{ p.content_type }}</td>
-        <td>
-          md5: {{ p.response_md5 }}<br>
-          sha256: {{ p.response_sha256 }}
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  {% else %}
+    <div class="alert alert-warning">
+      Query status: {{ content.get('query_status') }}
+    </div>
   {% endif %}
-  {% endif %}
-
-{% else %}
-  <div class="alert alert-warning">
-    Query status: {{ content.query_status }}
-  </div>
-{% endif %}
 
 </div>
 
 {% else %}
 <div class="alert alert-danger">
-  {{ artifact.report.errorMessage }}
+  {{ artifact.get('report', {}).get('errorMessage') }}
 </div>
 {% endif %}

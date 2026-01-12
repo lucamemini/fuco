@@ -2,74 +2,110 @@
 
 {% if artifact.status == "Success" %}
 <div class="card border-success">
-    <div class="card-header">
+  <div class="card-header">
     <ul class="nav nav-tabs card-header-tabs">
       <li class="nav-item">
-        <a class="nav-link active" class="nav-link active" id="home-tab_{{ artifact.id }}" data-bs-toggle="tab" data-bs-target="#home_{{ artifact.id }}" role="tab" aria-controls="home_{{ artifact.id }}" aria-selected="true">Result</a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link" id="json-tab_{{ artifact.id }}" data-bs-toggle="tab" data-bs-target="#json_{{ artifact.id }}" role="tab" aria-controls="json_{{ artifact.id }}" aria-selected="false">Json</a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link disabled">Ext. Analisys
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-link-45deg" viewBox="0 0 16 16">
-          <path d="M4.715 6.542 3.343 7.914a3 3 0 1 0 4.243 4.243l1.828-1.829A3 3 0 0 0 8.586 5.5L8 6.086a1.002 1.002 0 0 0-.154.199 2 2 0 0 1 .861 3.337L6.88 11.45a2 2 0 1 1-2.83-2.83l.793-.792a4.018 4.018 0 0 1-.128-1.287z"/>
-          <path d="M6.586 4.672A3 3 0 0 0 7.414 9.5l.775-.776a2 2 0 0 1-.896-3.346L9.12 3.55a2 2 0 1 1 2.83 2.83l-.793.792c.112.42.155.855.128 1.287l1.372-1.372a3 3 0 1 0-4.243-4.243L6.586 4.672z"/>
-        </svg>
+        <a class="nav-link active"
+           id="home-tab_{{ artifact.id }}"
+           data-bs-toggle="tab"
+           data-bs-target="#home_{{ artifact.id }}"
+           role="tab"
+           aria-controls="home_{{ artifact.id }}"
+           aria-selected="true">
+          Result
         </a>
       </li>
+      <li class="nav-item">
+        <a class="nav-link"
+           id="json-tab_{{ artifact.id }}"
+           data-bs-toggle="tab"
+           data-bs-target="#json_{{ artifact.id }}"
+           role="tab"
+           aria-controls="json_{{ artifact.id }}"
+           aria-selected="false">
+          Json
+        </a>
+      </li>
+      <li class="nav-item">
+        <span class="nav-link disabled">
+          Ext. Analysis
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+               class="bi bi-link-45deg" viewBox="0 0 16 16">
+            <path d="M4.715 6.542 3.343 7.914a3 3 0 1 0 4.243 4.243l1.828-1.829A3 3 0 0 0 8.586 5.5L8 6.086a1.002 1.002 0 0 0-.154.199 2 2 0 0 1 .861 3.337L6.88 11.45a2 2 0 1 1-2.83-2.83l.793-.792a4.018 4.018 0 0 1-.128-1.287z"/>
+            <path d="M6.586 4.672A3 3 0 0 0 7.414 9.5l.775-.776a2 2 0 0 1-.896-3.346L9.12 3.55a2 2 0 1 1 2.83 2.83l-.793.792c.112.42.155.855.128 1.287l1.372-1.372a3 3 0 1 0-4.243-4.243L6.586 4.672z"/>
+          </svg>
+        </span>
+      </li>
+    </ul>
+  </div>
+
+  <div class="card-body">
+    <div class="tab-content">
+
+      <!-- RESULT TAB -->
+      <div class="tab-pane fade show active"
+           id="home_{{ artifact.id }}"
+           role="tabpanel"
+           aria-labelledby="home-tab_{{ artifact.id }}">
+
+        {% if content.results is defined and content.results|length > 0 %}
+        <div class="card border-danger mb-3">
+          <div class="card-header bg-danger text-white">
+            Yara Report
+          </div>
+          <div class="card-body">
+            <dl class="row">
+              <dt class="col-sm-3">Matches</dt>
+              <dd class="col-sm-9">
+                <ul class="list-unstyled mb-0">
+                  {% for m in content.results %}
+                  <li>{{ m }}</li>
+                  {% endfor %}
+                </ul>
+              </dd>
+            </dl>
+          </div>
+        </div>
+        {% else %}
+        <div class="card border-success mb-3">
+          <div class="card-header bg-success text-white">
+            Yara Report
+          </div>
+          <div class="card-body">
+            <span>No matches.</span>
+          </div>
+        </div>
+        {% endif %}
+
+      </div>
+
+      <!-- JSON TAB -->
+      <div class="tab-pane fade"
+           id="json_{{ artifact.id }}"
+           role="tabpanel"
+           aria-labelledby="json-tab_{{ artifact.id }}">
+        <pre><code>{{ artifact | string }}</code></pre>
+      </div>
+
     </div>
-    <div class="card-body">
-    <div class="tab-content" id="myTabContent">
-     <div class="tab-pane fade show active" id="home_{{ artifact.id }}" role="tabpanel" aria-labelledby="home-tab_{{ artifact.id }}">
-
-{% if content.payloads.length |length > 0 %}
-<div class="panel panel-danger" >
-	<div class="panel-heading">
-		Yara Report
-	</div>
-	<div class="panel-body">
-		<dl class="dl-horizontal">
-			<dt>Matches</dt>
-			{% for m in content.results %}
-			<dd>{{m}}</dd>
-			{% endfor %}
-		</dl>
-	</div>
+  </div>
 </div>
+
 {% else %}
-<div class="panel panel-success" ng-if="success && content.results.length == 0">
-	<div class="panel-heading">
-		Yara Report
-	</div>
-	<div class="panel-body">
-		<span>No matches.</span>
-	</div>
-</div>
-{% endif %}
-
-     </div>
-     <div class="tab-pane fade" id="json_{{ artifact.id }}" role="tabpanel" aria-labelledby="json-tab_{{ artifact.id }}">
-        <pre>
-        <code>
-{{ artifact }}
-        </code>
-
-        </pre>
-    </div>
-    </div> <!-- tab content -->
-    </div> <!-- card body -->
-</div>
-{% else %}
-<!-- General error -->
+<!-- ERROR -->
 <div class="card border-danger">
-        <strong>{{(artifact.data)}}</strong>
-    </div>
-    <div class="card-body">
-    	<dl class="dl-horizontal" ng-if="artifact.report.errorMessage">
-            <dt><i class="fa fa-warning"></i> Yara: </dt>
-            <dd class="wrap">{{artifact.report.errorMessage}}</dd>
-        </dl>
-    </div>
+  <div class="card-header bg-danger text-white">
+    {{ artifact.data }}
+  </div>
+  <div class="card-body">
+    <dl class="row">
+      <dt class="col-sm-3">
+        <i class="fa fa-warning"></i> Yara
+      </dt>
+      <dd class="col-sm-9">
+        {{ artifact.report.errorMessage }}
+      </dd>
+    </dl>
+  </div>
 </div>
 {% endif %}

@@ -22,9 +22,9 @@
     <div class="tab-content" id="myTabContent">
      <div class="tab-pane fade show active" id="home_{{ artifact.id }}" role="tabpanel" aria-labelledby="home-tab_{{ artifact.id }}">
 
-<div class="panel panel-info" ng-if="success">
+<div class="panel panel-info" >
     <div class="panel-body">
-        <dl class="dl-horizontal" ng-if="content.category">
+        <dl class="dl-horizontal" >
             <dt>Fortinet URL Category:</dt>
             <dd class="wrap">{{content.category}}&nbsp;<br>
                 <i class="fa fa-recycle"></i>
@@ -38,7 +38,7 @@
      <div class="tab-pane fade" id="json_{{ artifact.id }}" role="tabpanel" aria-labelledby="json-tab_{{ artifact.id }}">
         <pre>
         <code>
-{{ artifact }}
+{{ artifact | string }}
         </code>
         </pre>
     </div>

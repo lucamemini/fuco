@@ -22,7 +22,7 @@
     <div class="tab-content" id="myTabContent">
      <div class="tab-pane fade show active" id="home_{{ artifact.id }}" role="tabpanel" aria-labelledby="home-tab_{{ artifact.id }}">
 
-<div class="panel panel-danger" ng-if="!success">
+<div class="panel panel-danger" >
     <div class="panel-heading">
         <strong>{{artifact.data }}</strong>
     </div>
@@ -32,7 +32,7 @@
 </div>
 
 
-<div class="panel panel-primary" ng-if="success">
+<div class="panel panel-primary" >
     <div class="panel-heading">
         <strong>{{artifact.data }}</strong>
     </div>
@@ -60,7 +60,7 @@
             </thead>
             <tbody>
 		{% for r in content.components %} 
-                <tr  ng-repeat="r in content.components">
+                <tr  >
                     <td>{{r.name}}</td>
                     <td>
                         <span class="label" ng-class="{'label-success' : r.risk_score == 0,  'label-warning' :  r.risk_score > 0 && r.risk_score <= 50,
@@ -71,7 +71,7 @@
                     <td>
                         <ul class="list-unstyled">
 			    {% for e in r.evidence %}
-                            <li ng-repeat="e in r.evidence">{{e}}</li>
+                            <li >{{e}}</li>
 			    {% endfor %}
                         </ul>
                     </td>
@@ -87,7 +87,7 @@
      <div class="tab-pane fade" id="json_{{ artifact.id }}" role="tabpanel" aria-labelledby="json-tab_{{ artifact.id }}">
         <pre>
         <code>
-{{ artifact }}
+{{ artifact | string }}
         </code>
         </pre>
     </div>

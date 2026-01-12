@@ -1,4 +1,4 @@
-<div class="panel panel-info" ng-if="success">
+<div class="panel panel-info" >
     <div class="panel-heading">
         SinkDB information for <strong>{{artifact.data}}</strong>
     </div>
@@ -7,10 +7,10 @@
         <dt>Status</dt>
         <dd>
             <p style="font-size: 1.5em;">
-                <span class="label label-warning" ng-if="content.Sinkhole.length > 0">
+                <span class="label label-warning" >
                     Artifact is sinkholed.
 
-                <table class="table" ng-if="content.Sinkhole.length !== 0 ">
+                <table class="table" >
                     <thead>
                         <th>SinkDB ID</th>
                         <th>SinkDB URL</th>
@@ -18,7 +18,7 @@
                         <th>Classification</th>
                         <th>Operator</th>
                     </thead>
-                    <tbody ng-repeat="r in content.Sinkhole | orderBy:'-date_added'">
+                    <tbody >
                             <tr>
                                 <td>{{r.id}}</td>
                                 <td>{{r.sinkdb_reference}}</td>
@@ -29,15 +29,15 @@
                         </tbody>
                     </table>
                 </span>
-                <span class="label label-success" ng-if="content.Sinkhole.length == 0">
+                <span class="label label-success" >
                     Artifact is <strong>not</strong> sinkholed.
                 </span>
             </p>
             <p style="font-size: 1.5em;">
-                <span class="label label-warning" ng-if="content.Phishing.length > 0">
+                <span class="label label-warning" >
                     Artifact is part of a phishing awareness Campaign.
 
-                <table class="table" ng-if="content.Phishing.length !== 0 ">
+                <table class="table" >
                     <thead>
                         <th>SinkDB ID</th>
                         <th>SinkDB URL</th>
@@ -45,7 +45,7 @@
                         <th>Classification</th>
                         <th>Operator</th>
                     </thead>
-                    <tbody ng-repeat="r in content.Phishing | orderBy:'-date_added'">
+                    <tbody >
                             <tr>
                                 <td>{{r.id}}</td>
                                 <td>{{r.sinkdb_reference}}</td>
@@ -56,15 +56,15 @@
                         </tbody>
                     </table>
                 </span>
-                <span class="label label-success" ng-if="content.Phishing.length == 0">
+                <span class="label label-success" >
                     Artifact is <strong>not</strong> part of a phishing awareness campaign.
                 </span>
             </p>
             <p style="font-size: 1.5em;">
-                <span class="label label-warning" ng-if="content.Scanner.length > 0">
+                <span class="label label-warning" >
                     Artifact is a scanner.
 
-                <table class="table" ng-if="content.Scanner.length !== 0 ">
+                <table class="table" >
                     <thead>
                         <th>SinkDB ID</th>
                         <th>SinkDB URL</th>
@@ -72,7 +72,7 @@
                         <th>Classification</th>
                         <th>Operator</th>
                     </thead>
-                    <tbody ng-repeat="r in content.Scanner | orderBy:'-date_added'">
+                    <tbody >
                             <tr>
                                 <td>{{r.id}}</td>
                                 <td>{{r.sinkdb_reference}}</td>
@@ -83,7 +83,7 @@
                         </tbody>
                     </table>
                 </span>
-                <span class="label label-success" ng-if="content.Scanner.length == 0">
+                <span class="label label-success" >
                     Artifact is <strong>not</strong> a scanner.
                 </span>
             </p>
@@ -93,7 +93,7 @@
 </div>
 
 <!-- General error -->
-<div class="panel panel-danger" ng-if="!success">
+<div class="panel panel-danger" >
     <div class="panel-heading">
         <strong>{{(artifact.data || artifact.attachment.name) | fang}}</strong>
     </div>

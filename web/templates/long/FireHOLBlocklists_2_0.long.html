@@ -1,4 +1,4 @@
-<div class="panel panel-info" ng-if="content.count > 0">
+<div class="panel panel-info" >
 
     <div class="panel-heading">
 		Firehol IP Report (https://github.com/firehol/blocklist-ipsets)
@@ -9,13 +9,13 @@
             <dd>{{content.count}}</dd>
         </dl>
 
-        <table class="table" ng-if="content.hits">
+        <table class="table" >
             <thead>
                 <th>List name</th>
                 <th>Last updated</th>
                 <th>Description</th>
             </thead>
-            <tbody ng-repeat="h in content.hits | orderBy:'-file_date'">
+            <tbody >
                 <tr>
                     <td>{{h.list}}</td>
                     <td>{{h.file_date}}</td>
@@ -29,14 +29,14 @@
 	</div>
 </div>
 
-<div class="panel panel-success" ng-if="content.count == 0 && success">
+<div class="panel panel-success" >
 	<div class="panel-heading">
 		Firehol IP Report (https://github.com/firehol/blocklist-ipsets): <b>No match found</b>
 	</div>
 </div>
 
 <!-- on error  -->
-<div class="panel panel-danger" ng-if="!success">
+<div class="panel panel-danger" >
 	<div class="panel-heading">
 		Firehol IP Report (https://github.com/firehol/blocklist-ipsets) <b>Error</b>
 	</div>

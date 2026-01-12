@@ -23,7 +23,7 @@
      <div class="tab-pane fade show active" id="home_{{ artifact.id }}" role="tabpanel" aria-labelledby="home-tab_{{ artifact.id }}">
 
 {% if content.Status == "No Error" %}
-<div class="panel panel-info" ng-if="content.Status == 'No Error'" >
+<div class="panel panel-info"  >
     <div class="panel-heading" >
         <strong> Answer </strong>
      </div>
@@ -38,7 +38,7 @@
                 <th>TTL</th>
             </tr>
 	    {% for row in content.Answer %}
-            <tr ng-repeat="row in content.Answer">
+            <tr >
                 <td>
                     {{row.name}}
                 </td>
@@ -59,7 +59,7 @@
 
 {% else %}
 <!-- Success but bad answer !--> 
-<div class="panel panel-danger" ng-if="content.Error" >
+<div class="panel panel-danger"  >
     <div class="panel-heading" >
         <strong> Answer with error </strong>
      </div>
@@ -75,7 +75,7 @@
      <div class="tab-pane fade" id="json_{{ artifact.id }}" role="tabpanel" aria-labelledby="json-tab_{{ artifact.id }}">
         <pre>
         <code>
-{{ artifact }}
+{{ artifact | string }}
         </code>
         </pre>
     </div>

@@ -22,7 +22,7 @@
     <div class="tab-content" id="myTabContent">
      <div class="tab-pane fade show active" id="home_{{ artifact.id }}" role="tabpanel" aria-labelledby="home-tab_{{ artifact.id }}">
 
-<div class="panel panel-info" ng-if="success">
+<div class="panel panel-info" >
     <div class="panel-heading">
         Domain Information of  <strong>{{artifact.data }}</strong>
     </div>
@@ -37,11 +37,11 @@
             <dt>ISP</dt>
             <dd>
 		{% if content.info_domain.isp | length == 0 %}
-                <span ng-if="content.info_domain.isp.length === 0">-</span>
+                <span >-</span>
 		{% else %}
                 <ul class="list-unstyled">
 		{% for i in content.info_domain.isp %}
-                    <li data-ng-repeat=" i in content.info_domain.isp">{{i}}</li>
+                    <li data->{{i}}</li>
 		{% endfor %}
                 </ul>
 		{% endif %}
@@ -51,11 +51,11 @@
             <dt>Domains</dt>
             <dd>
 		{% if content.info_domain.all_domains | length == 0 %}
-                <span ng-if="content.info_domain.all_domains.length === 0">-</span>
+                <span >-</span>
 		{% else %}
                 <ul class="list-unstyled">
 		    {% for i in content.info_domain.all_domains %}
-                    <li data-ng-repeat="i in content.info_domain.all_domains">{{i }}</li>
+                    <li data->{{i }}</li>
 		    {% endfor %}
                 </ul>
 		{% endif %}
@@ -71,11 +71,11 @@
             <dt>Orgs</dt>
             <dd>
 		{% if content.info_domain.orgs | length == 0 %}
-                <span ng-if="content.info_domain.orgs.length === 0">-</span>
+                <span >-</span>
 		{% else %}
                 <ul class="list-unstyled">
 		    {% for i in content.info_domain.orgs %}
-                    <li data-ng-repeat="i in content.info_domain.orgs">{{i}}</li>
+                    <li data->{{i}}</li>
 		    {% endfor %}
                 </ul>
 		{% endif %}
@@ -91,11 +91,11 @@
             <dt>IPs</dt>
             <dd>
 		{% if content.info_domain.ips | length == 0 %}
-                <span ng-if="content.info_domain.ips.length === 0">-</span>
+                <span >-</span>
 		{% else %}
                 <ul class="list-unstyled">
 		    {% for i in content.info_domain.ips %}
-                    <li data-ng-repeat="i in content.info_domain.ips">{{i}}</li>
+                    <li data->{{i}}</li>
 		    {% endfor %}
                 </ul>
 		{% endif %}
@@ -109,7 +109,7 @@
      <div class="tab-pane fade" id="json_{{ artifact.id }}" role="tabpanel" aria-labelledby="json-tab_{{ artifact.id }}">
         <pre>
         <code>
-{{ artifact }}
+{{ artifact | string }}
         </code>
         </pre>
     </div>

@@ -22,19 +22,19 @@
     <div class="tab-content" id="myTabContent">
      <div class="tab-pane fade show active" id="home_{{ artifact.id }}" role="tabpanel" aria-labelledby="home-tab_{{ artifact.id }}">
 
-<div class="panel panel-info" ng-if="success">
+<div class="panel panel-info" >
     <div class="panel-heading">
         <a href="https://hunter.io" target="_blank">hunter.io</a> domain search to find email addresses
         <br/> Report for
         <strong>{{artifact.data}}</strong>
     </div>
     {% if content.meta %}
-    <div class="panel-body" ng-if="content.meta">
+    <div class="panel-body" >
 
         <h4 class="dl-horizontal">{{content.meta.results}} addresses found.</h4>
 
 
-        <div ng-if="content.data && content.data.emails.length > 0">
+        <div >
 
             <h5>
                 Pattern : {{content.data.pattern}}
@@ -57,7 +57,7 @@
                     <th>Sources</th>
                 </tr>
   	        {% for email in content.data.emails %}
-                <tr ng-repeat="email in content.data.emails">
+                <tr >
                     <td class="text-info">{{email.value}}</td>
                     <td>{{email.fisrtname}} {{email.lastname}}</td>
                     <td>{{email.position}}</td>
@@ -77,7 +77,7 @@
                     <td>
                         <ul>
 			    {% for src in email.sources %}
-                            <li ng-repeat="src in email.sources">{{src.domain}}</li>
+                            <li >{{src.domain}}</li>
 			    {% endfor %}
                         </ul>
                     </td>
@@ -92,7 +92,7 @@
 	    Details: {{ content.errors[0].details }} 
         </div>
 	{% else %}
-        <div class="panel-body" ng-if="!content.meta">
+        <div class="panel-body" >
             No results found
         </div>
     {% endif %}
@@ -102,7 +102,7 @@
      <div class="tab-pane fade" id="json_{{ artifact.id }}" role="tabpanel" aria-labelledby="json-tab_{{ artifact.id }}">
         <pre>
         <code>
-{{ artifact }}
+{{ artifact | string }}
         </code>
         </pre>
     </div>

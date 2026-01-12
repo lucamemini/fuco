@@ -23,7 +23,7 @@
      <div class="tab-pane fade show active" id="home_{{ artifact.id }}" role="tabpanel" aria-labelledby="home-tab_{{ artifact.id }}">
 
 <!-- Success case -->
-<div ng-if="success">
+<div >
 	<div class="panel panel-info">
 		<div class="panel-heading">
 			<strong>{{name}} report</strong>
@@ -36,45 +36,45 @@
 				<dt>Level</dt>
 				<dd>{{content.level}}</dd>
 			</dl>
-			<dl class="dl-horizontal" ng-if="content.domain.length > 0">
+			<dl class="dl-horizontal" >
 				<dt>Domains</dt>
-				<dd ng-repeat="domain in content.domain">{{domain}}</dd>
+				<dd >{{domain}}</dd>
 			</dl>			
-			<dl class="dl-horizontal" ng-if="content.ip.length > 0">
+			<dl class="dl-horizontal" >
 				<dt>Ips</dt>
-				<dd ng-repeat="ip in content.ip">{{ip}}</dd>
+				<dd >{{ip}}</dd>
 			</dl>			
-			<dl class="dl-horizontal" ng-if="content.md5.length > 0">
+			<dl class="dl-horizontal" >
 				<dt>Md5</dt>
-				<dd ng-repeat="md5 in content.md5">{{md5}}</dd>
+				<dd >{{md5}}</dd>
 			</dl>
-			<dl class="dl-horizontal" ng-if="content.sha1.length > 0">
+			<dl class="dl-horizontal" >
 				<dt>Sha1</dt>
-				<dd ng-repeat="sha1 in content.sha1">{{sha1}}</dd>
+				<dd >{{sha1}}</dd>
 			</dl>		
-			<dl class="dl-horizontal" ng-if="content.sha256.length > 0">
+			<dl class="dl-horizontal" >
 				<dt>Sha256</dt>
-				<dd ng-repeat="sha256 in content.sha256">{{sha256}}</dd>
+				<dd >{{sha256}}</dd>
 			</dl>	
-			<dl class="dl-horizontal" ng-if="content.fileName.length > 0">
+			<dl class="dl-horizontal" >
 				<dt>fileName</dt>
-				<dd ng-repeat="fileName in content.fileName">{{fileName}}</dd>
+				<dd >{{fileName}}</dd>
 			</dl>
-			<dl class="dl-horizontal" ng-if="content.filename.length > 0">
+			<dl class="dl-horizontal" >
 				<dt>File Name</dt>
-				<dd ng-repeat="filename in content.filename">{{filename}}</dd>
+				<dd >{{filename}}</dd>
 			</dl>	
-			<dl class="dl-horizontal" ng-if="content.size.length > 0">
+			<dl class="dl-horizontal" >
 				<dt>File Size</dt>
-				<dd ng-repeat="type in content.size">{{type}}</dd>
+				<dd >{{type}}</dd>
 			</dl>	
-			<dl class="dl-horizontal" ng-if="content.packer.length > 0">
+			<dl class="dl-horizontal" >
 				<dt>File Packers</dt>
-				<dd ng-repeat="packer in content.packer">{{packer}}</dd>
+				<dd >{{packer}}</dd>
 			</dl>
-			<dl class="dl-horizontal" ng-if="content.actor.length > 0">
+			<dl class="dl-horizontal" >
 				<dt>Actor</dt>
-				<dd ng-repeat="actor in content.actor">{{actor}}</dd>
+				<dd >{{actor}}</dd>
 			</dl>
 		</div>
 	</div>
@@ -93,7 +93,7 @@
 					<th>Observation Time</th>
 				</tr>
 				{% for report in content.report_data %}
-				<tr ng-repeat="report in content.report_data">
+				<tr >
 					<td>{{report.title}}</td>
 					<td>{{report.intelligenceType}}</td>
 					<td>{{report.threatScape}}</td>
@@ -111,7 +111,7 @@
      <div class="tab-pane fade" id="json_{{ artifact.id }}" role="tabpanel" aria-labelledby="json-tab_{{ artifact.id }}">
         <pre>
         <code>
-{{ artifact }}
+{{ artifact | string }}
         </code>
         </pre>
     </div>

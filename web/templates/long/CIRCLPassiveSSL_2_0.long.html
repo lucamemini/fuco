@@ -22,14 +22,14 @@
     <div class="tab-content" id="myTabContent">
      <div class="tab-pane fade show active" id="home_{{ artifact.id }}" role="tabpanel" aria-labelledby="home-tab_{{ artifact.id }}">
 
-<div class="panel panel-info" ng-if="success">
+<div class="panel panel-info" >
 	<div class="panel-heading">
 		<a target="_blank" href="http://circl.lu/services/passive-ssl/">CIRCL.lu</a> Passive SSL Report
 	</div>
 	<div class="panel-body">
 
 		<!-- Certificate details -->
-		<div ng-if="content.cert.info">
+		<div >
 			<dl class="dl-horizontal">
 				<dt>Certificate fingerprint</dt>
 				<dd class="wrap">{{content.cert.info.fingerprint}}</dd>
@@ -67,22 +67,22 @@
 		</div>
 
 		<!-- IP-Addresses in certificate report -->
-		<div ng-if="content.query.seen.length > 0">
+		<div >
 			<dl class="dl-horizontal">
 				<dt>IPs used that certificate: </dt>
 				<dd class="wrap">
-					<span ng-repeat="ip in content.query.seen">{{ip}}<br /></span>
+					<span >{{ip}}<br /></span>
 				</dd>
 			</dl>
 		</div>
 
 		<!-- IP-Address report -->
-		<div ng-if="content.ip">
+		<div >
 			<dl class="dl-horizontal">
 				<dt>IP-Address:</dt>
 				<dd>{{content.ip}}</dd>
 			</dl>
-			<dl class="dl-horizontal" ng-repeat="cert in content.certificates">
+			<dl class="dl-horizontal" >
 				<dt>Used certificate:</dt>
 				<dd>Fingerprint: {{cert.fingerprint}}<br />Subject: {{cert.subject}}</dd>
 			</dl>
@@ -94,7 +94,7 @@
      <div class="tab-pane fade" id="json_{{ artifact.id }}" role="tabpanel" aria-labelledby="json-tab_{{ artifact.id }}">
         <pre>
         <code>
-{{ artifact }}
+{{ artifact | string }}
         </code>
         </pre>
     </div>

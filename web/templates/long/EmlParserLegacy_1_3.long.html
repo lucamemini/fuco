@@ -1,4 +1,4 @@
-<div class="panel panel-danger" ng-if="!success">
+<div class="panel panel-danger" >
     <div class="panel-heading">
         <strong>{{(artifact.data || artifact.attachment.name) | fang}}</strong>
     </div>
@@ -7,7 +7,7 @@
     </div>
 </div>
 
-<div class="panel panel-info" ng-if="success">
+<div class="panel panel-info" >
     <div class="panel-heading">
         Email message details
     </div>
@@ -35,11 +35,11 @@
             <dt>Bcc</dt>
             <dd>{{content.bcc || '-'}}</dd>
         </dl>
-        <dl class="dl-horizontal" ng-if="content.attachments && content.attachments.length !== 0">
+        <dl class="dl-horizontal" >
             <dt>Attachments</dt>
             <dd>
                 <div class="bm10">This message file includes
-                    <ng-pluralize count="content.attachments.length" when="{'1': '1 attachment', 'other': '{} attachments'}"></ng-pluralize>
+                    <ng-pluralize count="content.attachments|length" when="{'1': '1 attachment', 'other': '{} attachments'}"></ng-pluralize>
                 </div>
                 <table class="table table-striped table-bordered">
                     <thead>
@@ -49,7 +49,7 @@
 
                         </tr>
                     </thead>
-                    <tbody ng-repeat="a in content.attachments">
+                    <tbody >
                         <tr>
                             <td rowspan=4>{{a.filename}}</td>
                             <td>[MD5]: {{a.md5}}</td>

@@ -1,6 +1,6 @@
 {% if artifact.status == "Success" %}
 {% set content = artifact.report.full %}
-<div class="card border-success" ng-if="success">
+<div class="card border-success" >
     <div class="card-header">
     <ul class="nav nav-tabs card-header-tabs">
       <li class="nav-item">
@@ -25,11 +25,11 @@
         <dd>
             <p style="font-size: 1.5em;">
 		{% if content.is_sinkhole %}
-                <span class="badge text-bg-danger" ng-if="content.is_sinkhole">
+                <span class="badge text-bg-danger" >
                     {{(artifact.data)}} is sinkholed.
                 </span>
 		{% else %}
-                <span class="badge text-bg-primary" ng-if="!content.is_sinkhole">
+                <span class="badge text-bg-primary" >
                     {{(artifact.data)}} is <strong>not</strong> sinkholed.
                 </span>
 		{% endif %}
@@ -40,7 +40,7 @@
      <div class="tab-pane fade" id="json_{{ artifact.id }}" role="tabpanel" aria-labelledby="json-tab_{{ artifact.id }}">
 	<pre>
 	<code>	
-		{{ artifact }}
+		{{ artifact | string }}
 	</code>	
 	</pre>
     </div>
@@ -49,7 +49,7 @@
 </div>
 {% else %}
 <!-- General error -->
-<div class="card border-danger" ng-if="!success">
+<div class="card border-danger" >
     <div class="card-heading">
 	<strong>{{(artifact.data)}}</strong>
     </div>

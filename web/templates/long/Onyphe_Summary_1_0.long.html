@@ -23,23 +23,23 @@
      <div class="tab-pane fade show active" id="home_{{ artifact.id }}" role="tabpanel" aria-labelledby="home-tab_{{ artifact.id }}">
 
 
-<div class="panel panel-info" ng-if="success">
+<div class="panel panel-info" >
 	<div class="panel-heading">
 		Onyphe Summary - <strong>{{artifact.data}}</strong>
 	</div>
 	<div class="panel-body">
 	    {% if content.totals_category.threatlist > 0 %}
-	    <table class="table" ng-if="content.totals_category.threatlist > 0 ">
+	    <table class="table" >
             <thead>
                 <th>IPv6</th>
                 <th>Subnet</th>
                 <th>Threat list</th>
                 <th>Seen date</th>
             </thead>
-            <tbody ng-repeat="r in content.results | orderBy:'-seen_date'">
+            <tbody >
 		{% for r in content.results %}
 		{% if r['@category'] == 'threatlist' %}
-                <tr ng-if="r['@category'] == 'threatlist' ">
+                <tr >
                     <td>{{r.ipv6}}</td>
                     <td>{{r.subnet}}</td>
                     <td><b>{{r.threatlist}}</b></td>
@@ -54,7 +54,7 @@
 </div>
 
 {% if content.totals_category.threats > 0 %}
-<div class="panel panel-info" ng-if="success && content.totals_category.threats > 0 ">
+<div class="panel panel-info" >
     <div class="panel-heading">
         Threats</strong>
     </div>
@@ -66,10 +66,10 @@
                 <th>Threat list</th>
                 <th>Seen date</th>
             </thead>
-            <tbody ng-repeat="r in content.results | orderBy:'-seen_date'">
+            <tbody >
 		{% for r in content.results %}
 		{% if r['@category'] == 'threats' %}
-                <tr ng-if="r['@category'] == 'threats' ">
+                <tr >
                     <td>{{r.ipv6}}</td>
                     <td>{{r.subnet}}</td>
                     <td><b>{{r.threatlist}}</b></td>
@@ -84,7 +84,7 @@
 {% endif %}
 
 {% if content.totals_category.geoloc > 0 %}
-<div class="panel panel-info" ng-if="success && content.totals_category.geoloc > 0 ">
+<div class="panel panel-info" >
     <div class="panel-heading">
         Geolocate
     </div>
@@ -102,10 +102,10 @@
                 <th>Subnet</th>
 
             </thead>
-            <tbody ng-repeat="r in content.results | orderBy:'-seen_date'">
+            <tbody >
 		{% for r in content.results %}
 		{% if r['@category'] == 'geoloc' %}
-                <tr ng-if="r['@category'] == 'geoloc' ">
+                <tr >
                     <td>{{r.asn}}</td>
                     <td>{{r.city}}</td>
                     <td>{{r.country_name}}/{{r.country}}</td>
@@ -125,7 +125,7 @@
 {% endif %}
 
 {% if content.totals_category.inetnum > 0 %}
-<div class="panel panel-info" ng-if="success && content.totals_category.inetnum > 0 ">
+<div class="panel panel-info" >
     <div class="panel-heading">
         inetnum
     </div>
@@ -141,10 +141,10 @@
                 <th>Seen Date</th>
                 <th>Source</th>
             </thead>
-            <tbody ng-repeat="r in content.results | orderBy:'-seen_date'">
+            <tbody >
 		{% for r in content.results %}
 		{% if r['@category'] == 'inetnum' %}
-                <tr ng-if="r['@category'] == 'inetnum' ">
+                <tr >
                     <td>{{r.asn}}</td>
                     <td>{{r.country}}</td>
                     <td>{{r.subnet}}</td>
@@ -163,7 +163,7 @@
 {% endif %}
 
 {% if content.totals_category.ports > 0 %}
-<div class="panel panel-info" ng-if="success && content.totals_category.ports > 0 ">
+<div class="panel panel-info" >
     <div class="panel-heading">
         Ports
     </div>
@@ -179,10 +179,10 @@
                 <th>Port</th>
                 <th>Seen date</th>
             </thead>
-            <tbody ng-repeat="r in content.results | orderBy:'-seen_date'">
+            <tbody >
 		{% for r in content.results %}
 		{% if r['@category'] == 'ports' %}
-                <tr ng-if="r['@category'] == 'ports' ">
+                <tr >
                     <td>{{r.asn}}</td>
                     <td>{{r.country}}</td>
                     <td>{{r.ip}}</td>
@@ -201,7 +201,7 @@
 {% endif %}
 
 {% if content.totals_category.reverse > 0 %}
-<div class="panel panel-info" ng-if="success && content.totals_category.reverse > 0 ">
+<div class="panel panel-info" >
     <div class="panel-heading">
         Reverse</strong>
     </div>
@@ -214,10 +214,10 @@
                 <th>Reverse</th>
                 <th>Seen date</th>
             </thead>
-            <tbody ng-repeat="r in content.results | orderBy:'-seen_date'">
+            <tbody >
 		{% for r in content.results %}
 		{% if r['@category'] == 'reverse' %}
-                <tr ng-if="r['@category'] == 'reverse' ">
+                <tr >
                     <td>{{r.domain}}</td>
                     <td>{{r.ip}}</td>
                     <td>{{r.ipv6}}</td>
@@ -233,7 +233,7 @@
 {% endif %}
 
 {% if content.totals_category.datascan > 0 %}
-<div class="panel panel-info" ng-if="success && content.totals_category.datascan > 0 ">
+<div class="panel panel-info" >
     <div class="panel-heading">
         DataScan
     </div>
@@ -253,10 +253,10 @@
                 <th>Seen Date</th>
                 <th>Data MD5</th>
             </thead>
-            <tbody ng-repeat="r in content.results | orderBy:'-seen_date'">
+            <tbody >
 		{% for r in content.results %}
 		{% if r['@category'] == 'datascan' %}
-                <tr ng-if="r['@category'] == 'datascan' ">
+                <tr >
                     <td class="wrap">{{r.asn}}</td>
                     <td class="wrap">{{r.country}}</td>
                     <td class="wrap">{{r.ip}}</td>
@@ -279,7 +279,7 @@
 {% endif %}
 
 {% if content.totals_category.forward > 0 %}
-<div class="panel panel-info" ng-if="success && content.totals_category.forward > 0 ">
+<div class="panel panel-info" >
     <div class="panel-heading">
         Forward
     </div>
@@ -291,10 +291,10 @@
                 <th>IPv6</th>
                 <th>Seen date</th>
             </thead>
-            <tbody ng-repeat="r in content.results | orderBy:'-seen_date'">
+            <tbody >
 		{% for r in content.results %}
 		{% if r['@category'] == 'datascan' %}
-                <tr ng-if="r['@category'] == 'forward' ">
+                <tr >
                     <td>{{r.domain}}</td>
                     <td>{{r.ip}}</td>
                     <td>{{r.ipv6}}</td>
@@ -311,7 +311,7 @@
      <div class="tab-pane fade" id="json_{{ artifact.id }}" role="tabpanel" aria-labelledby="json-tab_{{ artifact.id }}">
         <pre>
         <code>
-{{ artifact }}
+{{ artifact | string }}
         </code>
         </pre>
     </div>

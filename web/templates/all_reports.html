@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="en" class="h-100">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>FUCO - Tutti i report per {{ data.fuco.question }}</title>
+    <link href="/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/css/all.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    
+    <style>
+      body { background-color: #f2f2f2; }
+      .bg-fuco { 
+        border-radius: 3px; 
+        box-shadow: 0px 8px 20px 0px rgba(0, 0, 0, 0.15);
+        background: #ffd700;
+      }
+      .job-timestamp {
+        font-size: 0.85em;
+        color: #666;
+        margin-left: 10px;
+      }
+      .job-age {
+        font-size: 0.75em;
+        color: #999;
+        font-style: italic;
+      }
+      .loading-spinner {
+        display: inline-block;
+        width: 1rem;
+        height: 1rem;
+        border: 2px solid #f3f3f3;
+        border-top: 2px solid #3498db;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-left: 10px;
+      }
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      .report-loaded {
+        background-color: #f8f9fa;
+      }
+    </style>
+    <link href="/css/sticky-footer-navbar.css" rel="stylesheet">
+  </head>
+  <body class="d-flex flex-column h-100">
+    
+<header>
+  <nav class="navbar navbar-expand-md navbar-dark fixed-top bg-fuco">
+    <div class="container-fluid">
+      <div class="collapse navbar-collapse">
+        <ul class="navbar-nav me-auto mb-2 mb-md-0">
+          <li class="nav-item">
+            <a class="nav-link active" href="/"><strong>Fuco</strong></a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+</header>
+
+<main class="flex-shrink-0">
+  <div class="container">
+    <h1 class="mt-5">
+      {{ data.fuco.question }}
+      <small class="text-muted">({{ data.fuco.datatype }})</small>
+    </h1>
+    
+    <div class="alert alert-info">
+      <i class="fas fa-info-circle"></i>
+      <strong>Report dalla cache</strong> - 
+      Trovati <strong>{{ data.jobs|length }}</strong> report già esistenti per questo osservabile.
+      Nessuna nuova analisi è stata sottomessa.
+    </div>
+    
+    <h6 id="tagCloud">&nbsp;</h6>
+    
+    <div class="accordion" id="accordion_result">
+      {% for job in data.jobs %}
+      <div class="accordion-item" id="item_{{ job.id }}">
+        <h2 class="accordion-header" id="heading_{{ job.id }}" style="position: relative;">
+          <button class="btn btn-primary-outline btn-sm" 
+                  style="position: absolute;right: 35px; top: 11px;z-index: 10;" 
+                  onClick="reloadReport('{{ job.id }}')" 
+                  id="reload_{{ job.id }}"
+                  title="Ricarica report">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-bootstrap-reboot" viewBox="0 0 16 16">
+              <path d="M1.161 8a6.84 6.84 0 1 0 6.842-6.84.58.58 0 1 1 0-1.16 8 8 0 1 1-6.556 3.412l-.663-.577a.58.58 0 0 1 .227-.997l2.52-.69a.58.58 0 0 1 .728.633l-.332 2.592a.58.58 0 0 1-.956.364l-.643-.56A6.812 6.812 0 0 0 1.16 8z"></path>
+              <path d="M6.641 11.671V8.843h1.57l1.498 2.828h1.314L9.377 8.665c.897-.3 1.427-1.106 1.427-2.1 0-1.37-.943-2.246-2.456-2.246H5.5v7.352h1.141zm0-3.75V5.277h1.57c.881 0 1.416.499 1.416 1.32 0 .84-.504 1.324-1.386 1.324h-1.6z"></path>
+            </svg>
+          </button>
+          
+          <button class="accordion-button collapsed" type="button" 
+                  data-bs-toggle="collapse" 
+                  data-bs-target="#collapse_{{ job.id }}" 
+                  aria-expanded="false">
+            <div style="display: flex; align-items: center; width: 100%;">
+              <span style="flex: 0 0 auto;">{{ job.analyzer }}</span>
+              
+              {% if job.createdAt %}
+              <span class="job-timestamp">
+                <i class="far fa-clock"></i>
+                <span id="timestamp_{{ job.id }}" data-timestamp="{{ job.createdAt }}">
+                  {{ job.createdAt | int }}
+                </span>
+              </span>
+              <span class="job-age" id="age_{{ job.id }}"></span>
+              {% endif %}
+            </div>
+          </button>
+        </h2>
+        
+        <div id="collapse_{{ job.id }}" 
+             class="accordion-collapse collapse" 
+             data-bs-parent="#accordion_result">
+          <div class="accordion-body" id="content_{{ job.id }}">
+            <div class="text-center">
+              <div class="spinner-border text-primary" role="status"></div>
+              <p class="mt-2">Caricamento report...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</main>
+
+<footer class="footer mt-auto py-3 bg-light">
+  <div class="container">
+    <span class="text-muted">
+      <a href="https://github.com/lucamemini/fuco" target="_blank">Fuco</a> 
+      By <a href="mailto:luca@memini.it">Luca Memini</a>
+    </span>
+  </div>
+</footer>
+
+<script>
+const jobs = {{ data.jobs | tojson }};
+
+// Formatta i timestamp in modo leggibile
+function formatTimestamp(timestamp) {
+    const date = new Date(timestamp);
+    return date.toLocaleString('it-IT', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}
+
+// Calcola quanto tempo fa è stato creato il job
+function timeAgo(timestamp) {
+    const now = Date.now();
+    const diff = now - timestamp;
+    
+    const seconds = Math.floor(diff / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+    
+    if (days > 0) {
+        return `${days} giorn${days > 1 ? 'i' : 'o'} fa`;
+    } else if (hours > 0) {
+        return `${hours} or${hours > 1 ? 'e' : 'a'} fa`;
+    } else if (minutes > 0) {
+        return `${minutes} minut${minutes > 1 ? 'i' : 'o'} fa`;
+    } else {
+        return 'pochi secondi fa';
+    }
+}
+
+// Carica un singolo report
+async function loadReport(jobId) {
+    try {
+        const response = await fetch(`/getAnalisys?JobId=${jobId}`);
+        const html = await response.text();
+        
+        $(`#content_${jobId}`).html(html);
+        $(`#item_${jobId}`).addClass('report-loaded');
+        
+        // Carica anche le taxonomies
+        loadTaxonomies(jobId);
+        
+    } catch (error) {
+        console.error(`Errore caricamento report ${jobId}:`, error);
+        $(`#content_${jobId}`).html(`
+            <div class="alert alert-danger">
+                Errore nel caricamento del report: ${error.message}
+            </div>
+        `);
+    }
+}
+
+// Carica le taxonomies
+async function loadTaxonomies(jobId) {
+    try {
+        const response = await fetch(`/getShort?JobId=${jobId}`);
+        const html = await response.text();
+        
+        if (html && html.trim() !== '') {
+            // Controlla se non è già stato caricato
+            if (!$('#tagCloud').find(`[data-job-id="${jobId}"]`).length) {
+                const wrappedHtml = `<span data-job-id="${jobId}">${html}</span>`;
+                $('#tagCloud').append(wrappedHtml);
+            }
+        }
+    } catch (error) {
+        console.error(`Errore caricamento taxonomies ${jobId}:`, error);
+    }
+}
+
+// Ricarica un report (pulsante reload)
+function reloadReport(jobId) {
+    $(`#content_${jobId}`).html(`
+        <div class="text-center">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-2">Ricaricamento report...</p>
+        </div>
+    `);
+    loadReport(jobId);
+}
+
+// Carica tutti i badge all'avvio
+function loadAllTaxonomies() {
+    console.log('Caricamento di tutti i badge...');
+    jobs.forEach(job => {
+        loadTaxonomies(job.id);
+    });
+}
+
+// Carica i report quando vengono aperti gli accordion
+$(document).ready(function() {
+    // Formatta i timestamp
+    jobs.forEach(job => {
+        if (job.createdAt) {
+            const formatted = formatTimestamp(job.createdAt);
+            const ago = timeAgo(job.createdAt);
+            
+            $(`#timestamp_${job.id}`).text(formatted);
+            $(`#age_${job.id}`).text(`(${ago})`);
+        }
+    });
+    
+    // CARICA SUBITO TUTTI I BADGE (non aspetta l'apertura degli accordion)
+    setTimeout(loadAllTaxonomies, 100);
+    
+    // Carica il report LONG solo quando l'accordion viene aperto
+    $('.accordion-button').on('click', function() {
+        const targetId = $(this).data('bs-target');
+        const jobId = targetId.replace('#collapse_', '');
+        const contentDiv = $(`#content_${jobId}`);
+        
+        // Carica solo se non è già stato caricato
+        if (contentDiv.find('.spinner-border').length > 0) {
+            loadReport(jobId);
+        }
+    });
+});
+</script>
+
+<script src="/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -22,66 +22,66 @@
     <div class="tab-content" id="myTabContent">
      <div class="tab-pane fade show active" id="home_{{ artifact.id }}" role="tabpanel" aria-labelledby="home-tab_{{ artifact.id }}">
 
-<div class="panel panel-info" ng-if="success">
+<div class="panel panel-info" >
   <div class="panel-heading">
     <!-- HybridAnalysis Sandbox Hash Report Public API: Related Reports -->
     Related Reports
   </div>
   <!-- Hash and File (also hash) -->
   <div class="panel-body">
-    <div ng-if="!content.results.response.result" ng-repeat="r in ::content.results.response">
-      <dl class="dl-horizontal" ng-if="r.verdict">
+    <div  >
+      <dl class="dl-horizontal" >
         <strong>Verdict: </strong>
         <span class="label" ng-class="{'no specific threat': 'label-info', 'whitelisted': 'label-success', 'suspicious': 'label-warning', 'malicious':'label-danger'}[r.verdict]">
             {{r.verdict}}
         </span><br/>
       </dl>
-      <dl class="dl-horizontal" ng-if="r.threatscore">
+      <dl class="dl-horizontal" >
           <strong>Threat Score: </strong> {{r.threatscore}}<br/>
       </dl>
-      <dl class="dl-horizontal" ng-if="r.classification_tags.length > 0">
+      <dl class="dl-horizontal" >
           <strong>Tagged as:</strong>
-          <span class="tags-list flexwrap" ng-repeat="tag in ::r.classification_tags ">
+          <span class="tags-list flexwrap" >
             {{tag}}
           </span>
       </dl>
-      <dl class="dl-horizontal" ng-if="r.submitname">
+      <dl class="dl-horizontal" >
         <strong>Submitted filename: </strong> {{r.submitname}}<br/>
       </dl>
-      <dl class="dl-horizontal" ng-if="r.analysis_start_time">
+      <dl class="dl-horizontal" >
         <strong>Analysis Start Time: </strong> {{r.analysis_start_time}}<br/>
       </dl>
-      <dl class="dl-horizontal" ng-if="r.md5">
+      <dl class="dl-horizontal" >
         <strong>MD5: </strong> {{r.md5}}<br/>
       </dl>
-      <dl class="dl-horizontal" ng-if="r.sha1">
+      <dl class="dl-horizontal" >
         <strong>SHA1: </strong> {{r.sha1}}<br/>
       </dl>
-      <dl class="dl-horizontal" ng-if="r.sha256">
+      <dl class="dl-horizontal" >
         <strong>SHA256: </strong> {{r.sha256}}<br/>
       </dl>
-      <dl class="dl-horizontal" ng-if="r.type">
+      <dl class="dl-horizontal" >
         <strong>File Description: </strong> {{r.type}}<br/>
       </dl>
-      <dl class="dl-horizontal" ng-if="r.avdetect">
+      <dl class="dl-horizontal" >
         <strong>AVdetect Score: </strong> {{r.avdetect}}<br/>
       </dl>
-      <dl class="dl-horizontal" ng-if="r.vxfamily">
+      <dl class="dl-horizontal" >
         <strong>VxFamily: </strong> {{r.vxfamily}}<br/>
       </dl>
-      <dl class="dl-horizontal" ng-if="r.total_signatures">
+      <dl class="dl-horizontal" >
         <strong>Total Signatures: </strong> {{r.total_signatures}}<br/>
       </dl>
-      <dl class="dl-horizontal" ng-if="r.environmentDescription">
+      <dl class="dl-horizontal" >
         <strong>Environment Description: </strong> {{r.environmentDescription}}<br/>
       </dl>
-      <dl class="dl-horizontal" ng-if="r.domains.length > 0">
-        <strong>DNS requests:</strong><ul><li ng-repeat="domain in ::r.domains">{{domain}}</li></ul>
+      <dl class="dl-horizontal" >
+        <strong>DNS requests:</strong><ul><li >{{domain}}</li></ul>
       </dl>
-      <dl class="dl-horizontal" ng-if="r.hosts.length > 0">
-        <strong>Contacted Hosts:</strong><ul><li ng-repeat="host in ::r.hosts">{{host}}</li></ul>
+      <dl class="dl-horizontal" >
+        <strong>Contacted Hosts:</strong><ul><li >{{host}}</li></ul>
       </dl>
-      <dl class="dl-horizontal" ng-if="r.sha256">
+      <dl class="dl-horizontal" >
           <strong>Online report:</strong>
           <a href="https://www.hybrid-analysis.com/sample/{{r.sha256}}">https://www.hybrid-analysis.com/sample/{{r.sha256}}</a>
         </dl>
@@ -90,38 +90,38 @@
   </div>
   <!-- Filename -->
   <div class="panel-body">
-    <div ng-if="content.results.response.result" ng-repeat="r in ::content.results.response.result">
-    <dl class="dl-horizontal" ng-if="r.verdict">
+    <div  >
+    <dl class="dl-horizontal" >
         <strong>Verdict: </strong>
         <span class="label" ng-class="{'no specific threat': 'label-info', 'whitelisted': 'label-success', 'suspicious': 'label-warning', 'malicious':'label-danger'}[r.verdict]">
             {{r.verdict}}
         </span><br/>
       </dl>
-      <dl class="dl-horizontal" ng-if="r.submitname">
+      <dl class="dl-horizontal" >
         <strong>Submitted filename: </strong> {{r.submitname}}<br/>
       </dl>
-      <dl class="dl-horizontal" ng-if="r.threatscore">
+      <dl class="dl-horizontal" >
           <strong>Threat Score: </strong> {{r.threatscore}}<br/>
       </dl>
-      <dl class="dl-horizontal" ng-if="r.sha256">
+      <dl class="dl-horizontal" >
         <strong>SHA256: </strong> {{r.sha256}}<br/>
       </dl>
-      <dl class="dl-horizontal" ng-if="r.type_short">
+      <dl class="dl-horizontal" >
         <strong>File type: </strong>{{r.type_short}} <br/>
       </dl>
-      <dl class="dl-horizontal" ng-if="r.type">
+      <dl class="dl-horizontal" >
         <strong>File Description: </strong> {{r.type}}<br/>
       </dl>
-      <dl class="dl-horizontal" ng-if="r.avdetect">
+      <dl class="dl-horizontal" >
         <strong>AVdetect Score: </strong> {{r.avdetect}}<br/>
       </dl>
-      <dl class="dl-horizontal" ng-if="r.vxfamily">
+      <dl class="dl-horizontal" >
         <strong>VxFamily: </strong> {{r.vxfamily}}<br/>
       </dl>
-      <dl class="dl-horizontal" ng-if="r.environmentDescription">
+      <dl class="dl-horizontal" >
         <strong>Environment Description: </strong> {{r.environmentDescription}}<br/>
       </dl>
-      <dl class="dl-horizontal" ng-if="r.sha256">
+      <dl class="dl-horizontal" >
         <strong>Online report:</strong>
         <a href="https://www.hybrid-analysis.com/sample/{{r.sha256}}">https://www.hybrid-analysis.com/sample/{{r.sha256}}</a>
       </dl>
@@ -134,7 +134,7 @@
      <div class="tab-pane fade" id="json_{{ artifact.id }}" role="tabpanel" aria-labelledby="json-tab_{{ artifact.id }}">
         <pre>
         <code>
-{{ artifact }}
+{{ artifact | string }}
         </code>
         </pre>
     </div>

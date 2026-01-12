@@ -22,12 +22,12 @@
     <div class="tab-content" id="myTabContent">
      <div class="tab-pane fade show active" id="home_{{ artifact.id }}" role="tabpanel" aria-labelledby="home-tab_{{ artifact.id }}">
 
-<div class="panel panel-info" ng-if="success">
+<div class="panel panel-info" >
     <div class="panel-heading">
         Host Information of  <strong>{{artifact.data}}</strong>
     </div>
     {% for host in content.matches %}
-    <div class="panel-body" ng-repeat="host in content.matches">
+    <div class="panel-body" >
         <dl class="dl-horizontal">
             <dt>ASN</dt>
             <dd>{{host.asn}}</dd>
@@ -68,7 +68,7 @@
      <div class="tab-pane fade" id="json_{{ artifact.id }}" role="tabpanel" aria-labelledby="json-tab_{{ artifact.id }}">
         <pre>
         <code>
-{{ artifact }}
+{{ artifact | string }}
         </code>
         </pre>
     </div>

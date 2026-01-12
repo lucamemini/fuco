@@ -29,33 +29,33 @@
         </div>
         <div class="panel-body">
 	    {% if content.scan_results %}
-            <dl class="dl-horizontal" ng-if="content.scan_results">
+            <dl class="dl-horizontal" >
                 <dt>Scan Result</dt>
                 <dd class="wrap">
 		    {% if content.scan_results.scan_all_result_i == -1 %}
-                    <span ng-if="[0, 5].indexOf(content.scan_results.scan_all_result_i) !== -1" class="badge bg-success">
+                    <span  class="badge bg-success">
                         {{content.scan_results.scan_all_result_a}}
                     </span>
 		    {% elif content.scan_results.scan_all_result_i == 1 %}
-                    <span ng-if="content.scan_results.scan_all_result_i == 1" class="badge bg-danger">
+                    <span  class="badge bg-danger">
                         {{content.scan_results.scan_all_result_a}}
                     </span>
 		    {% elif content.scan_results.scan_all_result_i == 2%}
-                    <span ng-if="content.scan_results.scan_all_result_i == 2" class="badge bg-warning">
+                    <span  class="badge bg-warning">
                         {{content.scan_results.scan_all_result_a}}
                     </span>
 		    {% else %}
-                    <span ng-if="[3, 4, 6, 7].indexOf(content.scan_results.scan_all_result_i) !== -1" class="badge bg-info">
+                    <span  class="badge bg-info">
                         {{content.scan_results.scan_all_result_a}}
                     </span>                
 		    {% endif %}
                 </dd>
             </dl>
 	   	 {% if content.scan_results.total_detected_avs %}
-           	 <dl class="dl-horizontal" ng-if="content.scan_results">
+           	 <dl class="dl-horizontal" >
            	     <dt>Scanning Engines</dt>
            	     <dd class="wrap">
-           	         <span ng-if="content.scan_results.total_detected_avs">{{content.scan_results.total_detected_avs}}/</span>{{content.scan_results.total_avs}}
+           	         <span >{{content.scan_results.total_detected_avs}}/</span>{{content.scan_results.total_avs}}
            	     </dd>
            	 </dl>
 	   	{% endif %}
@@ -81,7 +81,7 @@
     </div>
 
     {% if content.file_info %}
-    <div class="panel panel-info" ng-if="content.file_info">
+    <div class="panel panel-info" >
         <div class="panel-heading">
             <strong>File Info</strong>
         </div>
@@ -132,7 +132,7 @@
 
     {% if content.scan_results %}
     {% if content.scan_results.scan_details %}
-    <div class="panel panel-info" ng-if="content.scan_results.scan_details">
+    <div class="panel panel-info" >
         <div class="panel-heading">
             <strong>Multiscanning</strong>
         </div>
@@ -145,14 +145,14 @@
                     <th>Result</th>
                 </tr>
 		{% for k, obj in content.scan_results.scan_details.items() %}
-                <tr ng-repeat="(k, obj) in content.scan_results.scan_details">
+                <tr >
                     <td>
 			{% if obj.scan_result_i == 0 %}
-                        <span class="badge bg-success" ng-if="obj.scan_result_i == 0"><span class="glyphicon glyphicon-ok" aria-hidden="true"></span></span>
+                        <span class="badge bg-success" ><span class="glyphicon glyphicon-ok" aria-hidden="true"></span></span>
 			{% elif obj.scan_result_i == 1 %}
-                        <span class="badge bg-danger" ng-if="obj.scan_result_i == 1"><span class="glyphicon glyphicon-remove" aria-hidden="true"></span></span>
+                        <span class="badge bg-danger" ><span class="glyphicon glyphicon-remove" aria-hidden="true"></span></span>
 			{% elif obj.scan_result_i == 3 %}
-                        <span class="badge bg-warning" ng-if="obj.scan_result_i == 3"><span class="glyphicon glyphicon-warning-sign" aria-hidden="true"></span></span>
+                        <span class="badge bg-warning" ><span class="glyphicon glyphicon-warning-sign" aria-hidden="true"></span></span>
 			{% endif %} 
                        {{k}}
                     </td>
@@ -186,7 +186,7 @@
      <div class="tab-pane fade" id="json_{{ artifact.id }}" role="tabpanel" aria-labelledby="json-tab_{{ artifact.id }}">
         <pre>
         <code>
-{{ artifact }}
+{{ artifact | string }}
         </code>
         </pre>
     </div>

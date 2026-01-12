@@ -23,7 +23,7 @@
      <div class="tab-pane fade show active" id="home_{{ artifact.id }}" role="tabpanel" aria-labelledby="home-tab_{{ artifact.id }}">
 
 
-<div class="panel panel-info" ng-if="success">
+<div class="panel panel-info" >
     <div class="panel-heading">
         DomainMailSPF_DMARC information for <strong>{{artifact.data}}</strong>
     </div>
@@ -41,16 +41,16 @@
                 <dt class="text-bold">dnssec</dt>
                 <dd>{{content.DomainMailSPFDMARC.dnssec}}</dd>
             </dl>
-            <dl class="dl-horizontal" ng-if="content.DomainMailSPFDMARC.ns.hostnames.length > 0">
+            <dl class="dl-horizontal" >
                 <dt class="text-bold">[NS] Hostnames</dt>
                 <dd>{{content.DomainMailSPFDMARC.ns.hostnames | join(', ') }}</dd>
             </dl>
-            <dl class="dl-horizontal" ng-if="content.DomainMailSPFDMARC.ns.warnings.length > 0">
+            <dl class="dl-horizontal" >
                 <dt class="text-bold">[NS] Warnings</dt>
                 <dd><pre>{{content.DomainMailSPFDMARC.ns.warnings | join('\n') }}</pre></dd>
             </dl>
 
-            <dl class="dl-horizontal" ng-if="content.DomainMailSPFDMARC.mx.hosts.length > 0">
+            <dl class="dl-horizontal" >
                 <dt class="text-bold">[MX] Hosts</dt>
 <!--                <dd>{{content.DomainMailSPFDMARC.mx.hosts | join(', ') }}</dd>-->
 		{% for row in content.DomainMailSPFDMARC.mx.hosts %}
@@ -72,14 +72,14 @@
 		<hr>
 		{% endfor %}
             </dl>
-            <dl class="dl-horizontal" ng-if="content.DomainMailSPFDMARC.mx.warnings.length > 0">
+            <dl class="dl-horizontal" >
                 <dt class="text-bold">[MX] Warnings</dt>
                 <dd><pre>{{content.DomainMailSPFDMARC.mx.warnings | join('\n')}}</pre></dd>
             </dl>
         </div>
     </div>
 </div>
-<div class="panel panel-info" ng-if="success">
+<div class="panel panel-info" >
     <div class="panel-heading">
         SPF
     </div>
@@ -100,7 +100,7 @@
         </div>
     </div>
 </div>
-<div class="panel panel-info" ng-if="success">
+<div class="panel panel-info" >
     <div class="panel-heading">
         DMARK
     </div>
@@ -123,7 +123,7 @@
                 <dt>Location</dt>
                 <dd>{{content.DomainMailSPFDMARC.dmarc.location}}</dd>
             </dl>                        
-            <dl class="dl-horizontal" ng-if="content.DomainMailSPFDMARC.dmarc.warnings.length > 0">
+            <dl class="dl-horizontal" >
                 <dt class="text-bold">Warnings</dt>
                 <dd>{{content.DomainMailSPFDMARC.dmarc.warnings | join('\n')}}</dd>
             </dl>      
@@ -133,7 +133,7 @@
 	    {% for t in content.DomainMailSPFDMARC.dmarc.tags.items() %}
 	    {% for tag in t %}
 	    {% if tag.explicit %}
-            <dl class="dl-horizontal" ng-repeat="(tag, value) in content.DomainMailSPFDMARC.dmarc.tags">
+            <dl class="dl-horizontal" >
                 <dt>{{t[0]}}</dt>
 		{% if tag.value is string  %}
 	                <dd>{{tag.value}}</dd>
@@ -161,7 +161,7 @@
      <div class="tab-pane fade" id="json_{{ artifact.id }}" role="tabpanel" aria-labelledby="json-tab_{{ artifact.id }}">
         <pre>
         <code>
-{{ artifact }}
+{{ artifact | string }}
         </code>
         </pre>
     </div>

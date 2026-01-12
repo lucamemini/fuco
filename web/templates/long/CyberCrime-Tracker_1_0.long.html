@@ -24,13 +24,13 @@
 
 <!-- Success -->
 {% if content.results | count > 0 %}
-<div class="panel panel-danger" ng-if="success && content.results.length > 0">
+<div class="panel panel-danger" >
     <div class="panel-heading">
         CyberCrimeTracker C2 Search Report
     </div>
     <div class="panel-body">
 	{% for r in content.results %}
-        <dl class="dl-horizontal" ng-repeat="r in content.results">
+        <dl class="dl-horizontal" >
             <dt>IP:</dt>
             <dd>{{r.ip}}</dd>
             <dt>URL:</dt>
@@ -48,7 +48,7 @@
     </div>
 </div>
 {% else %}
-<div class="panel panel-info" ng-if="success && content.results.length == 0">
+<div class="panel panel-info" >
     <div class="panel-heading">
         CyberCrimeTracker C2 Search Report
     </div>
@@ -62,7 +62,7 @@
      <div class="tab-pane fade" id="json_{{ artifact.id }}" role="tabpanel" aria-labelledby="json-tab_{{ artifact.id }}">
         <pre>
         <code>
-{{ artifact }}
+{{ artifact | string }}
         </code>
         </pre>
     </div>

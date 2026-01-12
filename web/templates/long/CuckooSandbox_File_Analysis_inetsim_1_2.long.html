@@ -1,4 +1,4 @@
-<div class="report-CuckooSandbox" ng-if="success">
+<div class="report-CuckooSandbox" >
     <style>
         .report-CuckooSandbox dl {
             margin-bottom: 2px;
@@ -40,14 +40,14 @@
         </div>
         <div class="panel-body">
 
-            <div ng-if="content.signatures">
+            <div >
                 <h4>Signatures</h4>
                 <br>
-                <dl class="dl-horizontal" ng-repeat="signature in content.signatures track by $index">
+                <dl class="dl-horizontal" >
                     <dd>{{ signature }}<dd>
                 </dl>
             </div>
-            <div ng-if="!content.signatures">
+            <div >
                 No suspicious signature reported
             </div>
         </div>
@@ -59,7 +59,7 @@
         </div>
         <div class="panel-body">
 
-            <div ng-if="content.domains">
+            <div >
                 <h4>Remote connections</h4>
                 <br>
                 <div>
@@ -68,7 +68,7 @@
                             <th>IP</th>
                             <th>Domain</th>
                         </tr>
-                        <tr ng-repeat="domains in content.domains track by $index">
+                        <tr >
                             <td>{{domains[0]}}</td>
                             <td>{{domains[1]}}</td>
                         </tr>
@@ -80,14 +80,14 @@
             <hr>
             <br/>
 
-            <div ng-if="content.uri">
+            <div >
                 <h4>URI</h4>
                 <br>
-                <dl class="dl-horizontal" ng-repeat="uri in content.uri track by $index">
+                <dl class="dl-horizontal" >
                     <dd>{{ uri }}<dd>
                 </dl>
             </div>
-            <div ng-if="!content.uri">
+            <div >
                 No suspicious uri reported
             </div>
 
@@ -100,21 +100,21 @@
         </div>
         <div class="panel-body">
 
-            <div ng-if="content.yara">
+            <div >
                 <h4>Yara</h4>
                 <br>
                 <dl class="dl-horizontal">
                     <dd>{{ content.yara }}<dd>
                 </dl>
             </div>
-            <div ng-if="!content.yara">
+            <div >
                 No suspicious activity reported
             </div>
 
         </div>
     </div>
 
-    <div class="panel panel-info" ng-if="content.suricata_alerts">
+    <div class="panel panel-info" >
         <div class="panel-heading">
             <strong>Suricata</strong>
         </div>
@@ -122,14 +122,14 @@
             <div>
                 <h4>Suricata Alerts</h4>
                 <br>
-                <dl class="dl-horizontal" ng-repeat="suri in content.suricata_alerts track by $index">
+                <dl class="dl-horizontal" >
                     <dd>{{ suri }}<dd>
                 </dl>
             </div>
         </div>
     </div>
 	
-    <div class="panel panel-info" ng-if="content.snort_alerts">
+    <div class="panel panel-info" >
         <div class="panel-heading">
             <strong>Snort</strong>
         </div>
@@ -138,7 +138,7 @@
             <div>
                 <h4>Snort Alerts</h4>
                 <br>
-                <dl class="dl-horizontal" ng-repeat="snort in content.snort_alerts track by $index">
+                <dl class="dl-horizontal" >
                     <dd>{{ snort }}<dd>
                 </dl>
             </div>
@@ -149,7 +149,7 @@
 
 
 <!-- General error  -->
-<div class="panel panel-danger" ng-if="!success">
+<div class="panel panel-danger" >
     <div class="panel-heading">
         <strong>{{(artifact.data || artifact.attachment.name) | fang}}</strong>
     </div>

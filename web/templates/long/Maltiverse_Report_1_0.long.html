@@ -36,76 +36,76 @@
     <div class="tab-content" id="myTabContent">
      <div class="tab-pane fade show active" id="home_{{ artifact.id }}" role="tabpanel" aria-labelledby="home-tab_{{ artifact.id }}">
 
-<div ng-if="success">
+<div >
     <div class="panel panel-info">
         <div class="panel-heading">
                 Maltiverse record for "{{artifact.data}}"</a>
                 <br/>
         </div>
         <div class="panel-body">
-            <dl class="dl-horizontal" ng-if="content.classification">
+            <dl class="dl-horizontal" >
                 <dt>Classification</dt>
                 <dd class="wrap">{{content.classification}}</dd>
             </dl>
-            <dl class="dl-horizontal" ng-if="content.type">
+            <dl class="dl-horizontal" >
                 <dt>Type</dt>
                 <dd class="wrap">{{content.type}}</dd>
             </dl>
-            <dl class="dl-horizontal" ng-if="content.tag">
+            <dl class="dl-horizontal" >
                 <dt>Tag</dt>
                 <dd class="wrap">
 	            {% for tag in content.tag %}
-                    <span class="label label-default" style="margin-right:1px" ng-repeat="tag in content.tag">
+                    <span class="label label-default" style="margin-right:1px" >
                         {{tag}}
                     </span>
 		    {% endfor %}
                 </dd>
             </dl>
-            <dl class="dl-horizontal" ng-if="content.creation_time">
+            <dl class="dl-horizontal" >
                 <dt>Creation Time</dt>
                 <dd class="wrap">{{content.creation_time}}</dd>
             </dl>
-            <dl class="dl-horizontal" ng-if="content.modification_time">
+            <dl class="dl-horizontal" >
                 <dt>Modification Time</dt>
                 <dd class="wrap">{{content.modification_time}}</dd>
             </dl>
-            <dl class="dl-horizontal" ng-if="content.subdomains">
+            <dl class="dl-horizontal" >
                 <dt>Sub domains</dt>
                 <dd class="wrap">{{content.subdomains| join(', ')}}</dd>
             </dl>
 
-            <dl class="dl-horizontal" ng-if="content.filetype">
+            <dl class="dl-horizontal" >
                 <dt>File Type</dt>
                 <dd class="wrap">{{content.filetype}}</dd>
             </dl>
 
-            <dl class="dl-horizontal" ng-if="content.score">
+            <dl class="dl-horizontal" >
                 <dt>Score</dt>
                 <dd class="wrap">{{content.score}}</dd>
             </dl>
     	    {% if content.resolved_ip is defined %}
-            <dl class="dl-horizontal" ng-if="content.resolved_ip && content.resolved_ip.length > 0">
+            <dl class="dl-horizontal" >
                 <dt>Resolutions</dt>
                 <dd>
-                    <div ng-if="artifact.dataType === 'domain'">
+                    <div >
                         <strong>This domain has been seen to resolve to the following IP addresses.</strong>
                     </div>
 		    {% for resolution in content.resolved_ip %}
-                    <div ng-repeat="resolution in content.resolved_ip | limitTo:20">
+                    <div >
                         <p class="text-danger wrap">{{ resolution.ip_addr }} ({{ resolution.timestamp }})</p>
                     </div>
 		    {% endfor %}
                 </dd>
             </dl>
        	    {% endif %}
-            <dl class="dl-horizontal" ng-if="content.filename && content.filename.length > 0">
+            <dl class="dl-horizontal" >
                 <dt>File names</dt>
                 <dd>
-                    <div ng-if="artifact.dataType === 'domain'">
+                    <div >
                         <strong>This sample has been seen with the following filename.</strong>
                     </div>
 		    {% for name in content.filename %}
-                    <div ng-repeat="name in content.filename | limitTo:20">
+                    <div >
                         <p class="text-danger wrap">{{(name)}}</p>
                     </div>
 		    {% endfor %}
@@ -116,7 +116,7 @@
 
 
     {% if content.blacklist != '-' %}
-    <div class="panel panel-info" ng-if="content.blacklist" ng-init="blacklists_limit = 5">
+    <div class="panel panel-info"  ng-init="blacklists_limit = 5">
         <div class="panel-heading">
             <strong>Blacklists ({{content.blacklist | count}})</strong>
         </div>
@@ -132,7 +132,7 @@
                     <th>Last seen</th>
                 </tr>
 		{% for bl in content.blacklist %}
-                <tr ng-repeat="bl in content.blacklist | limitTo:blacklists_limit">
+                <tr >
                     <td>{{bl.source}}</td>
                     <td>{{bl.description}}</td>
                     <td>{{bl.first_seen}}</td>
@@ -149,7 +149,7 @@
      <div class="tab-pane fade" id="json_{{ artifact.id }}" role="tabpanel" aria-labelledby="json-tab_{{ artifact.id }}">
         <pre>
         <code>
-{{ artifact }}
+{{ artifact | string }}
         </code>
         </pre>
     </div>

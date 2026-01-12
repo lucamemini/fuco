@@ -1,6 +1,6 @@
 {% if artifact.status == "Success" %}
 {% set content = artifact.report.full %}
-<div class="card border-success" ng-if="success">
+<div class="card border-success" >
     <div class="card-header">
     <ul class="nav nav-tabs card-header-tabs">
       <li class="nav-item">
@@ -21,7 +21,7 @@
     <div class="card-body">
     <div class="tab-content" id="myTabContent">
      <div class="tab-pane fade show active" id="home_{{ artifact.id }}" role="tabpanel" aria-labelledby="home-tab_{{ artifact.id }}">
-<dl class="dl-horizontal" ng-if="content.results">
+<dl class="dl-horizontal" >
 	{% if content.results |length > 0 %}
             <dd>
                 <p>
@@ -52,17 +52,17 @@
             <dd>
                 {% if content.mode == "json" %}
                         {% if content.is_update %}
-                        <span class="label label-success" ng-if="content.is_uptodate && content.mode == 'json'">
+                        <span class="label label-success" >
                             Up-to-date
                         </span>
                         {% else %}
-                        <span class="label label-warning" ng-if="!content.is_uptodate && content.mode == 'json'">
+                        <span class="label label-warning" >
                             Outdated
                         </span>
                         {% endif %}
                 {% endif %}
                 {% if content.mode == "db" %}
-                <span class="label label-warning" ng-if="content.mode == 'db'">
+                <span class="label label-warning" >
                     N/A
                 </span>
                 {% endif %}
@@ -72,7 +72,7 @@
      <div class="tab-pane fade" id="json_{{ artifact.id }}" role="tabpanel" aria-labelledby="json-tab_{{ artifact.id }}">
         <pre>
         <code>
-{{ artifact }}
+{{ artifact | string }}
         </code>
         </pre>
     </div>
@@ -81,7 +81,7 @@
 </div>
 {% else %}
 <!-- General error -->
-<div class="card border-danger" ng-if="!success">
+<div class="card border-danger" >
     <div class="card-heading">
         <strong>{{(artifact.data)}}</strong>
     </div>

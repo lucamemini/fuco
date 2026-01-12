@@ -1,119 +1,184 @@
 {% if artifact.status == "Success" %}
 {% set content = artifact.report.full %}
+
 <div class="card border-success">
-    <div class="card-header">
+
+  <div class="card-header">
     <ul class="nav nav-tabs card-header-tabs">
       <li class="nav-item">
-        <a class="nav-link active" class="nav-link active" id="home-tab_{{ artifact.id }}" data-bs-toggle="tab" data-bs-target="#home_{{ artifact.id }}" role="tab" aria-controls="home_{{ artifact.id }}" aria-selected="true">Result</a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link" id="json-tab_{{ artifact.id }}" data-bs-toggle="tab" data-bs-target="#json_{{ artifact.id }}" role="tab" aria-controls="json_{{ artifact.id }}" aria-selected="false">Json</a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link disabled">Ext. Analisys
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-link-45deg" viewBox="0 0 16 16">
-          <path d="M4.715 6.542 3.343 7.914a3 3 0 1 0 4.243 4.243l1.828-1.829A3 3 0 0 0 8.586 5.5L8 6.086a1.002 1.002 0 0 0-.154.199 2 2 0 0 1 .861 3.337L6.88 11.45a2 2 0 1 1-2.83-2.83l.793-.792a4.018 4.018 0 0 1-.128-1.287z"/>
-          <path d="M6.586 4.672A3 3 0 0 0 7.414 9.5l.775-.776a2 2 0 0 1-.896-3.346L9.12 3.55a2 2 0 1 1 2.83 2.83l-.793.792c.112.42.155.855.128 1.287l1.372-1.372a3 3 0 1 0-4.243-4.243L6.586 4.672z"/>
-        </svg>
+        <a class="nav-link active"
+           id="home-tab_{{ artifact.id }}"
+           data-bs-toggle="tab"
+           data-bs-target="#home_{{ artifact.id }}"
+           role="tab">
+          Result
         </a>
       </li>
-    </div>
-    <div class="card-body">
-    <div class="tab-content" id="myTabContent">
-     <div class="tab-pane fade show active" id="home_{{ artifact.id }}" role="tabpanel" aria-labelledby="home-tab_{{ artifact.id }}">
+      <li class="nav-item">
+        <a class="nav-link"
+           id="json-tab_{{ artifact.id }}"
+           data-bs-toggle="tab"
+           data-bs-target="#json_{{ artifact.id }}"
+           role="tab">
+          Json
+        </a>
+      </li>
+      <li class="nav-item">
+        <span class="nav-link disabled">Ext. Analysis</span>
+      </li>
+    </ul>
+  </div>
 
+  <div class="card-body">
+    <div class="tab-content">
 
-<div ng-switch="content.response_code" ng-if="success">
-    <div ng-switch-when="1">
-        <div class="panel panel-info">
-            <div class="panel-heading"><strong>Summary</strong></div>
-            <div class="panel-body">
-                <dl class="dl-horizontal">
-                    <dt>Score</dt>
-                    <dd>{{content.positives}}/{{content.total}}</dd>
-                </dl>
-                <dl class="dl-horizontal">
-                    <dt>Last analysis date</dt>
-                    <dd>{{content.scan_date}}</dd>
-                </dl>
-                <dl class="dl-horizontal" ng-if="artifact.dataType === 'url'">
-                    <dt>Virus Total</dt>
-                    <dd>
-                        <span>
-                            <i class="fa fa-search"></i>
-                            <a ng-href="https://www.virustotal.com/en/url/{{artifact.data | sha256}}/analysis/" target="_blank">
-                                View Full Report</a>
-                        </span>
-                    </dd>
-                </dl>
-            </div>
+      <!-- ================= RESULT TAB ================= -->
+      <div class="tab-pane fade show active"
+           id="home_{{ artifact.id }}"
+           role="tabpanel">
+
+        {% if content.get('response_code') == 1 %}
+
+        <!-- ===== SUMMARY ===== -->
+        <div class="card mb-3">
+          <div class="card-header bg-info text-dark">
+            <strong>Summary</strong>
+          </div>
+          <div class="card-body">
+
+            <dl class="row">
+              <dt class="col-sm-4">Score</dt>
+              <dd class="col-sm-8">
+                {{ content.get('positives', 0) }}/{{ content.get('total', 0) }}
+              </dd>
+
+              <dt class="col-sm-4">Last analysis date</dt>
+              <dd class="col-sm-8">
+                {{ content.get('scan_date', 'n/a') }}
+              </dd>
+
+              <dt class="col-sm-4">VirusTotal</dt>
+              <dd class="col-sm-8">
+                {% if artifact.dataType == "domain" %}
+                  <a href="https://www.virustotal.com/#/domain/{{ artifact.data }}" target="_blank">
+                    View full report
+                  </a>
+                {% elif artifact.dataType == "ip" %}
+                  <a href="https://www.virustotal.com/#/ip-address/{{ artifact.data }}" target="_blank">
+                    View full report
+                  </a>
+                {% elif artifact.dataType == "hash" %}
+                  <a href="https://www.virustotal.com/#/file/{{ artifact.data }}/detection" target="_blank">
+                    View full report
+                  </a>
+                {% elif artifact.dataType == "url" %}
+                  <a href="{{ content.get('permalink') }}" target="_blank">
+                    View full report
+                  </a>
+                {% endif %}
+              </dd>
+            </dl>
+
+          </div>
         </div>
 
-        <div class="panel panel-info">
-            <div class="panel-heading"><strong>Scans</strong></div>
-            <div class="panel-body">
+        <!-- ===== SCANS ===== -->
+        {% if content.get('scans') %}
+        <div class="card mb-3">
+          <div class="card-header bg-info text-dark">
+            <strong>Scans</strong>
+          </div>
+          <div class="card-body">
 
-                <table class="table table-hover">
-                    <tr>
-                        <th>Scanner</th>
-                        <th>Detected</th>
-                        <th>Result</th>
-                        <th>Details</th>
-                        <th>Update</th>
-                        <th>Version</th>
-                    </tr>
-                    <tr ng-repeat="(scanner, result) in content.scans" ng-init="result.unrated = (result.result === 'unrated site')">
-                        <td><strong>{{scanner}}</strong></td>
-                        <td>
-                            <i ng-class="{'text-danger fa fa-bug': result.detected, 'text-success fa fa-check-circle': !result.detected && !result.unrated, 'text-info fa fa-question-circle': result.unrated}"></i>
-                        </td>
-                        <td ng-class="{'text-info': result.unrated, 'text-danger': result.detected, 'text-success': !result.detected && !result.unrated}" class="wrap">{{result.result}}</td>
-                        <td>
-                            <a ng-if="result.detail" ng-href="{{result.detail}}" target="_blank"><i class="fa fa-search"></i> View details</a>
-                        </td>
-                        <td>{{result.update}}</td>
-                        <td>{{result.version}}</td>
-                    </tr>
-                </table>
-            </div>
+            <table class="table table-sm table-hover">
+              <thead>
+                <tr>
+                  <th>Scanner</th>
+                  <th>Status</th>
+                  <th>Result</th>
+                  <th>Details</th>
+                  <th>Update</th>
+                  <th>Version</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for scanner, result in content.get('scans', {}).items() %}
+                {% set detected = result.get('detected', False) %}
+                {% set unrated = result.get('result') == 'unrated site' %}
+
+                <tr>
+                  <td><strong>{{ scanner }}</strong></td>
+
+                  <td class="text-center">
+                    {% if detected %}
+                      <span class="text-danger">●</span>
+                    {% elif unrated %}
+                      <span class="text-info">●</span>
+                    {% else %}
+                      <span class="text-success">●</span>
+                    {% endif %}
+                  </td>
+
+                  <td class="{% if detected %}text-danger{% elif unrated %}text-info{% else %}text-success{% endif %}">
+                    {{ result.get('result', 'n/a') }}
+                  </td>
+
+                  <td>
+                    {% if result.get('detail') %}
+                      <a href="{{ result.get('detail') }}" target="_blank">View</a>
+                    {% else %}
+                      -
+                    {% endif %}
+                  </td>
+
+                  <td>{{ result.get('update', '-') }}</td>
+                  <td>{{ result.get('version', '-') }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+
+          </div>
+        </div>
+        {% endif %}
+
+        {% else %}
+
+        <!-- ===== RESPONSE_CODE != 1 ===== -->
+        <div class="card border-danger">
+          <div class="card-header bg-danger text-white">
+            {{ artifact.data }}
+          </div>
+          <div class="card-body">
+            {{ content.get('verbose_msg', 'No details available') }}
+          </div>
         </div>
 
+        {% endif %}
+      </div>
+
+      <!-- ================= JSON TAB ================= -->
+      <div class="tab-pane fade"
+           id="json_{{ artifact.id }}"
+           role="tabpanel">
+        <pre class="mt-3"><code>{{ artifact | string }}</code></pre>
+      </div>
 
     </div>
-    <div ng-switch-default>
-        <div class="panel panel-danger">
-            <div class="panel-heading">
-                <strong>{{artifact.data}} {{artifact.attachment.name}}</strong>
-            </div>
-            <div class="panel-body">
-                {{content.verbose_msg}}
-            </div>
-        </div>
-    </div>
+  </div>
 </div>
 
-
-     </div>
-     <div class="tab-pane fade" id="json_{{ artifact.id }}" role="tabpanel" aria-labelledby="json-tab_{{ artifact.id }}">
-        <pre>
-        <code>
-{{ artifact }}
-        </code>
-        </pre>
-    </div>
-    </div> <!-- tab content -->
-    </div> <!-- card body -->
-</div>
 {% else %}
-<!-- General error -->
+
+<!-- ===== GENERAL ERROR ===== -->
 <div class="card border-danger">
-        <div class="card-header alert alert-danger">
-                <strong>Error</strong>
-        </div>
-        <div class="card-body">
-                <strong>{{(artifact.data)}}</strong><br>
-                {{ artifact.report.errorMessage}}
-        </div>
-    </div>
+  <div class="card-header bg-danger text-white">
+    Error
+  </div>
+  <div class="card-body">
+    <strong>{{ artifact.data }}</strong><br>
+    {{ artifact.report.errorMessage }}
+  </div>
 </div>
+
 {% endif %}

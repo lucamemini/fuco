@@ -33,23 +33,23 @@
             <strong>Summary</strong>
         </div>
         <div class="panel-body">
-            <dl class="dl-horizontal" ng-if="content.lookup_results">
+            <dl class="dl-horizontal" >
                 <dt>Detected by</dt>
                 <dd class="wrap">{{content.lookup_results.detected_by}}</dd>
             </dl>
-            <dl class="dl-horizontal" ng-if="content.address">
+            <dl class="dl-horizontal" >
                 <dt>Address</dt>
                 <dd class="wrap">{{content.address}}</dd>
             </dl>
-            <dl class="dl-horizontal" ng-if="content.geo_info">
+            <dl class="dl-horizontal" >
                 <dt>Geo Info</dt>
-                <dd class="wrap">{{content.geo_info.country.name}} {{content.geo_info.city.name}} <span ng-if="content.geo_info.continent.name">{{content.geo_info.continent.name}}</span></dd>
+                <dd class="wrap">{{content.geo_info.country.name}} {{content.geo_info.city.name}} <span >{{content.geo_info.continent.name}}</span></dd>
             </dl>            
         </div>
     </div>
  
 
-    <div class="panel panel-info" ng-if="content.lookup_results.sources">
+    <div class="panel panel-info" >
         <div class="panel-heading">
             <strong>Sources</strong>
         </div>
@@ -62,10 +62,10 @@
                     <th>Assessment</th>
                 </tr>
 		{% for obj in content.lookup_results.sources %}
-                <tr ng-repeat="obj in content.lookup_results.sources">
+                <tr >
                     <td>
-                        <span class="label label-success" ng-if="obj.status == 5"><span class="glyphicon glyphicon-ok" aria-hidden="true"></span></span>
-                        <span class="label label-danger" ng-if="obj.status == 1"><span class="glyphicon glyphicon-remove" aria-hidden="true"></span></span>
+                        <span class="label label-success" ><span class="glyphicon glyphicon-ok" aria-hidden="true"></span></span>
+                        <span class="label label-danger" ><span class="glyphicon glyphicon-remove" aria-hidden="true"></span></span>
                         {{obj.provider}}
                     </td>
                     <td>{{obj.detect_time}}</td>
@@ -83,7 +83,7 @@
      <div class="tab-pane fade" id="json_{{ artifact.id }}" role="tabpanel" aria-labelledby="json-tab_{{ artifact.id }}">
         <pre>
         <code>
-{{ artifact }}
+{{ artifact | string }}
         </code>
         </pre>
     </div>

@@ -23,7 +23,7 @@
      <div class="tab-pane fade show active" id="home_{{ artifact.id }}" role="tabpanel" aria-labelledby="home-tab_{{ artifact.id }}">
 
 {% if content.status == 'fail' %}
-<div class="report-SecurityTrails" ng-if="success">
+<div class="report-SecurityTrails" >
   <div class="panel panel-info">
     <div class="panel-heading">
       emailrep.io lookup error
@@ -35,16 +35,16 @@
   </div>
 </div>
 {% else %}
-<div class="report-SecurityTrails" ng-if="success">
+<div class="report-SecurityTrails" >
   <div class="panel panel-info">
     <div class="panel-heading">
       emailrep.io lookup ({{ content.email }})
     </div>
     <div class="panel-body">
-      <div ng-if="(content | json) === '{}'">
+      <div >
         No data found
       </div>
-      <div ng-if="(content | json) !== '{}'">
+      <div >
         <dl class=" dl-horizontal">
           <dt>Reputation:</dt>
           <dd class="wrap">{{ content.reputation }}</dd>
@@ -57,10 +57,10 @@
           <dt>References:</dt>
           <dd class="wrap">{{ content.references }}</dd>
         </dl>
-        <dl class="dl-horizontal" ng-if="content.details.profiles.length !== 0">
+        <dl class="dl-horizontal" >
           <dt>Profiles:</dt>
           <dd class="wrap">
-            <ul ng-repeat="profile in content.details.profiles">
+            <ul >
               <li>{{ profile }}</li>
             </ul>
           </dd>
@@ -81,7 +81,7 @@
      <div class="tab-pane fade" id="json_{{ artifact.id }}" role="tabpanel" aria-labelledby="json-tab_{{ artifact.id }}">
         <pre>
         <code>
-{{ artifact }}
+{{ artifact | string }}
         </code>
         </pre>
     </div>

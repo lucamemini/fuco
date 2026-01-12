@@ -22,15 +22,15 @@
     <div class="tab-content" id="myTabContent">
      <div class="tab-pane fade show active" id="home_{{ artifact.id }}" role="tabpanel" aria-labelledby="home-tab_{{ artifact.id }}">
 
-<div class="panel panel-info" ng-if="success" ng-init="recordsLimit=20">
+<div class="panel panel-info"  ng-init="recordsLimit=20">
     <div class="panel-heading">
         <strong>{{artifact.data}}</strong>
     </div>
     <div class="panel-body">
 	{% if content.record_count == 0 %}
-        <div ng-if="content.record_count === 0">No records found</div>
+        <div >No records found</div>
 	{% else %}
-        <table class="table table-hover" ng-if="content.record_count > 0">
+        <table class="table table-hover" >
             <thead>
                 <tr>
                     <th width="50">#</th>
@@ -42,7 +42,7 @@
                     <th>statuses</th>
                 </tr>
             </thead>
-            <tbody ng-repeat="row in content.history | limitTo:recordsLimit">
+            <tbody >
 		{% for row in content.history %}
 		<tr>
                 <td>{{ loop.index }}</td>
@@ -50,7 +50,7 @@
                 <td class="wrap">
                     <ul class="list-unstyled">
 			{% for ns in row.whois.name_servers %}
-                        <li ng-repeat="ns in row.whois.name_servers">{{ns}}</li>
+                        <li >{{ns}}</li>
 			{% endfor %}
                     </ul>
                 </td>
@@ -61,7 +61,7 @@
                 <td class="wrap">
                     <ul class="list-unstyled">
 			{% for st in row.whois.registration.statuses %}
-                        <li ng-repeat="st in row.whois.registration.statuses">{{st}}</li>
+                        <li >{{st}}</li>
 			{% endfor %}
                     </ul>
                 </td>
@@ -87,7 +87,7 @@
      <div class="tab-pane fade" id="json_{{ artifact.id }}" role="tabpanel" aria-labelledby="json-tab_{{ artifact.id }}">
         <pre>
         <code>
-{{ artifact }}
+{{ artifact | string }}
         </code>
         </pre>
     </div>

@@ -1,7 +1,7 @@
 {% set content = artifact.report.full %}
 
 {% if artifact.status == "Success" %}
-<div class="card border-success" ng-if="success">
+<div class="card border-success" >
     <div class="card-header">
     <ul class="nav nav-tabs card-header-tabs">
       <li class="nav-item">
@@ -52,7 +52,7 @@
      <div class="tab-pane fade" id="json_{{ artifact.id }}" role="tabpanel" aria-labelledby="json-tab_{{ artifact.id }}">
         <pre>
         <code>
-{{ artifact }}
+{{ artifact | string }}
         </code>
 
         </pre>
@@ -62,7 +62,7 @@
 </div>
 {% else %}
 <!-- General error -->
-<div class="card border-danger" ng-if="!success">
+<div class="card border-danger" >
     <div class="card-heading">
         <strong>{{(artifact.data)}}</strong>
     </div>

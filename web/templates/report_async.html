@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="en" class="h-100">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>FUCO Result :: {{ data.fuco.datatype }} - {{ data.fuco.question }}</title>
+    <link href="/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/css/all.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    
+    <style>
+      body { background-color: #f2f2f2; }
+      .bg-fuco { 
+        border-radius: 3px; 
+        box-shadow: 0px 8px 20px 0px rgba(0, 0, 0, 0.15);
+        background: #ffd700;
+      }
+      .loading-spinner {
+        display: inline-block;
+        width: 1rem;
+        height: 1rem;
+        border: 2px solid #f3f3f3;
+        border-top: 2px solid #3498db;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-left: 10px;
+      }
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      .job-completed { background-color: #d4edda; }
+      .job-error { background-color: #f8d7da; }
+      .job-submitting { background-color: #fff3cd; }
+    </style>
+    <link href="/css/sticky-footer-navbar.css" rel="stylesheet">
+  </head>
+  <body class="d-flex flex-column h-100">
+    
+<header>
+  <nav class="navbar navbar-expand-md navbar-dark fixed-top bg-fuco">
+    <div class="container-fluid">
+      <div class="collapse navbar-collapse">
+        <ul class="navbar-nav me-auto mb-2 mb-md-0">
+          <li class="nav-item">
+            <a class="nav-link active" href="/"><strong>Fuco</strong></a>
+          </li>
+        </ul>
+        <form class="d-flex" role="search">
+          <input class="form-control me-2" type="search" placeholder="Search">
+          <button class="btn btn-outline-success" type="submit">Search</button>
+        </form>
+      </div>
+    </div>
+  </nav>
+</header>
+
+<main class="flex-shrink-0">
+  <div class="container">
+    <h1 class="mt-5">{{ data.fuco.question }}</h1>
+    <h6 id="tagCloud">&nbsp;</h6>
+    
+    <div class="alert alert-info" id="progress-info">
+      <strong>Sottomissione analisi in corso...</strong> 
+      <span id="status-text">0 / {{ data.analyzers|length }} job sottomessi</span>
+    </div>
+    
+    <div class="accordion" id="accordion_result">
+      {% for analyzer in data.analyzers %}
+      <div class="accordion-item job-submitting" id="item_{{ analyzer|replace('.', '_') }}">
+        <h2 class="accordion-header" id="heading_{{ analyzer|replace('.', '_') }}">
+          <button class="accordion-button collapsed" type="button" 
+                  data-bs-toggle="collapse" 
+                  data-bs-target="#collapse_{{ analyzer|replace('.', '_') }}" 
+                  aria-expanded="false">
+            {{ analyzer }}
+            <span class="loading-spinner" id="spinner_{{ analyzer|replace('.', '_') }}"></span>
+          </button>
+        </h2>
+        <div id="collapse_{{ analyzer|replace('.', '_') }}" 
+             class="accordion-collapse collapse" 
+             data-bs-parent="#accordion_result">
+          <div class="accordion-body" id="content_{{ analyzer|replace('.', '_') }}">
+            <div class="text-center">
+              <div class="spinner-border text-warning" role="status"></div>
+              <p class="mt-2">In attesa di sottomissione...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</main>
+
+<footer class="footer mt-auto py-3 bg-light">
+  <div class="container">
+    <span class="text-muted">
+      <a href="https://github.com/lucamemini/fuco" target="_blank">Fuco</a> 
+      By <a href="mailto:luca@memini.it">Luca Memini</a>
+    </span>
+  </div>
+</footer>
+
+<script>
+const analyzers = {{ data.analyzers|tojson }};
+const observable = "{{ data.fuco.question }}";
+const datatype = "{{ data.fuco.datatype }}";
+
+let submittedCount = 0;
+let completedCount = 0;
+const totalCount = analyzers.length;
+const jobsMap = {}; // analyzer -> job_id
+const loadedTaxonomies = new Set(); // Traccia i job già caricati
+
+// Aggiorna il progresso
+function updateProgress() {
+    if (submittedCount < totalCount) {
+        $('#status-text').text(`${submittedCount} / ${totalCount} job sottomessi`);
+    } else if (completedCount < totalCount) {
+        $('#progress-info strong').text('Analisi in corso...');
+        $('#status-text').text(`${completedCount} / ${totalCount} completate`);
+    } else {
+        $('#progress-info').removeClass('alert-info').addClass('alert-success');
+        $('#progress-info strong').text('Tutte le analisi completate!');
+        $('#status-text').text('');
+    }
+}
+
+// Sottometti un singolo job
+async function submitJob(analyzer) {
+    const analyzerId = analyzer.replace(/\./g, '_');
+    
+    try {
+        console.log(`Sottomissione job per ${analyzer}...`);
+        
+        const response = await fetch('/api/submit_job', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                analyzer: analyzer,
+                datatype: datatype,
+                data: observable
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.status === 'success') {
+            console.log(`Job ${result.job_id} sottomesso per ${analyzer}`);
+            jobsMap[analyzer] = result.job_id;
+            
+            submittedCount++;
+            updateProgress();
+            
+            // Cambia lo stato visivo
+            $(`#item_${analyzerId}`).removeClass('job-submitting');
+            $(`#content_${analyzerId}`).html(`
+                <div class="text-center">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <p class="mt-2">Analisi in corso... (Job ID: ${result.job_id})</p>
+                </div>
+            `);
+            
+            // Inizia il polling di questo job
+            pollJob(analyzer, result.job_id);
+            
+        } else {
+            throw new Error(result.error || 'Errore sconosciuto');
+        }
+        
+    } catch (error) {
+        console.error(`Errore sottomissione ${analyzer}:`, error);
+        submittedCount++;
+        completedCount++;
+        updateProgress();
+        
+        $(`#item_${analyzerId}`).removeClass('job-submitting').addClass('job-error');
+        $(`#spinner_${analyzerId}`).hide();
+        $(`#content_${analyzerId}`).html(`
+            <div class="alert alert-danger">
+                Errore nella sottomissione: ${error.message}
+            </div>
+        `);
+    }
+}
+
+// Polling di un job specifico
+function pollJob(analyzer, jobId) {
+    const analyzerId = analyzer.replace(/\./g, '_');
+    let attempts = 0;
+    const maxAttempts = 60; // 2 minuti
+    
+    const pollInterval = setInterval(async () => {
+        attempts++;
+        
+        if (attempts > maxAttempts) {
+            clearInterval(pollInterval);
+            markJobError(analyzerId, 'Timeout: analisi troppo lunga');
+            return;
+        }
+        
+        try {
+            const response = await fetch(`/api/poll_job/${jobId}`);
+            const result = await response.json();
+            
+            if (result.status === 'success') {
+                clearInterval(pollInterval);
+                console.log(`Job ${jobId} completato con successo`);
+                
+                // Carica PRIMA le taxonomies
+                await loadJobTaxonomies(jobId);
+                
+                // POI carica il report completo (che NON deve ricaricare le taxonomies)
+                await loadJobReport(analyzerId, jobId);
+                
+            } else if (result.status === 'failed' || result.status === 'error') {
+                clearInterval(pollInterval);
+                markJobError(analyzerId, result.report_status || result.error || 'Errore');
+            }
+            // Se status === 'pending', continua il polling
+            
+        } catch (error) {
+            clearInterval(pollInterval);
+            markJobError(analyzerId, `Errore polling: ${error.message}`);
+        }
+        
+    }, 2000); // Polling ogni 2 secondi
+}
+
+// Carica il report completo di un job
+async function loadJobReport(analyzerId, jobId) {
+    try {
+        const response = await fetch(`/getAnalisys?JobId=${jobId}`);
+        const html = await response.text();
+        
+        $(`#content_${analyzerId}`).html(html);
+        $(`#item_${analyzerId}`).addClass('job-completed');
+        $(`#spinner_${analyzerId}`).hide();
+        
+        completedCount++;
+        updateProgress();
+        
+    } catch (error) {
+        console.error(`Errore caricamento report ${jobId}:`, error);
+        markJobError(analyzerId, 'Errore nel caricamento del report');
+    }
+}
+
+// Carica le taxonomies di un job (SOLO UNA VOLTA)
+async function loadJobTaxonomies(jobId) {
+    try {
+        // Verifica se le taxonomies per questo job sono già state caricate
+        if (loadedTaxonomies.has(jobId)) {
+            console.log(`Taxonomies per ${jobId} già caricate, skip`);
+            return;
+        }
+        
+        // Marca come "in caricamento" per prevenire chiamate multiple
+        loadedTaxonomies.add(jobId);
+        
+        const response = await fetch(`/getShort?JobId=${jobId}`);
+        const html = await response.text();
+        
+        if (html && html.trim() !== '') {
+            $('#tagCloud').append(html);
+            console.log(`Taxonomies caricate per ${jobId}`);
+        }
+        
+    } catch (error) {
+        console.error(`Errore caricamento taxonomies ${jobId}:`, error);
+        // Rimuovi dal set in caso di errore per permettere retry
+        loadedTaxonomies.delete(jobId);
+    }
+}
+
+// Marca un job come errore
+function markJobError(analyzerId, errorMsg) {
+    $(`#item_${analyzerId}`).addClass('job-error');
+    $(`#spinner_${analyzerId}`).hide();
+    $(`#content_${analyzerId}`).html(`
+        <div class="alert alert-danger">${errorMsg}</div>
+    `);
+    
+    completedCount++;
+    updateProgress();
+}
+
+// Avvio: sottometti tutti i job in parallelo
+$(document).ready(function() {
+    console.log(`Inizio sottomissione di ${totalCount} job...`);
+    
+    // Sottometti tutti i job contemporaneamente (il browser farà ~6 richieste parallele)
+    analyzers.forEach(analyzer => {
+        submitJob(analyzer);
+    });
+});
+</script>
+
+<script src="/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

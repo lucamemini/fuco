@@ -22,18 +22,18 @@
     <div class="tab-content" id="myTabContent">
      <div class="tab-pane fade show active" id="home_{{ artifact.id }}" role="tabpanel" aria-labelledby="home-tab_{{ artifact.id }}">
 
-<div class="panel panel-info" ng-if="success">
+<div class="panel panel-info" >
 	<div class="panel-heading">
 		<a target="_blank" href="http://circl.lu/services/passive-dns/">CIRCL.lu</a> Passive DNS Report
 	</div>
 	<div class="panel-body">
 		<!-- Domain details -->
-	{% if content.results.length |length == 0 %}
-        <p ng-if="content.results.length == 0">
+	{% if content.results|length |length == 0 %}
+        <p >
             No result found.
         </p>
 	{% else %}
-        <table class="table" ng-if="content.results">
+        <table class="table" >
             <thead>
                 <th>Count</th>
                 <th>rrtype</th>
@@ -41,7 +41,7 @@
                 <th>First time</th>
                 <th>Last time</th>
             </thead>
-            <tbody ng-repeat="r in content.results | orderBy:'-time_last'">
+            <tbody >
 	        {% for r in content.results %}
                 <tr>
                     <td>{{r.count}}</td>
@@ -61,7 +61,7 @@
      <div class="tab-pane fade" id="json_{{ artifact.id }}" role="tabpanel" aria-labelledby="json-tab_{{ artifact.id }}">
         <pre>
         <code>
-{{ artifact }}
+{{ artifact | string }}
         </code>
         </pre>
     </div>
