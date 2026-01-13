@@ -25,6 +25,9 @@ JOB_SEARCH_RANGE = '0-50'
 JOB_RECENT_LIMIT = 10
 LAST_ANALYSIS_RANGE = '0-150'
 
+# Local Cache (in minuti)
+CACHE_TTL_MINUTES = 30
+
 # Analyzer types
 ANALYZER_TYPES = ["domain", "ip", "url", "file", "hash", "mail", "mail_subject", "other"]
 

@@ -215,62 +215,6 @@ def api_poll_job(job_id):
             'job_id': job_id,
             'error': str(e)
         }), 500
-"""
-def analysis():
-    # Route tradizionale per form submissions (non API).
-    try:
-        data = request.form.get('tosearch')
-        if not data:
-            return error_response("Parametro 'tosearch' mancante", 400)
-        
-        datatype = request.form.get('DataType')
-        if not datatype:
-            return error_response("Parametro 'DataType' mancante", 400)
-        
-        analyzer_list = request.form.getlist('analyzer')
-        if not analyzer_list:
-            return error_response("Nessun analyzer selezionato", 400)
-        
-        result = {}
-        result['analysis'] = []
-        result['fuco'] = {}
-        result['fuco']['question'] = data
-        result['fuco']['datatype'] = datatype
-        
-        # Esecuzione delle analisi e polling dei job
-        job_results = []
-        for analyzer in analyzer_list:
-            try:
-                job_result = utils.run_analysis(analyzer, datatype, data)
-                job_results.append(job_result)
-            except Exception as e:
-                logger.error(f"Errore nell'esecuzione dell'analisi: {str(e)}")
-                result['analysis'].append({"error": str(e)})
-        
-        # Polling dei job fino a completamento
-        for job in job_results:
-            job_id = job['id']
-            
-            # Polling dello stato del job
-            report = utils.poll_job(job_id, config.API_SHORT_MAX_ATTEMPTS, config.API_SHORT_INITIAL_DELAY)
-            
-            if report and report.status == "Success":
-                result['analysis'].append(report.json())
-            else:
-                status = report.status if report else "Timeout"
-                logger.warning(f"Job {job_id} completato con status: {status}")
-                result['analysis'].append({
-                    "id": job_id,
-                    "status": status,
-                    "error": "Analisi non completata con successo"
-                })
-        
-        return render_template('report.html', data=result)
-    except Exception as e:
-        logger.error(f"Errore in analysis(): {str(e)}")
-        return error_response(str(e))
-
-"""
 
 # ============ Route API ============
 
@@ -476,7 +420,8 @@ def get_analysis():
     if not analysis_id:
         abort(400, "Missing analysis id")
 
-    report = utils.cortex_api.jobs.get_report(analysis_id)
+    #report = utils.cortex_api.jobs.get_report(analysis_id)
+    report = utils.get_cached_report(analysis_id)
 
     template_name = utils.resolve_long_template(report, current_app.root_path)
     generic_template = "long/generic.long.html"

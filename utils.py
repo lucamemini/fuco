@@ -12,6 +12,10 @@ from typing import Optional
 
 from jinja2 import Environment, FileSystemLoader
 
+# cache
+from functools import lru_cache
+from datetime import datetime, timedelta
+
 import fucoconfig as cfg
 from cortex4py.api import Api
 from cortex4py.query import And, Eq
@@ -23,6 +27,23 @@ logger = logging.getLogger(__name__)
 # API Cortex
 cortex_api = Api(cfg.cortex["host"], cfg.cortex["apikey"])
 
+
+# Cache per report (semplice, in-memory)
+_report_cache = {}
+_cache_ttl = timedelta(minutes=config.CACHE_TTL_MINUTES)
+
+def get_cached_report(job_id):
+    """Recupera report dalla cache o da Cortex"""
+    if job_id in _report_cache:
+        cached_time, report = _report_cache[job_id]
+        if datetime.now() - cached_time < _cache_ttl:
+            logger.info(f"Report {job_id} recuperato da cache")
+            return report
+    
+    # Altrimenti recupera da Cortex
+    report = cortex_api.jobs.get_report(job_id)
+    _report_cache[job_id] = (datetime.now(), report)
+    return report
 
 def get_analyzer_by_type(analyzer_type: str):
     """Ottiene gli analyzer per un tipo di dato specifico."""
@@ -96,7 +117,8 @@ def poll_job(job_id: str, max_attempts: int = None, initial_delay: int = None):
     try:
         for attempt in range(max_attempts):
             time.sleep(initial_delay + attempt)
-            report = cortex_api.jobs.get_report(job_id)
+            #report = cortex_api.jobs.get_report(job_id)
+            report = get_cached_report(job_id)
             if report.status in ("Success", "Failure"):
                 logger.info(f"Job {job_id} completato con status: {report.status}")
                 return report
