@@ -7,6 +7,9 @@ import json
 import re
 import ipaddress
 import os
+
+from typing import Optional
+
 from jinja2 import Environment, FileSystemLoader
 
 import fucoconfig as cfg
@@ -201,7 +204,7 @@ def render_short_template(taxonomies: list, analyzer_name: str, app_root_path: s
         logger.exception("Errore nel rendering short template")
         return "<p>Errore nel caricamento delle taxonomies.</p>"
 
-def resolve_long_template(report, app_root_path: str) -> str | None:
+def resolve_long_template(report, app_root_path: str) -> Optional[str]:
     """
     Risolve il template LONG corretto per l'analyzer.
 
