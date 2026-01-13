@@ -1,156 +1,257 @@
-{% if artifact.get('status') == "Success" %}
-{% set content = artifact.get('report', {}).get('full', {}) %}
+{% if artifact.status == "Success" %}
+{% set data = artifact.report %}
+{% set success = data.get('success', false) %}
+{% set content = data.get('full', {}) %}
 
-<div class="card border-success">
+<div class="card border-{% if success %}success{% else %}danger{% endif %}">
+  
+  <!-- ================= CARD HEADER WITH TABS ================= -->
   <div class="card-header">
     <ul class="nav nav-tabs card-header-tabs">
       <li class="nav-item">
-        <a class="nav-link active"
-           id="home-tab_{{ artifact.get('id') }}"
-           data-bs-toggle="tab"
-           data-bs-target="#home_{{ artifact.get('id') }}"
-           role="tab">
-          Result
-        </a>
+        <a class="nav-link active" id="result-tab_{{ artifact.id }}" data-bs-toggle="tab" data-bs-target="#result_{{ artifact.id }}" role="tab" aria-controls="result_{{ artifact.id }}" aria-selected="true">Result</a>
       </li>
       <li class="nav-item">
-        <a class="nav-link"
-           id="json-tab_{{ artifact.get('id') }}"
-           data-bs-toggle="tab"
-           data-bs-target="#json_{{ artifact.get('id') }}"
-           role="tab">
-          Json
-        </a>
+        <a class="nav-link" id="json-tab_{{ artifact.id }}" data-bs-toggle="tab" data-bs-target="#json_{{ artifact.id }}" role="tab" aria-controls="json_{{ artifact.id }}" aria-selected="false">Json</a>
       </li>
-      {% if content.get('permalink') %}
       <li class="nav-item">
-        <a class="nav-link" href="{{ content.get('permalink') }}" target="_blank">
+        <a class="nav-link" href="{{ content.get('permalink') }}" target="_blank" {% if not content.get('permalink') %}class="nav-link disabled"{% endif %}>
           Ext. Analysis
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-link-45deg" viewBox="0 0 16 16">
+            <path d="M4.715 6.542 3.343 7.914a3 3 0 1 0 4.243 4.243l1.828-1.829A3 3 0 0 0 8.586 5.5L8 6.086a1.002 1.002 0 0 0-.154.199 2 2 0 0 1 .861 3.337L6.88 11.45a2 2 0 1 1-2.83-2.83l.793-.792a4.018 4.018 0 0 1-.128-1.287z"/>
+            <path d="M6.586 4.672A3 3 0 0 0 7.414 9.5l.775-.776a2 2 0 0 1-.896-3.346L9.12 3.55a2 2 0 1 1 2.83 2.83l-.793.792c.112.42.155.855.128 1.287l1.372-1.372a3 3 0 1 0-4.243-4.243L6.586 4.672z"/>
+          </svg>
         </a>
       </li>
-      {% endif %}
     </ul>
   </div>
 
+  <!-- ================= CARD BODY WITH TAB CONTENT ================= -->
   <div class="card-body">
-    <div class="tab-content">
+    <div class="tab-content" id="myTabContent_{{ artifact.id }}">
+      
+      <!-- ================= TAB: RESULT ================= -->
+      <div class="tab-pane fade show active" id="result_{{ artifact.id }}" role="tabpanel" aria-labelledby="result-tab_{{ artifact.id }}">
 
-      <div class="tab-pane fade show active"
-           id="home_{{ artifact.get('id') }}"
-           role="tabpanel">
+{% if success and content %}
 
-        <div class="card border-info mb-3">
-          <div class="card-header bg-info text-white">
-            Summary
+        <!-- SUMMARY -->
+        <div class="panel panel-info">
+          <div class="panel-heading">
+            <strong>Summary</strong>
           </div>
-          <div class="card-body">
-
+          <div class="panel-body">
+            
             {% if content.get('verbose_msg') %}
-              <p>{{ content.get('verbose_msg') }}</p>
+            <dl class="dl-horizontal">
+              <dt>Status</dt>
+              <dd class="wrap">{{ content.get('verbose_msg') }}</dd>
+            </dl>
             {% endif %}
 
-            {% for key, value in content.items() %}
-              {% if 'category' in key %}
-                <span class="badge bg-info me-1">{{ key }}:{{ value }}</span>
-              {% endif %}
-            {% endfor %}
-
             {% if content.get('positives') is not none and content.get('total') is not none %}
-            <dl class="row mt-3">
-              <dt class="col-sm-4">Score</dt>
-              <dd class="col-sm-8">
-                {{ content.get('positives', 0) }}/{{ content.get('total', 0) }}
+            <dl class="dl-horizontal">
+              <dt>Scan Result</dt>
+              <dd class="wrap">
+                {% if content.get('positives', 0) == 0 %}
+                  <span class="badge bg-success">Clean</span>
+                {% elif content.get('positives', 0) < 5 %}
+                  <span class="badge bg-warning">{{ content.get('positives') }}/{{ content.get('total') }} detected</span>
+                {% else %}
+                  <span class="badge bg-danger">{{ content.get('positives') }}/{{ content.get('total') }} detected</span>
+                {% endif %}
               </dd>
             </dl>
             {% endif %}
 
             {% if content.get('scan_date') %}
-            <dl class="row">
-              <dt class="col-sm-4">Last analysis date</dt>
-              <dd class="col-sm-8">{{ content.get('scan_date') }}</dd>
+            <dl class="dl-horizontal">
+              <dt>Scan Date</dt>
+              <dd class="wrap">{{ content.get('scan_date') }}</dd>
             </dl>
             {% endif %}
-
-            {% if content.get('as_owner') %}
-            <dl class="row">
-              <dt class="col-sm-4">Autonomous System</dt>
-              <dd class="col-sm-8">{{ content.get('as_owner') }}</dd>
-            </dl>
-            {% endif %}
-
-            {% if content.get('categories') %}
-            <dl class="row">
-              <dt class="col-sm-4">Categories</dt>
-              <dd class="col-sm-8">
-                {{ content.get('categories') | join(', ') }}
-              </dd>
-            </dl>
-            {% endif %}
-
-            {% if content.get('subdomains') %}
-            <dl class="row">
-              <dt class="col-sm-4">Subdomains</dt>
-              <dd class="col-sm-8">
-                {{ content.get('subdomains') | join(', ') }}
-              </dd>
-            </dl>
-            {% endif %}
-
-            {% if content.get('resolutions') %}
-            <dl class="row">
-              <dt class="col-sm-4">Passive DNS Resolutions</dt>
-              <dd class="col-sm-8">
-                {% for r in content.get('resolutions', []) %}
-                  <div>
-                    {{ r.get('last_resolved', '') }}:
-                    <span class="text-danger">
-                      {{ r.get('hostname') or r.get('ip_address') }}
-                    </span>
-                  </div>
-                {% endfor %}
-              </dd>
-            </dl>
-            {% endif %}
-
-            <dl class="row">
-              <dt class="col-sm-4">VirusTotal</dt>
-              <dd class="col-sm-8">
-                {% set dt = artifact.get('dataType') %}
-                {% if dt == "domain" %}
-                  <a href="https://www.virustotal.com/#/domain/{{ artifact.get('data') }}" target="_blank">View Full Report</a>
-                {% elif dt == "ip" %}
-                  <a href="https://www.virustotal.com/#/ip-address/{{ artifact.get('data') }}" target="_blank">View Full Report</a>
-                {% elif dt == "hash" %}
-                  <a href="https://www.virustotal.com/#/file/{{ artifact.get('data') }}/detection" target="_blank">View Full Report</a>
-                {% elif dt == "url" and content.get('permalink') %}
-                  <a href="{{ content.get('permalink') }}" target="_blank">View Full Report</a>
-                {% endif %}
-              </dd>
-            </dl>
 
           </div>
         </div>
 
+        <!-- FILE INFO -->
+        <div class="panel panel-info">
+          <div class="panel-heading">
+            <strong>File Info</strong>
+          </div>
+          <div class="panel-body">
+            
+            {% if content.get('md5') %}
+            <dl class="dl-horizontal">
+              <dt>MD5</dt>
+              <dd class="wrap"><code>{{ content.get('md5') }}</code></dd>
+            </dl>
+            {% endif %}
+
+            {% if content.get('sha1') %}
+            <dl class="dl-horizontal">
+              <dt>SHA1</dt>
+              <dd class="wrap"><code>{{ content.get('sha1') }}</code></dd>
+            </dl>
+            {% endif %}
+
+            {% if content.get('sha256') %}
+            <dl class="dl-horizontal">
+              <dt>SHA256</dt>
+              <dd class="wrap"><code>{{ content.get('sha256') }}</code></dd>
+            </dl>
+            {% endif %}
+
+          </div>
+        </div>
+
+        <!-- SCANS TABLE -->
+        {% if content.get('scans') %}
+        <div class="panel panel-info">
+          <div class="panel-heading">
+            <strong>Multiscanning ({{ content.get('positives', 0) }}/{{ content.get('total', 0) }} detections)</strong>
+          </div>
+          <div class="panel-body">
+            
+            <!-- Separa detected dai clean -->
+            {% set detected_scans = [] %}
+            {% set clean_scans = [] %}
+            {% for engine, result in content.get('scans', {}).items() %}
+              {% if result.get('detected') %}
+                {% set _ = detected_scans.append((engine, result)) %}
+              {% else %}
+                {% set _ = clean_scans.append((engine, result)) %}
+              {% endif %}
+            {% endfor %}
+            
+            <table class="table table-hover">
+              <thead>
+                <tr>
+                  <th>Engine</th>
+                  <th>Version</th>
+                  <th>Update</th>
+                  <th>Result</th>
+                </tr>
+              </thead>
+              <tbody>
+                <!-- Prima i detected -->
+                {% for engine, result in detected_scans %}
+                <tr class="table-danger">
+                  <td>
+                    <span class="badge bg-danger">
+                      <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
+                    </span>
+                    <strong>{{ engine }}</strong>
+                  </td>
+                  <td>{{ result.get('version') }}</td>
+                  <td>{{ result.get('update') }}</td>
+                  <td><strong>{{ result.get('result') }}</strong></td>
+                </tr>
+                {% endfor %}
+
+                <!-- Poi i clean -->
+                {% for engine, result in clean_scans %}
+                <tr>
+                  <td>
+                    <span class="badge bg-success">
+                      <span class="glyphicon glyphicon-ok" aria-hidden="true"></span>
+                    </span>
+                    {{ engine }}
+                  </td>
+                  <td>{{ result.get('version') }}</td>
+                  <td>{{ result.get('update') }}</td>
+                  <td>-</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+
+          </div>
+        </div>
+        {% endif %}
+
+{% else %}
+
+        <!-- ERROR -->
+        <div class="alert alert-danger">
+          <strong><i class="fas fa-times-circle"></i> Error</strong><br>
+          No result returned by VirusTotal or analysis failed.
+        </div>
+
+{% endif %}
+
+      </div>
+      
+      <!-- ================= TAB: JSON ================= -->
+      <div class="tab-pane fade" id="json_{{ artifact.id }}" role="tabpanel" aria-labelledby="json-tab_{{ artifact.id }}">
+        <pre><code>{{ artifact | string }}</code></pre>
       </div>
 
-      <div class="tab-pane fade"
-           id="json_{{ artifact.get('id') }}"
-           role="tabpanel">
-        <pre><code>{{ artifact | tojson(indent=2) }}</code></pre>
+    </div> <!-- tab-content -->
+  </div> <!-- card-body -->
+
+</div> <!-- card -->
+
+{% else %}
+
+<!-- ================= ERROR CASE ================= -->
+<div class="card border-danger">
+  
+  <!-- HEADER WITH TABS (anche in caso di errore) -->
+  <div class="card-header">
+    <ul class="nav nav-tabs card-header-tabs">
+      <li class="nav-item">
+        <a class="nav-link active" id="error-tab_{{ artifact.id }}" data-bs-toggle="tab" data-bs-target="#error_{{ artifact.id }}" role="tab" aria-controls="error_{{ artifact.id }}" aria-selected="true">Error</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" id="json-error-tab_{{ artifact.id }}" data-bs-toggle="tab" data-bs-target="#json-error_{{ artifact.id }}" role="tab" aria-controls="json-error_{{ artifact.id }}" aria-selected="false">Json</a>
+      </li>
+    </ul>
+  </div>
+
+  <div class="card-body">
+    <div class="tab-content">
+      
+      <!-- TAB: Error message -->
+      <div class="tab-pane fade show active" id="error_{{ artifact.id }}" role="tabpanel" aria-labelledby="error-tab_{{ artifact.id }}">
+        <div class="alert alert-danger">
+          <h5><i class="fas fa-exclamation-triangle"></i> Analysis Failed</h5>
+          <hr>
+          <dl class="dl-horizontal">
+            <dt>Status</dt>
+            <dd><span class="badge bg-danger">{{ artifact.status }}</span></dd>
+          </dl>
+          
+          {% if artifact.data %}
+          <dl class="dl-horizontal">
+            <dt>Observable</dt>
+            <dd><strong>{{ artifact.data }}</strong></dd>
+          </dl>
+          {% endif %}
+          
+          {% if artifact.report and artifact.report.errorMessage %}
+          <dl class="dl-horizontal">
+            <dt>Error Message</dt>
+            <dd>{{ artifact.report.errorMessage }}</dd>
+          </dl>
+          {% endif %}
+          
+          {% if artifact.report and artifact.report.full %}
+          <dl class="dl-horizontal">
+            <dt>Details</dt>
+            <dd>{{ artifact.report.full }}</dd>
+          </dl>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- TAB: JSON (anche in caso di errore) -->
+      <div class="tab-pane fade" id="json-error_{{ artifact.id }}" role="tabpanel" aria-labelledby="json-error-tab_{{ artifact.id }}">
+        <pre><code>{{ artifact | string }}</code></pre>
       </div>
 
     </div>
   </div>
 </div>
 
-{% else %}
-<div class="card border-danger">
-  <div class="card-header bg-danger text-white">
-    Error
-  </div>
-  <div class="card-body">
-    <strong>{{ artifact.get('data') }}</strong><br>
-    {{ artifact.get('report', {}).get('errorMessage') }}
-  </div>
-</div>
 {% endif %}

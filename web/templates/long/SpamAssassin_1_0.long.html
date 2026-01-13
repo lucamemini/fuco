@@ -1,36 +1,68 @@
-<div class="panel panel-info" >
+{% if artifact.status == "Success" %}
+{% set content = artifact.report.full %}
 
-    <div class="panel-heading">
-        SpamAssassin score for <strong>{{(artifact.data || artifact.attachment.name) | fang}}</strong>
-    </div>
-    <div class="panel-body">
-        <h4>Final Score</h4>
-        <dl class="dl-horizontal">
-            <dt>Score</dt>
-            <dd>{{content.score}} </dd>
-        </dl>
-        <dl class="dl-horizontal">
-            <dt>Is Spam?</dt>
-            <dd><span  class="label label-warning">true</span><span  class="label label-primary">false</span></dd>
-        </dl>
-        <hr>
-        <h4>Score Detail</h4>
-        <dl class="dl-horizontal"  >
-            <dt>{{value.name}}</dt>
-            <dd>{{value.description}} [+{{value.partscore}}]</dd>
-        </dl>
-    </div>
+<div class="panel panel-info">
+
+  <div class="panel-heading">
+    SpamAssassin score for
+    <strong>
+      {{ (artifact.data if artifact.data is defined and artifact.data else artifact.attachment.name) | fang }}
+    </strong>
+  </div>
+
+  <div class="panel-body">
+
+    <h4>Final Score</h4>
+    <dl class="dl-horizontal">
+      <dt>Score</dt>
+      <dd>{{ content.score if content.score is defined else "N/A" }}</dd>
+    </dl>
+
+    <dl class="dl-horizontal">
+      <dt>Is Spam?</dt>
+      <dd>
+        {% if content.is_spam is defined %}
+          {% if content.is_spam %}
+            <span class="label label-warning">true</span>
+          {% else %}
+            <span class="label label-primary">false</span>
+          {% endif %}
+        {% else %}
+          <span class="label label-default">unknown</span>
+        {% endif %}
+      </dd>
+    </dl>
+
+    {% if content.rules is defined and content.rules | length > 0 %}
+    <hr>
+    <h4>Score Detail</h4>
+
+    {% for value in content.rules %}
+    <dl class="dl-horizontal">
+      <dt>{{ value.name }}</dt>
+      <dd>
+        {{ value.description }}
+        {% if value.partscore is defined %}
+          [+{{ value.partscore }}]
+        {% endif %}
+      </dd>
+    </dl>
+    {% endfor %}
+    {% endif %}
+
+  </div>
 </div>
 
-<!-- on error  -->
-<div class="panel panel-danger" >
-    <div class="panel-heading">
-        SpamAssassin score <b>Error</b>
-    </div>
-    <div class="panel-body">
-        <dl class="dl-horizontal">
-            <dt>Error: </dt>
-            <dd>{{artifact.report.errorMessage}}</dd>
-        </dl>
-    </div>
+{% else %}
+<div class="panel panel-danger">
+  <div class="panel-heading">
+    SpamAssassin score <strong>Error</strong>
+  </div>
+  <div class="panel-body">
+    <dl class="dl-horizontal">
+      <dt>Error:</dt>
+      <dd>{{ artifact.report.errorMessage }}</dd>
+    </dl>
+  </div>
 </div>
+{% endif %}
