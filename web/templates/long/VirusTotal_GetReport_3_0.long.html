@@ -49,12 +49,13 @@
             </dl>
             {% endif %}
 
+            <!-- SCANS (per file/hash) -->
             {% if content.get('positives') is not none and content.get('total') is not none %}
             <dl class="dl-horizontal">
               <dt>Scan Result</dt>
               <dd class="wrap">
                 {% if content.get('positives', 0) == 0 %}
-                  <span class="badge bg-success">Clean</span>
+                  <span class="badge bg-success">Clean (0/{{ content.get('total') }})</span>
                 {% elif content.get('positives', 0) < 5 %}
                   <span class="badge bg-warning">{{ content.get('positives') }}/{{ content.get('total') }} detected</span>
                 {% else %}
@@ -70,14 +71,34 @@
               <dd class="wrap">{{ content.get('scan_date') }}</dd>
             </dl>
             {% endif %}
+            
+            <!-- DETECTED URLs (per domain/IP/URL) -->
+            {% if content.get('detected_urls') %}
+            <dl class="dl-horizontal">
+              <dt>Detected URLs</dt>
+              <dd class="wrap">
+                <span class="badge bg-warning">{{ content.get('detected_urls')|length }} URL(s) with detections</span>
+              </dd>
+            </dl>
+            {% endif %}
+            
+            {% if content.get('undetected_urls') %}
+            <dl class="dl-horizontal">
+              <dt>Undetected URLs</dt>
+              <dd class="wrap">
+                <span class="badge bg-success">{{ content.get('undetected_urls')|length }} clean URL(s)</span>
+              </dd>
+            </dl>
+            {% endif %}
 
           </div>
         </div>
 
-        <!-- FILE INFO -->
+        <!-- HASHES (per file/hash) -->
+        {% if content.get('md5') or content.get('sha1') or content.get('sha256') %}
         <div class="panel panel-info">
           <div class="panel-heading">
-            <strong>File Info</strong>
+            <strong>File Hashes</strong>
           </div>
           <div class="panel-body">
             
@@ -104,12 +125,126 @@
 
           </div>
         </div>
+        {% endif %}
 
-        <!-- SCANS TABLE -->
+        <!-- RESOLUTIONS (per domain/IP) -->
+        {% if content.get('resolutions') %}
+        <div class="panel panel-info">
+          <div class="panel-heading">
+            <strong>DNS Resolutions</strong>
+          </div>
+          <div class="panel-body">
+            <table class="table table-sm table-hover">
+              <thead>
+                <tr>
+                  <th>IP Address</th>
+                  <th>Last Resolved</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for resolution in content.get('resolutions', []) %}
+                <tr>
+                  <td><code>{{ resolution.get('ip_address') }}</code></td>
+                  <td>{{ resolution.get('last_resolved') }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- DETECTED URLs TABLE (per domain/IP/URL) -->
+        {% if content.get('detected_urls') %}
+        <div class="panel panel-warning">
+          <div class="panel-heading">
+            <strong>Detected URLs ({{ content.get('detected_urls')|length }})</strong>
+          </div>
+          <div class="panel-body">
+            <table class="table table-sm table-hover">
+              <thead>
+                <tr>
+                  <th>URL</th>
+                  <th>Detections</th>
+                  <th>Scan Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for url_data in content.get('detected_urls', []) %}
+                <tr class="{% if url_data.get('positives', 0) > 0 %}table-warning{% endif %}">
+                  <td style="word-break: break-all; max-width: 400px;">
+                    <a href="{{ url_data.get('url') }}" target="_blank" rel="noopener">
+                      {{ url_data.get('url') }}
+                    </a>
+                  </td>
+                  <td>
+                    <span class="badge bg-warning">
+                      {{ url_data.get('positives', 0) }}/{{ url_data.get('total', 0) }}
+                    </span>
+                  </td>
+                  <td>{{ url_data.get('scan_date') }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- DOMAIN SIBLINGS (per domain) -->
+        {% if content.get('domain_siblings') and content.get('domain_siblings')|length > 0 %}
+        <div class="panel panel-info">
+          <div class="panel-heading">
+            <strong>Domain Siblings ({{ content.get('domain_siblings')|length }})</strong>
+          </div>
+          <div class="panel-body">
+            <ul class="list-unstyled" style="column-count: 2;">
+              {% for sibling in content.get('domain_siblings', []) %}
+              <li><code>{{ sibling }}</code></li>
+              {% endfor %}
+            </ul>
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- DOWNLOADED SAMPLES (per domain/IP) -->
+        {% if content.get('detected_downloaded_samples') and content.get('detected_downloaded_samples')|length > 0 %}
+        <div class="panel panel-danger">
+          <div class="panel-heading">
+            <strong>Detected Downloaded Samples ({{ content.get('detected_downloaded_samples')|length }})</strong>
+          </div>
+          <div class="panel-body">
+            <table class="table table-sm table-hover">
+              <thead>
+                <tr>
+                  <th>SHA256</th>
+                  <th>Detections</th>
+                  <th>Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for sample in content.get('detected_downloaded_samples', []) %}
+                <tr class="table-danger">
+                  <td><code style="font-size: 0.85em;">{{ sample.get('sha256') }}</code></td>
+                  <td>
+                    <span class="badge bg-danger">
+                      {{ sample.get('positives', 0) }}/{{ sample.get('total', 0) }}
+                    </span>
+                  </td>
+                  <td>{{ sample.get('date') }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- SCANS TABLE (per file/hash) -->
         {% if content.get('scans') %}
         <div class="panel panel-info">
           <div class="panel-heading">
-            <strong>Multiscanning ({{ content.get('positives', 0) }}/{{ content.get('total', 0) }} detections)</strong>
+            <strong>Antivirus Scans ({{ content.get('positives', 0) }}/{{ content.get('total', 0) }} detections)</strong>
           </div>
           <div class="panel-body">
             
@@ -124,7 +259,7 @@
               {% endif %}
             {% endfor %}
             
-            <table class="table table-hover">
+            <table class="table table-sm table-hover">
               <thead>
                 <tr>
                   <th>Engine</th>
@@ -139,7 +274,7 @@
                 <tr class="table-danger">
                   <td>
                     <span class="badge bg-danger">
-                      <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
+                      <i class="fas fa-times"></i>
                     </span>
                     <strong>{{ engine }}</strong>
                   </td>
@@ -154,7 +289,7 @@
                 <tr>
                   <td>
                     <span class="badge bg-success">
-                      <span class="glyphicon glyphicon-ok" aria-hidden="true"></span>
+                      <i class="fas fa-check"></i>
                     </span>
                     {{ engine }}
                   </td>
@@ -166,6 +301,18 @@
               </tbody>
             </table>
 
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- WHOIS (per domain) -->
+        {% if content.get('whois') %}
+        <div class="panel panel-info">
+          <div class="panel-heading">
+            <strong>WHOIS Information</strong>
+          </div>
+          <div class="panel-body">
+            <pre style="max-height: 300px; overflow: auto; background: #f8f9fa; padding: 10px; border-radius: 5px;">{{ content.get('whois') }}</pre>
           </div>
         </div>
         {% endif %}

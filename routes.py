@@ -1,8 +1,10 @@
 """
 Routes Flask per l'applicazione FUCO
 """
+from io import BytesIO
 import json
 import logging
+import sys
 from typing import List, Optional
 from urllib.parse import quote
 
@@ -14,6 +16,14 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import utils
 import config
 
+# printing 
+try:
+    if not sys.platform.startswith("win"):
+        from weasyprint import HTML
+    else:
+        HTML = None
+except Exception:
+    HTML = None
 
 # Configurazione logging
 logger = logging.getLogger(__name__)
@@ -44,19 +54,6 @@ class AnalysisRequest(BaseModel):
 
 
 # ============ Funzioni helper ============
-"""
-def fang(s):
-    # Custom filter: upper-case a string
-    try:
-        return s.upper()
-    except Exception:
-        return s
-
-
-def urlencode_filter(s):
-    #Custom filter: URL encode a string
-    return quote(str(s))
-"""
 
 def error_response(message: str, code: int = 500):
     """Helper per generare risposte di errore JSON."""
@@ -64,6 +61,96 @@ def error_response(message: str, code: int = 500):
     return jsonify({"error": message}), code
 
 # ============ Route HTML ============
+
+
+@routes_bp.route('/export/pdf', methods=['POST'])
+def export_pdf():
+    """
+    Esporta i risultati in PDF.
+    Riceve via POST i dati delle analisi e genera un PDF.
+    """
+    try:
+        data = request.get_json()
+        if not data:
+            return error_response("Nessun dato fornito", 400)
+        
+        observable = data.get('observable')
+        datatype = data.get('datatype')
+        jobs = data.get('jobs', [])
+        
+        if not observable or not jobs:
+            return error_response("Parametri mancanti", 400)
+        
+        logger.info(f"Generazione PDF per {observable} con {len(jobs)} job")
+        
+        # Recupera i report completi per ogni job
+        reports_data = []
+        for job in jobs:
+            job_id = job.get('id')
+            try:
+                # Usa la cache se disponibile
+                report = get_cached_report(job_id)
+                
+                if report and report.status == "Success":
+                    reports_data.append({
+                        'id': job_id,
+                        'analyzer': job.get('analyzer'),
+                        'report': report,
+                        'html': render_report_html(report, current_app.root_path)
+                    })
+            except Exception as e:
+                logger.error(f"Errore recupero report {job_id}: {str(e)}")
+                continue
+        
+        # Renderizza il template PDF
+        html_content = render_template('pdf_export.html',
+                                     observable=observable,
+                                     datatype=datatype,
+                                     reports=reports_data,
+                                     timestamp=datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+        
+        # Converti HTML in PDF
+        pdf_buffer = BytesIO()
+        if HTML is None:
+            raise RuntimeError("PDF rendering disabled on this platform")
+        
+        HTML(string=html_content, base_url=request.url_root).write_pdf(pdf_buffer)
+        pdf_buffer.seek(0)
+        
+        # Crea response
+        response = make_response(pdf_buffer.getvalue())
+        response.headers['Content-Type'] = 'application/pdf'
+        response.headers['Content-Disposition'] = f'attachment; filename=fuco_report_{observable}.pdf'
+        
+        logger.info(f"PDF generato con successo per {observable}")
+        return response
+        
+    except Exception as e:
+        logger.error(f"Errore generazione PDF: {str(e)}", exc_info=True)
+        return error_response(f"Errore nella generazione del PDF: {str(e)}", 500)
+
+
+def render_report_html(report, app_root_path):
+    """
+    Renderizza il report in HTML per il PDF.
+    Usa lo stesso sistema dei template LONG.
+    """
+    try:
+        template_name = utils.resolve_long_template(report, app_root_path)
+        generic_template = "long/generic.long.html"
+        
+        if not template_name:
+            template_name = generic_template
+        
+        try:
+            return render_template(template_name, artifact=report)
+        except Exception:
+            return render_template(generic_template, artifact=report)
+            
+    except Exception as e:
+        logger.error(f"Errore rendering report HTML: {str(e)}")
+        return f"<div class='alert alert-danger'>Errore nel rendering: {str(e)}</div>"
+
 
 @routes_bp.route('/')
 def home():
@@ -556,4 +643,40 @@ def all_reports():
     
     except Exception as e:
         logger.error(f"Errore in all_reports(): {str(e)}", exc_info=True)
+        return error_response(str(e), 500)
+    
+    # Aggiungi in routes.py - utile per debug
+
+@routes_bp.route('/api/cache/stats', methods=['GET'])
+def cache_stats():
+    """
+    Endpoint di debug per vedere lo stato della cache.
+    Rimuovi in produzione o proteggi con autenticazione.
+    """
+    try:
+        stats = utils.get_cache_stats()
+        return jsonify(stats)
+    except Exception as e:
+        logger.error(f"Errore nel recupero stats cache: {str(e)}")
+        return error_response(str(e), 500)
+
+
+@routes_bp.route('/api/cache/clear', methods=['POST'])
+def clear_cache():
+    """
+    Endpoint per svuotare la cache manualmente.
+    ATTENZIONE: Rimuovi in produzione o proteggi con autenticazione.
+    """
+    try:
+        data = request.get_json()
+        job_id = data.get('job_id') if data else None
+        
+        utils.clear_report_cache(job_id)
+        
+        return jsonify({
+            'success': True,
+            'message': f'Cache cleared for job {job_id}' if job_id else 'All cache cleared'
+        })
+    except Exception as e:
+        logger.error(f"Errore nella pulizia cache: {str(e)}")
         return error_response(str(e), 500)

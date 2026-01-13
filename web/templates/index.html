@@ -211,60 +211,124 @@
 	</div>
       </form>
       {% if recent %}
-      <div class="recent-searches mt-4 p-3 bg-light rounded" style="width: 100%; max-width: 790px;">
-        <h4 class="mb-3 text-center">Recent Searches</h4>
-        {% for dtype, datas in recent.items() %}
-        <h5 class="text-muted">
-          {%- if dtype == 'ip' -%}
-            <i class="fas fa-globe" style="margin-right: 8px;"></i>
-          {%- elif dtype == 'domain' -%}
-            <i class="fas fa-link" style="margin-right: 8px;"></i>
-          {%- elif dtype == 'url' -%}
-            <i class="fas fa-external-link-alt" style="margin-right: 8px;"></i>
-          {%- elif dtype == 'hash' -%}
-            <i class="fas fa-hashtag" style="margin-right: 8px;"></i>
-          {%- elif dtype == 'mail' -%}
-            <i class="fas fa-envelope" style="margin-right: 8px;"></i>
-          {%- elif dtype == 'fqdn' -%}
-            <i class="fas fa-sitemap" style="margin-right: 8px;"></i>
-          {%- else -%}
-            <i class="fas fa-file" style="margin-right: 8px;"></i>
-          {%- endif -%}
-          {{ dtype | title }}
-        </h5>
-        <ul class="list-unstyled">
-          {% for data, jobids in datas.items() %}
-          <li>
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <a href="/allReports?observable={{ data|urlencode }}&datatype={{ dtype }}" 
-                 style="text-decoration: none; color: inherit; flex: 1;">
-                <strong style="display: block; padding: 8px 4px; font-size: 1.05em; color: #333;">
-                  {{ data }}
-                </strong>
-              </a>
-              <button class="btn btn-sm btn-outline-secondary copy-btn" 
-                      onclick="copyToClipboard('{{ data }}', this)"
-                      title="Copia negli appunti"
-                      style="padding: 4px 8px; border: 1px solid #ccc; background: white; cursor: pointer;">
-                <i class="fas fa-copy"></i>
-              </button>
-            </div>
-            <div class="mt-1" id="taxonomies-{{ data|replace('.', '_')|replace('/', '_') }}">
-              <small class="text-muted">
-                <i class="fas fa-spinner fa-spin"></i> Caricamento badge...
-              </small>
-            </div>
-          </li>
-          {% endfor %}
-        </ul>
-        {% endfor %}
+<div class="recent-searches mt-4 p-3 bg-light rounded" style="width: 100%; max-width: 790px;">
+  <h4 class="mb-3 text-center">Recent Searches</h4>
+  {% for dtype, datas in recent.items() %}
+  <h5 class="text-muted">
+    {%- if dtype == 'ip' -%}
+      <i class="fas fa-globe" style="margin-right: 8px;"></i>
+    {%- elif dtype == 'domain' -%}
+      <i class="fas fa-link" style="margin-right: 8px;"></i>
+    {%- elif dtype == 'url' -%}
+      <i class="fas fa-external-link-alt" style="margin-right: 8px;"></i>
+    {%- elif dtype == 'hash' -%}
+      <i class="fas fa-hashtag" style="margin-right: 8px;"></i>
+    {%- elif dtype == 'mail' -%}
+      <i class="fas fa-envelope" style="margin-right: 8px;"></i>
+    {%- elif dtype == 'fqdn' -%}
+      <i class="fas fa-sitemap" style="margin-right: 8px;"></i>
+    {%- else -%}
+      <i class="fas fa-file" style="margin-right: 8px;"></i>
+    {%- endif -%}
+    {{ dtype | title }}
+  </h5>
+  <ul class="list-unstyled">
+    {% for data, jobids in datas.items() %}
+    <li style="margin-bottom: 15px;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <a href="/allReports?observable={{ data|urlencode }}&datatype={{ dtype }}" 
+           style="text-decoration: none; color: inherit; flex: 1;">
+          <strong style="display: block; padding: 8px 4px; font-size: 1.05em; color: #333;">
+            {{ data }}
+          </strong>
+        </a>
+        <button class="btn btn-sm btn-outline-secondary copy-btn" 
+                onclick="copyToClipboard('{{ data }}', this)"
+                title="Copia negli appunti"
+                style="padding: 4px 8px; border: 1px solid #ccc; background: white; cursor: pointer;">
+          <i class="fas fa-copy"></i>
+        </button>
       </div>
-      {% endif %}
-    </div>
+      
+      <!-- Contatore analisi + pulsante per caricare badge -->
+      <div class="mt-1">
+            <button
+                type="button"
+                class="btn btn-sm btn-outline-info load-badges-btn"
+                data-observable="{{ data|replace('.', '_')|replace('/', '_') }}"
+                data-jobids='{{ jobids | tojson | safe }}'>
+          <i class="fas fa-eye"></i> 
+          Show badges ({{ jobids|length }} analyses)
+        </button>
+   
+        <div id="taxonomies-{{ data|replace('.', '_')|replace('/', '_') }}" style="margin-top: 8px;">
+          <!-- Badge verranno caricati qui al click -->
+        </div>
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+  {% endfor %}
+</div>
+{% endif %}
 
-<!-- RIMOSSO: script che mostrava il modal -->
 
-    <script>
+<!-- Script badges -->
+<script>
+const loadedBadges = new Set();
+
+function loadBadges(observableId, jobIds) {
+    if (loadedBadges.has(observableId)) return;
+    loadedBadges.add(observableId);
+
+    const container = $('#taxonomies-' + observableId);
+    const btn = $('.load-badges-btn[data-observable="' + observableId + '"]');
+
+    btn.prop('disabled', true)
+       .html('<i class="fas fa-spinner fa-spin"></i> Loading...');
+
+    container.empty();
+
+    let completed = 0;
+
+    jobIds.forEach(jobId => {
+        $.get('/getShort?JobId=' + jobId, function (html) {
+            container.append(html);
+        }).always(function () {
+            completed++;
+            if (completed === jobIds.length) {
+                btn.hide();
+            }
+        });
+    });
+}
+
+$(document).on('click', '.load-badges-btn', function () {
+    const btn = $(this);
+    const observableId = btn.data('observable');
+
+    let jobIdsRaw = btn.attr('data-jobids');
+    let jobIds = [];
+
+    try {
+        jobIds = JSON.parse(jobIdsRaw);
+    } catch (e) {
+        console.error('Invalid jobIds JSON:', jobIdsRaw);
+        return;
+    }
+
+    if (!Array.isArray(jobIds) || jobIds.length === 0) {
+        btn.hide();
+        return;
+    }
+
+    loadBadges(observableId, jobIds);
+});
+</script>
+
+
+
+    <script>  
     {% if t %}
 	$('#typefield').val('{{ t }}');
 	getAnalyzer('{{ t }}','value')
@@ -278,40 +342,8 @@
         }
     }, 1000);
     {% endif %}
-    
-    // Caricamento progressivo dei badge delle recent searches
-    $(document).ready(function() {
-        const recentSearches = [
-            {% for dtype, datas in recent.items() %}
-            {% for data, jobids in datas.items() %}
-            {
-                containerId: 'taxonomies-{{ data|replace('.', '_')|replace('/', '_') }}',
-                jobIds: {{ jobids|tojson }}
-            },
-            {% endfor %}
-            {% endfor %}
-        ];
-        
-        // Carica tutti i badge in parallelo (più veloce)
-        setTimeout(function() {
-            recentSearches.forEach(function(search) {
-                const container = $('#' + search.containerId);
-                container.html(''); // Pulisci il messaggio "Caricamento..."
-                
-                // Carica tutti i job per questo observable
-                search.jobIds.forEach(function(jobId) {
-                    $.get('/getShort?JobId=' + jobId, function(html) {
-                        container.append(html);
-                    }).fail(function() {
-                        console.warn('Errore caricamento badge per job: ' + jobId);
-                    });
-                });
-            });
-        }, 100); // Inizia dopo che la pagina è visibile
-    });
     </script>
     <script src="js/extention/choices.js"></script>
-    <script src="js/sc.js"></script>
     <script>
       const choices = new Choices('[data-trigger]',
       {

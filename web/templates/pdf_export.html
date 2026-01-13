@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>FUCO Report - {{ observable }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 2cm;
+            @top-right {
+                content: "Page " counter(page) " of " counter(pages);
+            }
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 10pt;
+            line-height: 1.4;
+            color: #333;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid #ffd700;
+        }
+        
+        .header h1 {
+            color: #333;
+            margin: 0;
+            font-size: 24pt;
+        }
+        
+        .header .subtitle {
+            color: #666;
+            font-size: 12pt;
+            margin-top: 10px;
+        }
+        
+        .metadata {
+            background: #f8f9fa;
+            padding: 15px;
+            margin-bottom: 30px;
+            border-radius: 5px;
+        }
+        
+        .metadata table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .metadata td {
+            padding: 5px 10px;
+        }
+        
+        .metadata td:first-child {
+            font-weight: bold;
+            width: 30%;
+        }
+        
+        .report-section {
+            page-break-inside: avoid;
+            margin-bottom: 40px;
+            border: 1px solid #ddd;
+            padding: 20px;
+            border-radius: 5px;
+        }
+        
+        .report-section h2 {
+            color: #ffd700;
+            background: #333;
+            padding: 10px;
+            margin: -20px -20px 20px -20px;
+            border-radius: 5px 5px 0 0;
+            font-size: 16pt;
+        }
+        
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        
+        .table th, .table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        
+        .table th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+        
+        .table tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 9pt;
+            font-weight: bold;
+        }
+        
+        .badge-success { background: #28a745; color: white; }
+        .badge-danger { background: #dc3545; color: white; }
+        .badge-warning { background: #ffc107; color: black; }
+        .badge-info { background: #17a2b8; color: white; }
+        
+        .footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 8pt;
+            color: #666;
+            padding: 10px;
+            border-top: 1px solid #ddd;
+        }
+        
+        /* Stili per i template LONG */
+        .card {
+            border: 1px solid #ddd;
+            margin-bottom: 20px;
+        }
+        
+        .card-header {
+            background: #f8f9fa;
+            padding: 10px;
+            font-weight: bold;
+        }
+        
+        .card-body {
+            padding: 15px;
+        }
+        
+        .panel {
+            margin-bottom: 20px;
+        }
+        
+        .panel-heading {
+            background: #f8f9fa;
+            padding: 10px;
+            font-weight: bold;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .panel-body {
+            padding: 15px;
+        }
+        
+        dl.dl-horizontal dt {
+            float: left;
+            width: 30%;
+            clear: left;
+            font-weight: bold;
+        }
+        
+        dl.dl-horizontal dd {
+            margin-left: 32%;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-family: monospace;
+            font-size: 9pt;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🐝 FUCO Analysis Report</h1>
+        <div class="subtitle">Cortex Intelligence Report</div>
+    </div>
+    
+    <div class="metadata">
+        <table>
+            <tr>
+                <td>Observable:</td>
+                <td><strong>{{ observable }}</strong></td>
+            </tr>
+            <tr>
+                <td>Type:</td>
+                <td>{{ datatype }}</td>
+            </tr>
+            <tr>
+                <td>Total Analyzers:</td>
+                <td>{{ reports|length }}</td>
+            </tr>
+            <tr>
+                <td>Generated:</td>
+                <td>{{ timestamp }}</td>
+            </tr>
+        </table>
+    </div>
+    
+    {% for report_data in reports %}
+    <div class="report-section">
+        <h2>{{ report_data.analyzer }}</h2>
+        
+        {{ report_data.html | safe }}
+    </div>
+    {% endfor %}
+    
+    <div class="footer">
+        Generated by FUCO - Cortex Search Engine | {{ timestamp }}
+    </div>
+</body>
+</html>

@@ -28,27 +28,139 @@ logger = logging.getLogger(__name__)
 cortex_api = Api(cfg.cortex["host"], cfg.cortex["apikey"])
 
 
+"""
+Fix della cache - NON salvare report incompleti
+"""
+
 # Cache per report (semplice, in-memory)
 _report_cache = {}
 _cache_ttl = timedelta(minutes=config.CACHE_TTL_MINUTES)
 
 def get_cached_report(job_id):
-    """Recupera report dalla cache o da Cortex"""
+    """
+    Recupera report dalla cache o da Cortex.
+    IMPORTANTE: Salva in cache SOLO i report con status finale (Success/Failure).
+    """
+    # 1. Controlla se è in cache
     if job_id in _report_cache:
         cached_time, report = _report_cache[job_id]
+        
+        # Verifica se la cache non è scaduta
         if datetime.now() - cached_time < _cache_ttl:
-            logger.info(f"Report {job_id} recuperato da cache")
+            logger.debug(f"Report {job_id} recuperato da cache (status: {report.status})")
             return report
+        else:
+            # Cache scaduta, rimuovi
+            logger.debug(f"Cache scaduta per job {job_id}, ricarico da Cortex")
+            del _report_cache[job_id]
     
-    # Altrimenti recupera da Cortex
-    report = cortex_api.jobs.get_report(job_id)
-    _report_cache[job_id] = (datetime.now(), report)
-    return report
+    # 2. Non in cache o scaduta, recupera da Cortex
+    logger.info(f"Report {job_id} non in cache, recupero da Cortex")
+    
+    try:
+        report = cortex_api_call(cortex_api.jobs.get_report, job_id)
+        
+        # 3. IMPORTANTE: Salva in cache SOLO se lo status è FINALE
+        final_statuses = ("Success", "Failure", "Deleted")
+        
+        if hasattr(report, 'status') and report.status in final_statuses:
+            _report_cache[job_id] = (datetime.now(), report)
+            logger.info(f"Report {job_id} salvato in cache (status finale: {report.status})")
+        else:
+            current_status = getattr(report, 'status', 'Unknown')
+            logger.debug(f"Report {job_id} NON salvato in cache (status non finale: {current_status})")
+        
+        return report
+        
+    except Exception as e:
+        logger.error(f"Errore recupero report {job_id}: {str(e)}")
+        raise
+
+
+def clear_report_cache(job_id=None):
+    """
+    Pulisce la cache dei report.
+    
+    Args:
+        job_id: Se specificato, rimuove solo quel report. Altrimenti pulisce tutta la cache.
+    """
+    global _report_cache
+    
+    if job_id:
+        if job_id in _report_cache:
+            del _report_cache[job_id]
+            logger.info(f"Report {job_id} rimosso dalla cache")
+    else:
+        _report_cache.clear()
+        logger.info("Cache completa svuotata")
+
+
+def get_cache_stats():
+    """Ritorna statistiche sulla cache per debug."""
+    total_cached = len(_report_cache)
+    
+    stats = {
+        'total_reports': total_cached,
+        'by_status': {},
+        'oldest_entry': None,
+        'newest_entry': None
+    }
+    
+    if total_cached > 0:
+        timestamps = []
+        for job_id, (cached_time, report) in _report_cache.items():
+            status = getattr(report, 'status', 'Unknown')
+            stats['by_status'][status] = stats['by_status'].get(status, 0) + 1
+            timestamps.append(cached_time)
+        
+        stats['oldest_entry'] = min(timestamps).isoformat()
+        stats['newest_entry'] = max(timestamps).isoformat()
+    
+    return stats
+
+# Wrapper per chiamate API con retry
+def cortex_api_call(func, *args, **kwargs):
+    """
+    Wrapper per chiamate API Cortex con retry e timeout.
+    Gestisce errori di rete temporanei con exponential backoff.
+    """
+    max_retries = 3
+    timeout = kwargs.pop('timeout', 30)  # Timeout di 30 secondi
+    
+    for attempt in range(max_retries):
+        try:
+            # Esegui la chiamata API
+            result = func(*args, **kwargs)
+            return result
+            
+        except ConnectionError as e:
+            logger.warning(f"ConnectionError tentativo {attempt+1}/{max_retries}: {str(e)}")
+            if attempt == max_retries - 1:
+                raise Exception(f"Impossibile connettersi a Cortex dopo {max_retries} tentativi")
+            time.sleep(2 ** attempt)  # Exponential backoff: 1s, 2s, 4s
+            
+        except TimeoutError as e:
+            logger.warning(f"Timeout tentativo {attempt+1}/{max_retries}")
+            if attempt == max_retries - 1:
+                raise Exception(f"Timeout dopo {max_retries} tentativi")
+            time.sleep(2 ** attempt)
+            
+        except Exception as e:
+            logger.error(f"Errore API Cortex: {str(e)}")
+            # Se è un errore 4xx (client error), non ritentare
+            if hasattr(e, 'response') and e.response and 400 <= e.response.status_code < 500:
+                raise
+            # Altrimenti ritenta
+            if attempt == max_retries - 1:
+                raise
+            time.sleep(2 ** attempt)
 
 def get_analyzer_by_type(analyzer_type: str):
     """Ottiene gli analyzer per un tipo di dato specifico."""
     try:
-        analyzers = cortex_api.analyzers.get_by_type(analyzer_type)
+        #analyzers = cortex_api.analyzers.get_by_type(analyzer_type)
+        analyzers = cortex_api_call(cortex_api.analyzers.get_by_type, analyzer_type)
+        
         logger.info(f"Ottenuti {len(analyzers) if analyzers else 0} analyzer per tipo: {analyzer_type}")
         return analyzers
     except Exception as e:
@@ -57,10 +169,17 @@ def get_analyzer_by_type(analyzer_type: str):
 
 
 def get_recent_searches():
-    """Recupera i 10 ricerche recenti per ogni tipo di dato."""
+    """Recupera le 10 ricerche recenti per ogni tipo di dato."""
     try:
         query = And(Eq('status', 'Success'))
-        jobs = cortex_api.jobs.find_all(query, range=config.JOB_SEARCH_RANGE, sort='-createdAt')
+        #jobs = cortex_api.jobs.find_all(query, range=config.JOB_SEARCH_RANGE, sort='-createdAt')
+        jobs = cortex_api_call(
+            cortex_api.jobs.find_all,
+            query,
+            range=config.JOB_SEARCH_RANGE,
+            sort='-createdAt'
+        )
+
         recent = {}
         
         for job in jobs:
@@ -84,7 +203,11 @@ def get_recent_searches():
 def run_analysis(analyzer: str, datatype: str, data: str) -> dict:
     """Esegue un'analisi tramite un analyzer specifico."""
     try:
-        job = cortex_api.analyzers.run_by_name(analyzer, {
+        #job = cortex_api.analyzers.run_by_name(...)
+        job = cortex_api_call(
+            cortex_api.analyzers.run_by_name,
+            analyzer,
+        {
             'data': data,
             'dataType': datatype,
             'pap': config.DEFAULT_PAP,

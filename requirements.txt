@@ -4,5 +4,7 @@ Jinja2
 cortex4py
 flask_apscheduler
 wheel
-python-magic-bin
+python-magic-bin; platform_system == "Windows"
+python-magic; platform_system != "Windows"
 pydantic
+weasyprint
