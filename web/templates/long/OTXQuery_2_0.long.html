@@ -1,256 +1,460 @@
 {% if artifact.status == "Success" %}
 {% set content = artifact.report.full %}
+{% set artifacts_list = artifact.report.get('artifacts', []) %}
+
 <div class="card border-success">
-    <div class="card-header">
+  <div class="card-header">
     <ul class="nav nav-tabs card-header-tabs">
       <li class="nav-item">
-        <a class="nav-link active" id="home-tab_{{ artifact.id }}" data-bs-toggle="tab" data-bs-target="#home_{{ artifact.id }}" role="tab" aria-controls="home_{{ artifact.id }}" aria-selected="true">Result</a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link" id="json-tab_{{ artifact.id }}" data-bs-toggle="tab" data-bs-target="#json_{{ artifact.id }}" role="tab" aria-controls="json_{{ artifact.id }}" aria-selected="false">Json</a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link disabled">Ext. Analisys
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-link-45deg" viewBox="0 0 16 16">
-          <path d="M4.715 6.542 3.343 7.914a3 3 0 1 0 4.243 4.243l1.828-1.829A3 3 0 0 0 8.586 5.5L8 6.086a1.002 1.002 0 0 0-.154.199 2 2 0 0 1 .861 3.337L6.88 11.45a2 2 0 1 1-2.832.83l.793-.792a4.018 4.018 0 0 1-.128-1.287z"/>
-          <path d="M6.586 4.672A3 3 0 0 0 7.414 9.5l.775-.776a2 2 0 0 1-.896-3.346L9.12 3.55a2 2 0 1 1 2.83 2.83l-.793.792c.112.42.155.855.128 1.287l1.372-1.372a3 3 0 1 0-4.243-4.243L6.5864.672z"/>
-        </svg>
+        <a class="nav-link active" 
+           id="home-tab_{{ artifact.id }}" 
+           data-bs-toggle="tab" 
+           data-bs-target="#home_{{ artifact.id }}" 
+           role="tab">
+          Summary
         </a>
       </li>
+      <li class="nav-item">
+        <a class="nav-link" 
+           id="pdns-tab_{{ artifact.id }}" 
+           data-bs-toggle="tab" 
+           data-bs-target="#pdns_{{ artifact.id }}" 
+           role="tab">
+          Passive DNS
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" 
+           id="artifacts-tab_{{ artifact.id }}" 
+           data-bs-toggle="tab" 
+           data-bs-target="#artifacts_{{ artifact.id }}" 
+           role="tab">
+          Artifacts <span class="badge bg-primary">{{ artifacts_list | length }}</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" 
+           id="json-tab_{{ artifact.id }}" 
+           data-bs-toggle="tab" 
+           data-bs-target="#json_{{ artifact.id }}" 
+           role="tab">
+          JSON
+        </a>
+      </li>
+    </ul>
+  </div>
+
+  <div class="card-body">
+    <div class="tab-content">
+
+      {# TAB SUMMARY #}
+      <div class="tab-pane fade show active" 
+           id="home_{{ artifact.id }}" 
+           role="tabpanel">
+
+        <div class="panel panel-info">
+          <div class="panel-heading">
+            <h5><i class="fas fa-shield-alt"></i> AlienVault OTX Report</h5>
+          </div>
+          <div class="panel-body">
+
+            {% if content.errortext %}
+            <div class="alert alert-danger">
+              <i class="fas fa-exclamation-triangle"></i> 
+              <strong>Error:</strong> {{ content.errortext }}
+            </div>
+            {% endif %}
+
+            {# Geographic Information #}
+            {% if content.country_name or content.city or content.asn %}
+            <div class="card mb-3">
+              <div class="card-header bg-light">
+                <strong><i class="fas fa-globe"></i> Geographic & Network Information</strong>
+              </div>
+              <div class="card-body">
+                <dl class="row mb-0">
+                  {% if content.country_name %}
+                  <dt class="col-sm-3">Country:</dt>
+                  <dd class="col-sm-9">
+                    {{ content.country_name }}
+                    {% if content.country_code %}
+                      <span class="badge bg-secondary">{{ content.country_code }}</span>
+                    {% endif %}
+                  </dd>
+                  {% endif %}
+                  
+                  {% if content.city %}
+                  <dt class="col-sm-3">City:</dt>
+                  <dd class="col-sm-9">{{ content.city }}</dd>
+                  {% endif %}
+                  
+                  {% if content.asn %}
+                  <dt class="col-sm-3">ASN:</dt>
+                  <dd class="col-sm-9"><code>{{ content.asn }}</code></dd>
+                  {% endif %}
+                  
+                  {% if content.continent_code %}
+                  <dt class="col-sm-3">Continent:</dt>
+                  <dd class="col-sm-9">{{ content.continent_code }}</dd>
+                  {% endif %}
+                </dl>
+              </div>
+            </div>
+            {% endif %}
+
+            {# Threat Intelligence - Pulses #}
+            <div class="card mb-3">
+              <div class="card-header bg-light">
+                <strong><i class="fas fa-rss"></i> Related Threat Pulses</strong>
+              </div>
+              <div class="card-body">
+                <dl class="row mb-2">
+                  <dt class="col-sm-3">Pulses Found:</dt>
+                  <dd class="col-sm-9">
+                    {% if content.pulse_count > 0 %}
+                      <span class="badge bg-warning text-dark">{{ content.pulse_count }}</span>
+                    {% else %}
+                      <span class="badge bg-success">0</span>
+                    {% endif %}
+                  </dd>
+                </dl>
+
+                {% if content.pulse_count > 0 %}
+                <hr>
+                <h6>Pulse Details:</h6>
+                {% for pulse in content.pulses %}
+                <div class="card mb-2">
+                  <div class="card-body">
+                    <h6 class="card-title">
+                      <a href="https://otx.alienvault.com/pulse/{{ pulse.id }}/" 
+                         target="_blank"
+                         class="text-decoration-none">
+                        <i class="fas fa-external-link-alt"></i> {{ pulse.name }}
+                      </a>
+                    </h6>
+                    <div class="row small">
+                      <div class="col-md-6">
+                        <strong>Author:</strong> {{ pulse.author.username }}<br>
+                        <strong>Modified:</strong> {{ pulse.modified }}<br>
+                        <strong>Subscribers:</strong> {{ pulse.subscriber_count }}
+                      </div>
+                      <div class="col-md-6">
+                        <strong>Indicators:</strong> {{ pulse.indicator_count }}<br>
+                        {% if pulse.industries %}
+                        <strong>Industries:</strong> {{ pulse.industries | join(', ') }}<br>
+                        {% endif %}
+                        <strong>Subscribed:</strong> 
+                        {% if pulse.is_subscribing %}
+                          <span class="badge bg-success">Yes</span>
+                        {% else %}
+                          <span class="badge bg-secondary">No</span>
+                        {% endif %}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                {% endfor %}
+                {% endif %}
+
+                <div class="mt-3">
+                  <a href="https://otx.alienvault.com/pulse/create/" 
+                     target="_blank" 
+                     class="btn btn-sm btn-outline-primary">
+                    <i class="fas fa-plus"></i> Create a Pulse
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            {# Malware Samples #}
+            {% if content.malware_samples and content.malware_samples != "-" and content.malware_samples != "No samples found" %}
+            <div class="card mb-3">
+              <div class="card-header bg-light">
+                <strong><i class="fas fa-virus"></i> Malware Samples</strong>
+              </div>
+              <div class="card-body">
+                {% if content.malware_samples is iterable and content.malware_samples is not string %}
+                  {% for sample in content.malware_samples %}
+                  <div class="mb-2">
+                    <code>{{ sample.sample if sample.sample else sample }}</code>
+                  </div>
+                  {% endfor %}
+                {% else %}
+                  <code>{{ content.malware_samples }}</code>
+                {% endif %}
+              </div>
+            </div>
+            {% endif %}
+
+            {# File Information #}
+            {% if content.sha256 or content.sha1 or content.md5 or content.file_type %}
+            <div class="card mb-3">
+              <div class="card-header bg-light">
+                <strong><i class="fas fa-file"></i> File Information</strong>
+              </div>
+              <div class="card-body">
+                <dl class="row mb-0">
+                  {% if content.sha256 %}
+                  <dt class="col-sm-2">SHA256:</dt>
+                  <dd class="col-sm-10"><code class="text-break">{{ content.sha256 }}</code></dd>
+                  {% endif %}
+                  
+                  {% if content.sha1 %}
+                  <dt class="col-sm-2">SHA1:</dt>
+                  <dd class="col-sm-10"><code class="text-break">{{ content.sha1 }}</code></dd>
+                  {% endif %}
+                  
+                  {% if content.md5 %}
+                  <dt class="col-sm-2">MD5:</dt>
+                  <dd class="col-sm-10"><code class="text-break">{{ content.md5 }}</code></dd>
+                  {% endif %}
+                  
+                  {% if content.file_type %}
+                  <dt class="col-sm-2">File Type:</dt>
+                  <dd class="col-sm-10">{{ content.file_type }}</dd>
+                  {% endif %}
+                  
+                  {% if content.file_class %}
+                  <dt class="col-sm-2">File Class:</dt>
+                  <dd class="col-sm-10">{{ content.file_class }}</dd>
+                  {% endif %}
+                  
+                  {% if content.filesize %}
+                  <dt class="col-sm-2">File Size:</dt>
+                  <dd class="col-sm-10">{{ content.filesize }}</dd>
+                  {% endif %}
+                  
+                  {% if content.ssdeep %}
+                  <dt class="col-sm-2">SSDEEP:</dt>
+                  <dd class="col-sm-10"><code class="text-break">{{ content.ssdeep }}</code></dd>
+                  {% endif %}
+                </dl>
+              </div>
+            </div>
+            {% endif %}
+
+            {# Related URLs #}
+            {% if content.url_list and content.url_list | length > 0 %}
+            <div class="card mb-3">
+              <div class="card-header bg-light">
+                <strong><i class="fas fa-link"></i> Related URLs</strong>
+                <span class="badge bg-primary float-end">{{ content.url_list | length }}</span>
+              </div>
+              <div class="card-body">
+                {% for url in content.url_list %}
+                <div class="card mb-2">
+                  <div class="card-body py-2">
+                    <strong>URL:</strong> 
+                    <a href="{{ url.url }}" target="_blank" class="text-break">{{ url.url }}</a><br>
+                    <small class="text-muted">
+                      <strong>Date:</strong> {{ url.date }} | 
+                      <strong>HTTP:</strong> {{ url.httpcode }} | 
+                      <strong>IP:</strong> {{ url.result.urlworker.ip if url.result and url.result.urlworker else 'N/A' }}
+                    </small>
+                  </div>
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+            {% endif %}
+
+            {# External Links #}
+            {% if content.whois or content.alexa %}
+            <div class="card mb-3">
+              <div class="card-header bg-light">
+                <strong><i class="fas fa-external-link-alt"></i> External Resources</strong>
+              </div>
+              <div class="card-body">
+                {% if content.whois %}
+                <a href="{{ content.whois }}" target="_blank" class="btn btn-sm btn-outline-secondary me-2">
+                  <i class="fas fa-search"></i> Whois Query
+                </a>
+                {% endif %}
+                
+                {% if content.alexa %}
+                <a href="{{ content.alexa }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                  <i class="fas fa-chart-line"></i> Alexa Report
+                </a>
+                {% endif %}
+              </div>
+            </div>
+            {% endif %}
+
+          </div>
+        </div>
+      </div>
+
+      {# TAB PASSIVE DNS #}
+      <div class="tab-pane fade" 
+           id="pdns_{{ artifact.id }}" 
+           role="tabpanel">
+
+        {% if content.passive_dns and content.passive_dns | length > 0 %}
+        <div class="card">
+          <div class="card-header bg-light">
+            <strong><i class="fas fa-network-wired"></i> Passive DNS Records</strong>
+            <span class="badge bg-primary float-end">{{ content.passive_dns | length }}</span>
+          </div>
+          <div class="card-body">
+            <div class="table-responsive">
+              <table class="table table-hover table-sm">
+                <thead class="table-light">
+                  <tr>
+                    <th>Hostname</th>
+                    <th>Address</th>
+                    <th>Record Type</th>
+                    <th>First Seen</th>
+                    <th>Last Seen</th>
+                    <th>Country</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for dns in content.passive_dns %}
+                  <tr>
+                    <td>
+                      <a href="https://otx.alienvault.com{{ dns.indicator_link }}" 
+                         target="_blank"
+                         class="text-decoration-none">
+                        {{ dns.hostname }}
+                      </a>
+                    </td>
+                    <td><code>{{ dns.address }}</code></td>
+                    <td><span class="badge bg-secondary">{{ dns.record_type }}</span></td>
+                    <td><small>{{ dns.first }}</small></td>
+                    <td><small>{{ dns.last }}</small></td>
+                    <td>
+                      {% if dns.flag_title %}
+                        {{ dns.flag_title }}
+                      {% else %}
+                        <span class="text-muted">—</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        {% else %}
+        <div class="alert alert-info">
+          <i class="fas fa-info-circle"></i> No Passive DNS records found.
+        </div>
+        {% endif %}
+      </div>
+
+      {# TAB ARTIFACTS #}
+      <div class="tab-pane fade" 
+           id="artifacts_{{ artifact.id }}" 
+           role="tabpanel">
+
+        {% if artifacts_list | length > 0 %}
+        
+        {# Raggruppa per tipo #}
+        {% set ips = [] %}
+        {% set domains = [] %}
+        {% set urls = [] %}
+        
+        {% for art in artifacts_list %}
+          {% if art.dataType == 'ip' %}
+            {% set _ = ips.append(art) %}
+          {% elif art.dataType in ['domain', 'fqdn'] %}
+            {% set _ = domains.append(art) %}
+          {% elif art.dataType == 'url' %}
+            {% set _ = urls.append(art) %}
+          {% endif %}
+        {% endfor %}
+
+        {# IP Addresses #}
+        {% if ips | length > 0 %}
+        <div class="card mb-3">
+          <div class="card-header bg-light">
+            <strong><i class="fas fa-network-wired"></i> IP Addresses</strong>
+            <span class="badge bg-primary float-end">{{ ips | length }}</span>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              {% for ip in ips %}
+              <div class="col-md-4 mb-2">
+                <code>{{ ip.data }}</code>
+                <span class="badge bg-warning text-dark">TLP:{{ ip.tlp }}</span>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+        {# Domains/FQDN #}
+        {% if domains | length > 0 %}
+        <div class="card mb-3">
+          <div class="card-header bg-light">
+            <strong><i class="fas fa-globe"></i> Domains & FQDN</strong>
+            <span class="badge bg-primary float-end">{{ domains | length }}</span>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              {% for domain in domains %}
+              <div class="col-md-6 mb-2">
+                <code>{{ domain.data }}</code>
+                <span class="badge bg-info">{{ domain.dataType }}</span>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+        {# URLs #}
+        {% if urls | length > 0 %}
+        <div class="card mb-3">
+          <div class="card-header bg-light">
+            <strong><i class="fas fa-link"></i> URLs</strong>
+            <span class="badge bg-primary float-end">{{ urls | length }}</span>
+          </div>
+          <div class="card-body">
+            {% for url in urls %}
+            <div class="mb-2">
+              <a href="{{ url.data }}" target="_blank" class="text-break">{{ url.data }}</a>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+
+        {% else %}
+        <div class="alert alert-info">
+          <i class="fas fa-info-circle"></i> No artifacts extracted.
+        </div>
+        {% endif %}
+      </div>
+
+      {# TAB JSON #}
+      <div class="tab-pane fade" 
+           id="json_{{ artifact.id }}" 
+           role="tabpanel">
+        <pre><code class="language-json">{{ artifact | tojson(indent=2) }}</code></pre>
+      </div>
+
     </div>
-    <div class="card-body">
-    <div class="tab-content" id="myTabContent">
-     <div class="tab-pane fade show active" id="home_{{ artifact.id }}" role="tabpanel" aria-labelledby="home-tab_{{ artifact.id }}">
-
-
-<div class="panel panel-info" >
-	<div class="panel-heading">
-		OTX Report
-	</div>
-	<div class="panel-body">
-
-		{% if content.errortext %}
-		<dl class="dl-horizontal" >
-			<dt><i class="fa fa-warning"></i> ERROR: </dt>
-			<dd class="wrap">{{content.errortext}}&nbsp;</dd>
-		</dl>
-		{% endif %}
-
-		<dl class="dl-horizontal">
-			<dt>Related Pulses Found: </dt>
-			<dd class="wrap">{{content.pulse_count}}</dd>
-		</dl>
-
-		{% if content.pulse_count > 0 %}
-		<dl class="dl-horizontal" >
-			<dt>Related Pulses: </dt>
-			<dd class="wrap">
-			{% for pulse in content.pulses %}
-			<div >
-				<strong>Name: </strong><a ng-href="https://otx.alienvault.com/pulse/{{pulse.id}}/" target="_blank">{{pulse.name}}</a><br/>
-				<strong>Author: </strong>{{pulse.author.username}}<br/>
-				<strong>Modified: </strong>{{pulse.modified_text}} @ {{pulse.modified}} <br/>
-				<strong>Subscribers: </strong>{{pulse.subscriber_count}} <br/>
-				<strong>Subscribed: </strong>{{pulse.is_subscribing}} <br/>
-				<strong>Industries: </strong>{{pulse.industries}} <br/>
-				<strong>Indicators: </strong>{{pulse.indicator_count}}
-				<hr>
-			</div>
-			{% endfor %}
-			</dd>
-		</dl>
-		{% endif %}
-
-		<dl class="dl-horizontal">
-			<dt>Submit Pulse: </dt>
-			<dd class="wrap">
-				<i class="fa fa-bullhorn"></i> <a href="https://otx.alienvault.com/pulse/create/" target="_blank">Create a Pulse</a>&nbsp;
-			</dd>
-		</dl>
-
-		{% if content.malware_samples != "No samples found"  %}
-		<dl class="dl-horizontal" >
-			<dt>Malware Samples: </dt>
-			<dd class="wrap">
-				{% for sample in content.malware_samples %}
-				<div >
-					{{sample.sample}}
-				</div>
-				{% endfor %}
-			</dd>
-		</dl>
-		{% endif %}
-
-		{% if content.malware %}
-		<dl class="dl-horizontal" >
-			<dt>Malware: </dt>
-			<dd class="wrap">{{content.malware}}&nbsp;</dd>
-		</dl>
-		{% endif %}
-
-
-		{% if content.sha1 %}
-		<dl class="dl-horizontal" >
-			<dt>SHA1: </dt>
-			<dd class="wrap">{{content.sha1}}&nbsp;</dd>
-		</dl>
-		{% endif %}
-
-		{% if content.sha256 %}
-		<dl class="dl-horizontal" >
-			<dt>SHA256: </dt>
-			<dd class="wrap">{{content.sha256}}&nbsp;</dd>
-		</dl>
-		{% endif %}
-
-		{% if content.md5 %}
-		<dl class="dl-horizontal" >
-			<dt>MD5: </dt>
-			<dd class="wrap">{{content.md5}}&nbsp;</dd>
-		</dl>
-		{% endif %}
-
-		{% if content.page_type %}
-		<dl class="dl-horizontal" >
-			<dt>Page Type: </dt>
-			<dd class="wrap">{{content.page_type}}&nbsp;</dd>
-		</dl>
-		{% endif %}
-
-		{% if content.file_class %}
-		<dl class="dl-horizontal" >
-			<dt>File Class: </dt>
-			<dd class="wrap">{{content.file_class}}&nbsp;</dd>
-		</dl>
-		{% endif %}
-
-		{% if content.file_type %}
-		<dl class="dl-horizontal" >
-			<dt>File Type: </dt>
-			<dd class="wrap">{{content.file_type}}&nbsp;</dd>
-		</dl>
-		{% endif %}
-
-		{% if content.filesize %}
-		<dl class="dl-horizontal" >
-			<dt>File Size: </dt>
-			<dd class="wrap">{{content.filesize}}&nbsp;</dd>
-		</dl>
-		{% endif %}
-
-		{% if content.ssdeep %}
-		<dl class="dl-horizontal" >
-			<dt>SSDEEP: </dt>
-			<dd class="wrap">{{content.ssdeep}}&nbsp;</dd>
-		</dl>
-		{% endif %}
-
-		{% if content.url_list | length  > 0 %}
-		<dl class="dl-horizontal" >
-			<dt>Related URLs: </dt>
-			<dd class="wrap">
-			{% for url in content.url_list %}
-			<div >
-				<strong>URL: </strong>{{url.url}} <br/>
-				<strong>Date: </strong>{{url.date}} <br/>
-				<strong>HTTP Code: </strong>{{url.httpcode}} <br/>
-				<strong>IP: </strong>{{url.result.urlworker.ip}}
-				<hr>
-			</div>
-			{% endfor %}
-			</dd>
-		</dl>
-		{% endif %}
-
-		{% if content.passive_dns | length  > 0 %}
-		<dl class="dl-horizontal" >
-			<dt>Passive DNS: </dt>
-			<dd class="wrap">
-			{% for dns in content.passive_dns %}
-			<div >
-				<strong>Hostname: </strong>{{dns.hostname}} <br/>
-				<strong>IP: </strong>{{dns.address}} <br/>
-				<strong>First/Last seen: </strong>{{dns.first}} / {{dns.last}} <br/>
-				<strong>Locale: </strong>{{dns.flag_title}}
-			</div>
-			<hr>
-			{% endfor %}
-			</dd>
-		</dl>
-		{% endif %}
-
-		{% if content.whois %}
-		<dl class="dl-horizontal" >
-			<dt>Whois: </dt>
-			<dd class="wrap">
-				<i class="fa fa-search"></i> <a ng-href="{{content.whois}}" target="_blank">Whois Query</a>&nbsp;
-			</dd>
-		</dl>
-		{% endif %}
-
-		{% if content.alexa %}
-		<dl class="dl-horizontal" >
-			<dt>Alexa: </dt>
-			<dd class="wrap">
-				<i class="fa fa-search"></i> <a ng-href="{{content.alexa}}" target="_blank">Alexa Report</a>&nbsp;
-			</dd>
-		</dl>
-		{% endif %}
-
-		{% if content.city %}
-		<dl class="dl-horizontal" >
-			<dt>City: </dt>
-			<dd class="wrap">{{content.city}}&nbsp;</dd>
-		</dl>
-		{% endif %}
-
-		{% if content.country_code %}
-		<dl class="dl-horizontal" >
-			<dt>Country Code: </dt>
-			<dd class="wrap">{{content.country_code}}&nbsp;</dd>
-		</dl>
-		{% endif %}
-
-		{% if content.country_name %}
-		<dl class="dl-horizontal" >
-			<dt>Country: </dt>
-			<dd class="wrap">{{content.country_name}}&nbsp;</dd>
-		</dl>
-		{% endif %}
-
-		{% if content.asn %}
-		<dl class="dl-horizontal" >
-			<dt>ASN: </dt>
-			<dd class="wrap">{{content.asn}}&nbsp;</dd>
-		</dl>
-		{% endif %}
-
-	</div>
+  </div>
 </div>
 
-
-
-     </div>
-     <div class="tab-pane fade" id="json_{{ artifact.id }}" role="tabpanel" aria-labelledby="json-tab_{{ artifact.id }}">
-        <pre>
-        <code>
-{{ artifact | string }}
-        </code>
-        </pre>
-    </div>
-    </div> <!-- tab content -->
-    </div> <!-- card body -->
-</div>
 {% else %}
-<!-- General error -->
+{# Error State #}
 <div class="card border-danger">
-        <div class="card-header alert alert-danger">
-                <strong>Error</strong>
-        </div>
-        <div class="card-body">
-                <strong>{{(artifact.data)}}</strong><br>
-                {{ artifact.report.errorMessage}}
-        </div>
+  <div class="card-header bg-danger text-white">
+    <i class="fas fa-exclamation-triangle"></i> <strong>Analysis Error</strong>
+  </div>
+  <div class="card-body">
+    <h5>Observable: <code>{{ artifact.data }}</code></h5>
+    <div class="alert alert-danger mt-3">
+      {{ artifact.report.errorMessage if artifact.report else 'Unknown error occurred' }}
     </div>
+    
+    {% if artifact.status %}
+    <p class="text-muted">Status: <strong>{{ artifact.status }}</strong></p>
+    {% endif %}
+  </div>
 </div>
 {% endif %}

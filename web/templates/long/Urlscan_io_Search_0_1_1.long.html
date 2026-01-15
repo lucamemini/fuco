@@ -1,6 +1,21 @@
 {% if artifact.get('status') == "Success" %}
-{% set content = artifact.get('report', {}).get('full', {}) %}
-{% set results = content.get('indicator', {}).get('results', []) %}
+{% set content = artifact.get('report', {}) %}
+{% set full_data = content.get('full', {}) %}
+
+{# Gestione compatibilità: prova diverse strutture dati #}
+{% if full_data.get('indicator', {}).get('results') %}
+  {% set results = full_data.get('indicator', {}).get('results', []) %}
+{% elif full_data.get('results') %}
+  {% set results = full_data.get('results', []) %}
+{% elif content.get('results') %}
+  {% set results = content.get('results', []) %}
+{% elif content.get('artifacts') %}
+  {# Raggruppa gli artifacts per scan ID #}
+  {% set artifacts_list = content.get('artifacts', []) %}
+  {% set results = [] %}
+{% else %}
+  {% set results = [] %}
+{% endif %}
 
 <div class="card border-success">
   <div class="card-header">
@@ -11,7 +26,16 @@
            data-bs-toggle="tab"
            data-bs-target="#home_{{ artifact.get('id') }}"
            role="tab">
-          Result
+          Results
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link"
+           id="artifacts-tab_{{ artifact.get('id') }}"
+           data-bs-toggle="tab"
+           data-bs-target="#artifacts_{{ artifact.get('id') }}"
+           role="tab">
+          Artifacts
         </a>
       </li>
       <li class="nav-item">
@@ -20,13 +44,8 @@
            data-bs-toggle="tab"
            data-bs-target="#json_{{ artifact.get('id') }}"
            role="tab">
-          Json
+          JSON
         </a>
-      </li>
-      <li class="nav-item">
-        <span class="nav-link disabled">
-          Ext. Analysis
-        </span>
       </li>
     </ul>
   </div>
@@ -34,68 +53,203 @@
   <div class="card-body">
     <div class="tab-content">
 
+      {# TAB RESULTS #}
       <div class="tab-pane fade show active"
            id="home_{{ artifact.get('id') }}"
            role="tabpanel">
 
         <div class="panel panel-info">
           <div class="panel-heading">
-            urlscan.io search results:
-            {% if results | length > 20 %}
-              <span class="float-end">({{ results | length }})</span>
+            <strong>URLscan.io Search Results</strong>
+            {% if results | length > 0 %}
+              <span class="badge bg-primary float-end">{{ results | length }} results</span>
             {% endif %}
           </div>
 
           <div class="panel-body">
             {% if results | length > 0 %}
-            <table class="table table-hover">
-              <thead>
-                <tr>
-                  <th>URL</th>
-                  <th>Result</th>
-                  <th>Time</th>
-                  <th>Screenshot</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for r in results %}
-                <tr>
-                  <td>{{ r.get('page', {}).get('url') }}</td>
-                  <td>
-                    {% if r.get('_id') %}
-                    <a href="https://urlscan.io/result/{{ r.get('_id') }}"
-                       target="_blank">
-                      View Report
-                    </a>
-                    {% endif %}
-                  </td>
-                  <td>{{ r.get('task', {}).get('time') }}</td>
-                  <td>
-                    {% if r.get('screenshot') %}
-                    <img src="{{ r.get('screenshot') }}"
-                         width="150"
-                         height="112"
-                         alt="screenshot">
-                    {% else %}
-                    —
-                    {% endif %}
-                  </td>
-                </tr>
-                {% endfor %}
-              </tbody>
-            </table>
+            <div class="table-responsive">
+              <table class="table table-hover table-striped">
+                <thead class="table-light">
+                  <tr>
+                    <th style="width: 40%;">URL</th>
+                    <th style="width: 15%;">Result</th>
+                    <th style="width: 20%;">Time</th>
+                    <th style="width: 25%;">Screenshot</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for r in results %}
+                  <tr>
+                    <td>
+                      <a href="{{ r.get('page', {}).get('url', '#') }}" 
+                         target="_blank"
+                         class="text-break">
+                        {{ r.get('page', {}).get('url', 'N/A') | truncate(60) }}
+                      </a>
+                    </td>
+                    <td>
+                      {% if r.get('_id') %}
+                      <a href="https://urlscan.io/result/{{ r.get('_id') }}"
+                         target="_blank"
+                         class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-external-link-alt"></i> View Report
+                      </a>
+                      {% else %}
+                      <span class="text-muted">—</span>
+                      {% endif %}
+                    </td>
+                    <td>
+                      {% if r.get('task', {}).get('time') %}
+                        <small>{{ r.get('task', {}).get('time') }}</small>
+                      {% else %}
+                        <span class="text-muted">—</span>
+                      {% endif %}
+                    </td>
+                    <td>
+                      {% if r.get('screenshot') %}
+                      <a href="{{ r.get('screenshot') }}" target="_blank">
+                        <img src="{{ r.get('screenshot') }}"
+                             class="img-thumbnail"
+                             style="max-width: 150px; max-height: 112px;"
+                             alt="screenshot"
+                             loading="lazy">
+                      </a>
+                      {% else %}
+                      <span class="text-muted">No screenshot</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
             {% else %}
-              <span>No results.</span>
+              <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i> No search results found.
+              </div>
             {% endif %}
           </div>
         </div>
 
       </div>
 
+      {# TAB ARTIFACTS #}
+      <div class="tab-pane fade"
+           id="artifacts_{{ artifact.get('id') }}"
+           role="tabpanel">
+
+        {% set artifacts_list = content.get('artifacts', []) %}
+        
+        {% if artifacts_list | length > 0 %}
+        <div class="alert alert-info mb-3">
+          <i class="fas fa-info-circle"></i>
+          <strong>{{ artifacts_list | length }}</strong> artifacts extracted from URLscan results
+        </div>
+
+        {# Raggruppa per tipo #}
+        {% set screenshots = [] %}
+        {% set api_results = [] %}
+        {% set others = [] %}
+        
+        {% for art in artifacts_list %}
+          {% if 'screenshot' in art.data %}
+            {% set _ = screenshots.append(art) %}
+          {% elif 'api/v1/result' in art.data %}
+            {% set _ = api_results.append(art) %}
+          {% else %}
+            {% set _ = others.append(art) %}
+          {% endif %}
+        {% endfor %}
+
+        {# Screenshots #}
+        {% if screenshots | length > 0 %}
+        <div class="mb-4">
+          <h5><i class="fas fa-camera"></i> Screenshots ({{ screenshots | length }})</h5>
+          <div class="row g-3">
+            {% for art in screenshots[:20] %}
+            <div class="col-md-3 col-sm-6">
+              <a href="{{ art.data }}" target="_blank" class="d-block">
+                <img src="{{ art.data }}" 
+                     class="img-thumbnail w-100" 
+                     alt="Screenshot"
+                     loading="lazy"
+                     style="max-height: 200px; object-fit: cover;">
+              </a>
+            </div>
+            {% endfor %}
+          </div>
+          {% if screenshots | length > 20 %}
+          <p class="text-muted mt-2">
+            <small>Showing first 20 of {{ screenshots | length }} screenshots</small>
+          </p>
+          {% endif %}
+        </div>
+        {% endif %}
+
+        {# API Results #}
+        {% if api_results | length > 0 %}
+        <div class="mb-4">
+          <h5><i class="fas fa-link"></i> API Result Links ({{ api_results | length }})</h5>
+          <div class="list-group">
+            {% for art in api_results[:10] %}
+            <a href="{{ art.data }}" 
+               target="_blank" 
+               class="list-group-item list-group-item-action">
+              <i class="fas fa-external-link-alt"></i> {{ art.data }}
+            </a>
+            {% endfor %}
+          </div>
+          {% if api_results | length > 10 %}
+          <p class="text-muted mt-2">
+            <small>Showing first 10 of {{ api_results | length }} API links</small>
+          </p>
+          {% endif %}
+        </div>
+        {% endif %}
+
+        {# Others #}
+        {% if others | length > 0 %}
+        <div class="mb-4">
+          <h5><i class="fas fa-file"></i> Other Artifacts ({{ others | length }})</h5>
+          <div class="table-responsive">
+            <table class="table table-sm table-hover">
+              <thead class="table-light">
+                <tr>
+                  <th>Data</th>
+                  <th>Type</th>
+                  <th>TLP</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for art in others %}
+                <tr>
+                  <td class="text-break">
+                    <a href="{{ art.data }}" target="_blank">{{ art.data }}</a>
+                  </td>
+                  <td><span class="badge bg-secondary">{{ art.dataType }}</span></td>
+                  <td><span class="badge bg-warning">TLP:{{ art.tlp }}</span></td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        {% endif %}
+
+        {% else %}
+        <div class="alert alert-info">
+          <i class="fas fa-info-circle"></i> No artifacts available.
+        </div>
+        {% endif %}
+
+      </div>
+
+      {# TAB JSON #}
       <div class="tab-pane fade"
            id="json_{{ artifact.get('id') }}"
            role="tabpanel">
-        <pre><code>{{ artifact | tojson(indent=2) }}</code></pre>
+        <pre><code class="language-json">{{ artifact | tojson(indent=2) }}</code></pre>
       </div>
 
     </div>
@@ -104,12 +258,18 @@
 
 {% else %}
 <div class="card border-danger">
-  <div class="card-header alert alert-danger">
-    <strong>Error</strong>
+  <div class="card-header bg-danger text-white">
+    <i class="fas fa-exclamation-triangle"></i> <strong>Analysis Error</strong>
   </div>
   <div class="card-body">
-    <strong>{{ artifact.get('data') }}</strong><br>
-    {{ artifact.get('report', {}).get('errorMessage') }}
+    <h5>Observable: <code>{{ artifact.get('data') }}</code></h5>
+    <div class="alert alert-danger mt-3">
+      {{ artifact.get('report', {}).get('errorMessage', 'Unknown error occurred') }}
+    </div>
+    
+    {% if artifact.get('status') %}
+    <p class="text-muted">Status: <strong>{{ artifact.get('status') }}</strong></p>
+    {% endif %}
   </div>
 </div>
 {% endif %}

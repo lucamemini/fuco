@@ -213,6 +213,7 @@ def analysis():
             },
             'analyzers': analyzer_list  # Passiamo solo la lista di analyzer
         }
+        result['analyzers'] = sorted(analyzer_list, key=str.lower)
         
         # Renderizza IMMEDIATAMENTE (< 50ms)
         logger.info("Rendering immediato della pagina report")
@@ -638,6 +639,7 @@ def all_reports():
             }
             result['jobs'].append(job_info)
         
+        result['jobs'] = sorted(result['jobs'], key=lambda x: x.get('analyzer', '').lower())
         logger.info(f"Rendering {len(result['jobs'])} report per {observable}")
         return render_template('all_reports.html', data=result)
     
