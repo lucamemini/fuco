@@ -10,7 +10,6 @@
 {% elif content.results is defined %}
   {% set results = content.results %}
 {% elif content.artifacts is defined %}
-  {# Raggruppa gli artifacts per scan ID #}
   {% set artifacts_list = content.artifacts %}
   {% set results = [] %}
 {% else %}
@@ -82,14 +81,18 @@
                   {% for r in results %}
                   <tr>
                     <td>
-                      <a href="{{ r.page.url if r.page and r.page.url else '#' }}" 
+                      {% if r.page is defined and r.page.url is defined %}
+                      <a href="{{ r.page.url }}" 
                          target="_blank"
                          class="text-break">
-                        {{ (r.page.url if r.page and r.page.url else 'N/A') | truncate(60) }}
+                        {{ r.page.url | truncate(60) }}
                       </a>
+                      {% else %}
+                      <span class="text-muted">N/A</span>
+                      {% endif %}
                     </td>
                     <td>
-                      {% if r._id %}
+                      {% if r._id is defined %}
                       <a href="https://urlscan.io/result/{{ r._id }}"
                          target="_blank"
                          class="btn btn-sm btn-outline-primary">
@@ -100,14 +103,14 @@
                       {% endif %}
                     </td>
                     <td>
-                      {% if r.task and r.task.time %}
+                      {% if r.task is defined and r.task.time is defined %}
                         <small>{{ r.task.time }}</small>
                       {% else %}
                         <span class="text-muted">—</span>
                       {% endif %}
                     </td>
                     <td>
-                      {% if r.screenshot %}
+                      {% if r.screenshot is defined %}
                       <a href="{{ r.screenshot }}" target="_blank">
                         <img src="{{ r.screenshot }}"
                              class="img-thumbnail"
@@ -247,9 +250,9 @@
 
       {# TAB JSON #}
       <div class="tab-pane fade"
-           id="json_{{ artifact.get('id') }}"
+           id="json_{{ artifact.id }}"
            role="tabpanel">
-        <pre><code class="language-json">{{ artifact | tojson(indent=2) }}</code></pre>
+        <pre><code class="language-json">{{ artifact.report | tojson(indent=2) }}</code></pre>
       </div>
 
     </div>
@@ -257,18 +260,19 @@
 </div>
 
 {% else %}
+{# Error State #}
 <div class="card border-danger">
   <div class="card-header bg-danger text-white">
     <i class="fas fa-exclamation-triangle"></i> <strong>Analysis Error</strong>
   </div>
   <div class="card-body">
-    <h5>Observable: <code>{{ artifact.get('data') }}</code></h5>
+    <h5>Observable: <code>{{ artifact.data }}</code></h5>
     <div class="alert alert-danger mt-3">
-      {{ artifact.get('report', {}).get('errorMessage', 'Unknown error occurred') }}
+      {{ artifact.report.errorMessage if artifact.report and artifact.report.errorMessage is defined else 'Unknown error occurred' }}
     </div>
     
-    {% if artifact.get('status') %}
-    <p class="text-muted">Status: <strong>{{ artifact.get('status') }}</strong></p>
+    {% if artifact.status %}
+    <p class="text-muted">Status: <strong>{{ artifact.status }}</strong></p>
     {% endif %}
   </div>
 </div>
