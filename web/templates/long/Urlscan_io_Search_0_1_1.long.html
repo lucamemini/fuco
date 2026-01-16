@@ -1,17 +1,17 @@
-{% if artifact.get('status') == "Success" %}
-{% set content = artifact.get('report', {}) %}
-{% set full_data = content.get('full', {}) %}
+{% if artifact.status == "Success" %}
+{% set content = artifact.report %}
+{% set full_data = content.full if content.full is defined else {} %}
 
 {# Gestione compatibilità: prova diverse strutture dati #}
-{% if full_data.get('indicator', {}).get('results') %}
-  {% set results = full_data.get('indicator', {}).get('results', []) %}
-{% elif full_data.get('results') %}
-  {% set results = full_data.get('results', []) %}
-{% elif content.get('results') %}
-  {% set results = content.get('results', []) %}
-{% elif content.get('artifacts') %}
+{% if full_data.indicator is defined and full_data.indicator.results is defined %}
+  {% set results = full_data.indicator.results %}
+{% elif full_data.results is defined %}
+  {% set results = full_data.results %}
+{% elif content.results is defined %}
+  {% set results = content.results %}
+{% elif content.artifacts is defined %}
   {# Raggruppa gli artifacts per scan ID #}
-  {% set artifacts_list = content.get('artifacts', []) %}
+  {% set artifacts_list = content.artifacts %}
   {% set results = [] %}
 {% else %}
   {% set results = [] %}
@@ -22,27 +22,27 @@
     <ul class="nav nav-tabs card-header-tabs">
       <li class="nav-item">
         <a class="nav-link active"
-           id="home-tab_{{ artifact.get('id') }}"
+           id="home-tab_{{ artifact.id }}"
            data-bs-toggle="tab"
-           data-bs-target="#home_{{ artifact.get('id') }}"
+           data-bs-target="#home_{{ artifact.id }}"
            role="tab">
           Results
         </a>
       </li>
       <li class="nav-item">
         <a class="nav-link"
-           id="artifacts-tab_{{ artifact.get('id') }}"
+           id="artifacts-tab_{{ artifact.id }}"
            data-bs-toggle="tab"
-           data-bs-target="#artifacts_{{ artifact.get('id') }}"
+           data-bs-target="#artifacts_{{ artifact.id }}"
            role="tab">
           Artifacts
         </a>
       </li>
       <li class="nav-item">
         <a class="nav-link"
-           id="json-tab_{{ artifact.get('id') }}"
+           id="json-tab_{{ artifact.id }}"
            data-bs-toggle="tab"
-           data-bs-target="#json_{{ artifact.get('id') }}"
+           data-bs-target="#json_{{ artifact.id }}"
            role="tab">
           JSON
         </a>
@@ -55,7 +55,7 @@
 
       {# TAB RESULTS #}
       <div class="tab-pane fade show active"
-           id="home_{{ artifact.get('id') }}"
+           id="home_{{ artifact.id }}"
            role="tabpanel">
 
         <div class="panel panel-info">
@@ -82,15 +82,15 @@
                   {% for r in results %}
                   <tr>
                     <td>
-                      <a href="{{ r.get('page', {}).get('url', '#') }}" 
+                      <a href="{{ r.page.url if r.page and r.page.url else '#' }}" 
                          target="_blank"
                          class="text-break">
-                        {{ r.get('page', {}).get('url', 'N/A') | truncate(60) }}
+                        {{ (r.page.url if r.page and r.page.url else 'N/A') | truncate(60) }}
                       </a>
                     </td>
                     <td>
-                      {% if r.get('_id') %}
-                      <a href="https://urlscan.io/result/{{ r.get('_id') }}"
+                      {% if r._id %}
+                      <a href="https://urlscan.io/result/{{ r._id }}"
                          target="_blank"
                          class="btn btn-sm btn-outline-primary">
                         <i class="fas fa-external-link-alt"></i> View Report
@@ -100,16 +100,16 @@
                       {% endif %}
                     </td>
                     <td>
-                      {% if r.get('task', {}).get('time') %}
-                        <small>{{ r.get('task', {}).get('time') }}</small>
+                      {% if r.task and r.task.time %}
+                        <small>{{ r.task.time }}</small>
                       {% else %}
                         <span class="text-muted">—</span>
                       {% endif %}
                     </td>
                     <td>
-                      {% if r.get('screenshot') %}
-                      <a href="{{ r.get('screenshot') }}" target="_blank">
-                        <img src="{{ r.get('screenshot') }}"
+                      {% if r.screenshot %}
+                      <a href="{{ r.screenshot }}" target="_blank">
+                        <img src="{{ r.screenshot }}"
                              class="img-thumbnail"
                              style="max-width: 150px; max-height: 112px;"
                              alt="screenshot"
@@ -136,10 +136,10 @@
 
       {# TAB ARTIFACTS #}
       <div class="tab-pane fade"
-           id="artifacts_{{ artifact.get('id') }}"
+           id="artifacts_{{ artifact.id }}"
            role="tabpanel">
 
-        {% set artifacts_list = content.get('artifacts', []) %}
+        {% set artifacts_list = content.artifacts if content.artifacts is defined else [] %}
         
         {% if artifacts_list | length > 0 %}
         <div class="alert alert-info mb-3">

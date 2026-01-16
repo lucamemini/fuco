@@ -1,6 +1,6 @@
 {% if artifact.status == "Success" %}
 {% set content = artifact.report.full %}
-{% set artifacts_list = artifact.report.get('artifacts', []) %}
+{% set artifacts_list = artifact.report.artifacts if artifact.report.artifacts is defined else [] %}
 
 <div class="card border-success">
   <div class="card-header">
