@@ -15,8 +15,8 @@ TEMPLATE_FOLDER = os.path.join('web', 'templates')
 
 # TLP / PAP levels
 # WHITE: 0, GREEN: 1, AMBER: 2, RED: 3
-DEFAULT_PAP = 2
-DEFAULT_TLP = 2
+DEFAULT_PAP = 1
+DEFAULT_TLP = 1
 
 # Polling configurazioni
 DEFAULT_MAX_ATTEMPTS = 10
@@ -48,3 +48,25 @@ EMAIL_REGEX = r'^[^@]+@[^@]+\.[^@]+$'
 # Logging configuration
 LOG_LEVEL = logging.INFO
 LOG_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+
+# ============ IP Whitelist per API Cache ============
+
+# Lista IP autorizzati ad accedere alle API di gestione cache
+# IMPORTANTE: Modifica questa lista con i tuoi IP fidati!
+ALLOWED_IPS = [
+    '127.0.0.1',      # Localhost IPv4
+    '::1',            # Localhost IPv6
+    # Aggiungi qui gli IP dei tuoi server/admin
+    # Esempi:
+    # '192.168.1.100',  # Server interno
+    # '10.0.0.5',       # Admin workstation
+    # '203.0.113.42',   # IP pubblico ufficio
+]
+
+# Configurazione alternativa: Leggi da variabile d'ambiente
+# Utile per deployment con Docker/Kubernetes
+_env_allowed_ips = os.getenv('FUCO_ALLOWED_IPS')
+if _env_allowed_ips:
+    # Formato: "192.168.1.1,192.168.1.2,10.0.0.5"
+    ALLOWED_IPS = [ip.strip() for ip in _env_allowed_ips.split(',') if ip.strip()]
+    logging.info(f"IP whitelist caricata da variabile d'ambiente: {len(ALLOWED_IPS)} IP")

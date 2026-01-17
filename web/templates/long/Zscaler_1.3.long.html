@@ -1,0 +1,180 @@
+{% if artifact.status == "Success" %}
+{% set content = artifact.report.full if artifact.report.full is defined else {} %}
+
+<div class="card border-success">
+  <div class="card-header">
+    <ul class="nav nav-tabs card-header-tabs">
+      <li class="nav-item">
+        <a class="nav-link active"
+           id="home-tab_{{ artifact.id }}"
+           data-bs-toggle="tab"
+           data-bs-target="#home_{{ artifact.id }}"
+           role="tab">
+          Results
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link"
+           id="json-tab_{{ artifact.id }}"
+           data-bs-toggle="tab"
+           data-bs-target="#json_{{ artifact.id }}"
+           role="tab">
+          JSON
+        </a>
+      </li>
+    </ul>
+  </div>
+
+  <div class="card-body">
+    <div class="tab-content">
+
+      {# TAB RESULTS #}
+      <div class="tab-pane fade show active"
+           id="home_{{ artifact.id }}"
+           role="tabpanel">
+
+        <div class="panel panel-info">
+          <div class="panel-heading">
+            <h5>
+              <i class="fas fa-shield-alt"></i> 
+              Zscaler URL Categorisation of <strong>{{ artifact.data }}</strong>
+            </h5>
+          </div>
+
+          <div class="panel-body">
+            
+            {# Error Message #}
+            {% if content.errorMessage is defined %}
+            <div class="alert alert-danger">
+              <i class="fas fa-exclamation-triangle"></i>
+              <strong>Zscaler Error:</strong> {{ content.errorMessage }}
+            </div>
+            {% endif %}
+
+            {# URL Classifications Table #}
+            {% if content.urlClassifications is defined or content.urlClassificationsWithSecurityAlert is defined %}
+            <div class="table-responsive">
+              <table class="table table-hover table-bordered">
+                <thead class="table-light">
+                  <tr>
+                    <th style="width: 40%;">URL</th>
+                    <th style="width: 60%;">Classifications</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  
+                  {# URL Classifications (normale) #}
+                  {% if content.urlClassifications is defined %}
+                    {% if content.urlClassifications is string %}
+                      {# Se è una stringa singola #}
+                      <tr>
+                        <td><code>{{ content.url if content.url is defined else artifact.data }}</code></td>
+                        <td>
+                          <span class="badge bg-primary">{{ content.urlClassifications }}</span>
+                        </td>
+                      </tr>
+                    {% elif content.urlClassifications is iterable %}
+                      {# Se è una lista #}
+                      {% for classification in content.urlClassifications %}
+                      <tr>
+                        <td><code>{{ content.url if content.url is defined else artifact.data }}</code></td>
+                        <td>
+                          <span class="badge bg-primary">{{ classification }}</span>
+                        </td>
+                      </tr>
+                      {% endfor %}
+                    {% endif %}
+                  {% endif %}
+
+                  {# URL Classifications with Security Alert #}
+                  {% if content.urlClassificationsWithSecurityAlert is defined %}
+                    {% if content.urlClassificationsWithSecurityAlert is string %}
+                      {# Se è una stringa singola #}
+                      <tr>
+                        <td><code>{{ content.url if content.url is defined else artifact.data }}</code></td>
+                        <td>
+                          <span class="badge bg-danger">
+                            <i class="fas fa-exclamation-triangle"></i> 
+                            {{ content.urlClassificationsWithSecurityAlert }}
+                          </span>
+                        </td>
+                      </tr>
+                    {% elif content.urlClassificationsWithSecurityAlert is iterable %}
+                      {# Se è una lista #}
+                      {% for classification in content.urlClassificationsWithSecurityAlert %}
+                      <tr>
+                        <td><code>{{ content.url if content.url is defined else artifact.data }}</code></td>
+                        <td>
+                          <span class="badge bg-danger">
+                            <i class="fas fa-exclamation-triangle"></i> 
+                            {{ classification }}
+                          </span>
+                        </td>
+                      </tr>
+                      {% endfor %}
+                    {% endif %}
+                  {% endif %}
+
+                </tbody>
+              </table>
+            </div>
+            {% else %}
+            <div class="alert alert-info">
+              <i class="fas fa-info-circle"></i> No URL classifications found.
+            </div>
+            {% endif %}
+
+            {# Additional Information #}
+            {% if content.url is defined %}
+            <div class="card mt-3">
+              <div class="card-header bg-light">
+                <strong><i class="fas fa-link"></i> URL Details</strong>
+              </div>
+              <div class="card-body">
+                <dl class="row mb-0">
+                  <dt class="col-sm-3">Analyzed URL:</dt>
+                  <dd class="col-sm-9">
+                    <a href="{{ content.url }}" target="_blank" class="text-break">
+                      {{ content.url }}
+                    </a>
+                  </dd>
+                </dl>
+              </div>
+            </div>
+            {% endif %}
+
+          </div>
+        </div>
+
+      </div>
+
+      {# TAB JSON #}
+      <div class="tab-pane fade"
+           id="json_{{ artifact.id }}"
+           role="tabpanel">
+        {% set json_data = artifact.json() %}
+        <pre><code class="language-json">{{ json_data | tojson(indent=2) }}</code></pre>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+{% else %}
+{# Error State #}
+<div class="card border-danger">
+  <div class="card-header bg-danger text-white">
+    <i class="fas fa-exclamation-triangle"></i> <strong>Analysis Error</strong>
+  </div>
+  <div class="card-body">
+    <h5>Observable: <code>{{ artifact.data }}</code></h5>
+    <div class="alert alert-danger mt-3">
+      {{ artifact.report.errorMessage if artifact.report and artifact.report.errorMessage is defined else 'Unknown error occurred' }}
+    </div>
+    
+    {% if artifact.status %}
+    <p class="text-muted">Status: <strong>{{ artifact.status }}</strong></p>
+    {% endif %}
+  </div>
+</div>
+{% endif %}

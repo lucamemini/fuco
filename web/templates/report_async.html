@@ -85,29 +85,7 @@
 </div>
     
     <div class="accordion" id="accordion_result">
-      {% for analyzer in data.analyzers %}
-      <div class="accordion-item job-submitting" id="item_{{ analyzer|replace('.', '_') }}">
-        <h2 class="accordion-header" id="heading_{{ analyzer|replace('.', '_') }}">
-          <button class="accordion-button collapsed" type="button" 
-                  data-bs-toggle="collapse" 
-                  data-bs-target="#collapse_{{ analyzer|replace('.', '_') }}" 
-                  aria-expanded="false">
-            {{ analyzer }}
-            <span class="loading-spinner" id="spinner_{{ analyzer|replace('.', '_') }}"></span>
-          </button>
-        </h2>
-        <div id="collapse_{{ analyzer|replace('.', '_') }}" 
-             class="accordion-collapse collapse" 
-             data-bs-parent="#accordion_result">
-          <div class="accordion-body" id="content_{{ analyzer|replace('.', '_') }}">
-            <div class="text-center">
-              <div class="spinner-border text-warning" role="status"></div>
-              <p class="mt-2">In attesa di sottomissione...</p>
-            </div>
-          </div>
-        </div>
-      </div>
-      {% endfor %}
+      <!-- Gli accordion verranno inseriti qui ordinati alfabeticamente -->
     </div>
   </div>
 </main>
@@ -125,12 +103,45 @@
 const analyzers = {{ data.analyzers|tojson }};
 const observable = "{{ data.fuco.question }}";
 const datatype = "{{ data.fuco.datatype }}";
+const tlp = {{ data.fuco.tlp if data.fuco.tlp is defined else config.DEFAULT_TLP }};
+const pap = {{ data.fuco.pap if data.fuco.pap is defined else config.DEFAULT_PAP }};
+
+// ORDINA GLI ANALYZER ALFABETICAMENTE
+analyzers.sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
 
 let submittedCount = 0;
 let completedCount = 0;
 const totalCount = analyzers.length;
 const jobsMap = {}; // analyzer -> job_id
-const loadedTaxonomies = new Set(); // Traccia i job già caricati
+const loadedTaxonomies = new Set();
+
+// Genera l'HTML per un singolo accordion item
+function createAccordionItem(analyzer) {
+    const analyzerId = analyzer.replace(/\./g, '_');
+    return `
+    <div class="accordion-item job-submitting" id="item_${analyzerId}">
+        <h2 class="accordion-header" id="heading_${analyzerId}">
+            <button class="accordion-button collapsed" type="button" 
+                    data-bs-toggle="collapse" 
+                    data-bs-target="#collapse_${analyzerId}" 
+                    aria-expanded="false">
+                ${analyzer}
+                <span class="loading-spinner" id="spinner_${analyzerId}"></span>
+            </button>
+        </h2>
+        <div id="collapse_${analyzerId}" 
+             class="accordion-collapse collapse" 
+             data-bs-parent="#accordion_result">
+            <div class="accordion-body" id="content_${analyzerId}">
+                <div class="text-center">
+                    <div class="spinner-border text-warning" role="status"></div>
+                    <p class="mt-2">In attesa di sottomissione...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    `;
+}
 
 // Aggiorna il progresso
 function updateProgress() {
@@ -143,6 +154,7 @@ function updateProgress() {
         $('#progress-info').removeClass('alert-info').addClass('alert-success');
         $('#progress-info strong').text('Tutte le analisi completate!');
         $('#status-text').text('');
+        checkExportReady();
     }
 }
 
@@ -159,7 +171,9 @@ async function submitJob(analyzer) {
             body: JSON.stringify({
                 analyzer: analyzer,
                 datatype: datatype,
-                data: observable
+                data: observable,
+                tlp: tlp,  // NUOVO: Passa TLP
+                pap: pap   // NUOVO: Passa PAP
             })
         });
         
@@ -172,7 +186,6 @@ async function submitJob(analyzer) {
             submittedCount++;
             updateProgress();
             
-            // Cambia lo stato visivo
             $(`#item_${analyzerId}`).removeClass('job-submitting');
             $(`#content_${analyzerId}`).html(`
                 <div class="text-center">
@@ -181,7 +194,6 @@ async function submitJob(analyzer) {
                 </div>
             `);
             
-            // Inizia il polling di questo job
             pollJob(analyzer, result.job_id);
             
         } else {
@@ -208,7 +220,7 @@ async function submitJob(analyzer) {
 function pollJob(analyzer, jobId) {
     const analyzerId = analyzer.replace(/\./g, '_');
     let attempts = 0;
-    const maxAttempts = 60; // 2 minuti
+    const maxAttempts = 60;
     
     const pollInterval = setInterval(async () => {
         attempts++;
@@ -227,24 +239,20 @@ function pollJob(analyzer, jobId) {
                 clearInterval(pollInterval);
                 console.log(`Job ${jobId} completato con successo`);
                 
-                // Carica PRIMA le taxonomies
                 await loadJobTaxonomies(jobId);
-                
-                // POI carica il report completo (che NON deve ricaricare le taxonomies)
                 await loadJobReport(analyzerId, jobId);
                 
             } else if (result.status === 'failed' || result.status === 'error') {
                 clearInterval(pollInterval);
                 markJobError(analyzerId, result.report_status || result.error || 'Errore');
             }
-            // Se status === 'pending', continua il polling
             
         } catch (error) {
             clearInterval(pollInterval);
             markJobError(analyzerId, `Errore polling: ${error.message}`);
         }
         
-    }, 2000); // Polling ogni 2 secondi
+    }, 2000);
 }
 
 // Carica il report completo di un job
@@ -266,16 +274,14 @@ async function loadJobReport(analyzerId, jobId) {
     }
 }
 
-// Carica le taxonomies di un job (SOLO UNA VOLTA)
+// Carica le taxonomies di un job
 async function loadJobTaxonomies(jobId) {
     try {
-        // Verifica se le taxonomies per questo job sono già state caricate
         if (loadedTaxonomies.has(jobId)) {
             console.log(`Taxonomies per ${jobId} già caricate, skip`);
             return;
         }
         
-        // Marca come "in caricamento" per prevenire chiamate multiple
         loadedTaxonomies.add(jobId);
         
         const response = await fetch(`/getShort?JobId=${jobId}`);
@@ -288,7 +294,6 @@ async function loadJobTaxonomies(jobId) {
         
     } catch (error) {
         console.error(`Errore caricamento taxonomies ${jobId}:`, error);
-        // Rimuovi dal set in caso di errore per permettere retry
         loadedTaxonomies.delete(jobId);
     }
 }
@@ -305,11 +310,24 @@ function markJobError(analyzerId, errorMsg) {
     updateProgress();
 }
 
-// Avvio: sottometti tutti i job in parallelo
+// Abilita il pulsante export
+function checkExportReady() {
+    if (completedCount === totalCount) {
+        $('#export-pdf-btn').prop('disabled', false);
+    }
+}
+
+// Inizializzazione
 $(document).ready(function() {
+    console.log(`Rendering di ${totalCount} analyzer ordinati alfabeticamente...`);
+    
+    // Genera gli accordion ordinati
+    const accordionHtml = analyzers.map(analyzer => createAccordionItem(analyzer)).join('');
+    $('#accordion_result').html(accordionHtml);
+    
     console.log(`Inizio sottomissione di ${totalCount} job...`);
     
-    // Sottometti tutti i job contemporaneamente (il browser farà ~6 richieste parallele)
+    // Sottometti tutti i job contemporaneamente
     analyzers.forEach(analyzer => {
         submitJob(analyzer);
     });
@@ -318,39 +336,21 @@ $(document).ready(function() {
 
 <script src="/js/bootstrap.bundle.min.js"></script>
 <script>
-// Abilita il pulsante export quando tutte le analisi sono completate
-function checkExportReady() {
-    if (completedCount === totalCount) {
-        $('#export-pdf-btn').prop('disabled', false);
-    }
-}
-
-// Modifica la funzione markJobCompleted per chiamare checkExportReady
-function markJobCompleted(analyzerId) {
-    $(`#item_${analyzerId}`).addClass('job-completed');
-    $(`#spinner_${analyzerId}`).hide();
-    completedCount++;
-    updateProgress();
-    checkExportReady(); // <-- AGGIUNGI QUESTA RIGA
-}
-
 // Funzione per esportare in PDF
 function exportToPDF() {
     const exportBtn = $('#export-pdf-btn');
     exportBtn.prop('disabled', true);
     exportBtn.html('<i class="fas fa-spinner fa-spin"></i> Generating PDF...');
     
-    // Prepara i dati per l'export
     const exportData = {
         observable: observable,
         datatype: datatype,
         jobs: analyzers.map(analyzer => ({
             id: jobsMap[analyzer],
             analyzer: analyzer
-        })).filter(j => j.id) // Solo job sottomessi con successo
+        })).filter(j => j.id)
     };
     
-    // Chiamata API per generare PDF
     fetch('/export/pdf', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -361,7 +361,6 @@ function exportToPDF() {
         return response.blob();
     })
     .then(blob => {
-        // Download automatico del PDF
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -374,7 +373,6 @@ function exportToPDF() {
         exportBtn.prop('disabled', false);
         exportBtn.html('<i class="fas fa-file-pdf"></i> Export PDF');
         
-        // Toast notification
         alert('PDF generato con successo!');
     })
     .catch(error => {

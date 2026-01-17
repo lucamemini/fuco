@@ -4,21 +4,14 @@
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="author" content="colorlib.com">
     <link href="https://fonts.googleapis.com/css?family=Poppins" rel="stylesheet" />
     <link href="css/main.css" rel="stylesheet" />
 
-	<!-- Latest compiled and minified CSS -->
 	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/css/bootstrap.min.css" integrity="sha384-HSMxcRTRxnN+Bdg0JdbxYKrThecOKuH5zCYotlSAcp1+c8xmyTe9GYg1l9a69psu" crossorigin="anonymous">
-	<!-- Optional theme -->
 	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/css/bootstrap-theme.min.css" integrity="sha384-6pzBo3FDv/PJ8r2KRkGHifhEocL+1X2rVCTTkUfGk7/0pbek5mMa1upzvWbrUbOZ" crossorigin="anonymous">
 	<script src="https://code.jquery.com/jquery-3.4.1.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
-	<!-- Latest compiled and minified JavaScript -->
 	<script src="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/js/bootstrap.min.js" integrity="sha384-aJ21OjlMXNL5UyIl/XNwTMqvzeRMZH2w8c5cRVpzpU8Y5bApTppSuUkhZXN0VxHd" crossorigin="anonymous"></script>
-
-	<!-- FontAwesome complete CSS -->
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/css/all.min.css" integrity="sha512-MV7K8+y+gLIBoVD59lQIYicR65iaqukzvf/nwasF0nqhPay5w/9lJmVM2hMDcnK1OnMGCdVK+iQrJ7lzPJQd1w==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-
 	<link href="https://cdn.jsdelivr.net/npm/pretty-checkbox@3.0/dist/pretty-checkbox.min.css" rel="stylesheet" />  
 
    <style>
@@ -43,13 +36,13 @@
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
+
 .valign {
   display: table-cell; 
   vertical-align: middle;
   height: 40px; 
 }
 
-/* Stile per il bottone copia */
 .copy-btn {
   transition: all 0.2s ease;
 }
@@ -59,18 +52,118 @@
   border-color: #999 !important;
 }
 
-.copy-btn:active {
-  background-color: #e0e0e0 !important;
-}
-
 .copy-btn.copied {
   background-color: #28a745 !important;
   color: white !important;
   border-color: #28a745 !important;
 }
+
+/* TLP/PAP Badge Selector - Stile Google minimalista */
+.tlp-pap-selector {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 8px 0;
+  font-size: 12px;
+  color: #5f6368;
+  margin-top: 8px;
+}
+
+.tlp-pap-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tlp-pap-label {
+  font-weight: 500;
+  cursor: help;
+}
+
+.tlp-pap-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 2px solid transparent;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.tlp-pap-badge:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.tlp-pap-badge.active {
+  border-color: #1a73e8;
+  box-shadow: 0 2px 6px rgba(26, 115, 232, 0.3);
+}
+
+/* TLP Colors */
+.tlp-white { background: #fff; color: #000; border: 1px solid #dadce0; }
+.tlp-green { background: #34a853; color: #fff; }
+.tlp-amber { background: #fbbc04; color: #000; }
+.tlp-red { background: #ea4335; color: #fff; }
+
+/* PAP Colors */
+.pap-white { background: #fff; color: #000; border: 1px solid #dadce0; }
+.pap-green { background: #34a853; color: #fff; }
+.pap-amber { background: #fbbc04; color: #000; }
+.pap-red { background: #ea4335; color: #fff; }
+
+/* Tooltip minimalista */
+.tlp-pap-info {
+  position: relative;
+  display: inline-block;
+  cursor: help;
+  margin-left: 4px;
+  opacity: 0.6;
+}
+
+.tlp-pap-info:hover {
+  opacity: 1;
+}
+
+.tlp-pap-tooltip {
+  visibility: hidden;
+  position: absolute;
+  background-color: #202124;
+  color: #fff;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  z-index: 1000;
+  bottom: 125%;
+  left: 50%;
+  transform: translateX(-50%);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.tlp-pap-info:hover .tlp-pap-tooltip {
+  visibility: visible;
+  opacity: 1;
+}
+
+.tlp-pap-tooltip::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: #202124 transparent transparent transparent;
+}
    </style>
    <script>
 	function getAnalyzer(selectObject,tipo) {
+
 		if (tipo == "object") {
         	var value = selectObject.value;
 		}
@@ -84,58 +177,115 @@
         	Http.send();
 
         	Http.onreadystatechange = (e) => {
-        	  document.getElementById('analyzer_list').innerHTML = "";
-        	  document.getElementById('analyzer_list').innerHTML = Http.responseText;
+        	  if (Http.readyState === 4 && Http.status === 200) {
+        	      document.getElementById('analyzer_list').innerHTML = "";
+        	      document.getElementById('analyzer_list').innerHTML = Http.responseText;
+        	      
+        	      // Mostra il selettore "All" e seleziona tutti gli analyzer di default
+        	      const analyzerContainer = document.getElementById('analyzer-selector-container');
+        	      const checkboxes = document.querySelectorAll('#analyzer_list input[type="checkbox"]');
+        	      
+        	      if (checkboxes.length > 0) {
+        	          // Mostra il selettore
+        	          analyzerContainer.style.display = 'flex';
+        	          
+        	          // Aggiorna il contatore
+        	          document.getElementById('analyzer-count').textContent = checkboxes.length;
+        	          
+        	          // Seleziona tutti gli analyzer di default
+        	          checkboxes.forEach(cb => cb.checked = true);
+        	          
+        	          // Assicura che il checkbox "All" sia checked
+        	          document.getElementById('select-all-checkbox').checked = true;
+        	      } else {
+        	          // Nascondi se non ci sono analyzer
+        	          //analyzerContainer.style.display = 'none';
+                    document.getElementById('analyzer-count').textContent = "0"
+                    document.getElementById('select-all-checkbox').checked = false;
+        	      }
+        	  }
         	}
 	}
         function CheckAll(source) {
 	  var aa= document.getElementsByTagName("input");
     	   for (var i =0; i < aa.length; i++){
-           if (aa[i].type == 'checkbox')
+           if (aa[i].type == 'checkbox' && aa[i].name === 'analyzer')
            	aa[i].checked = source.checked;
     	   }
         }
         
-        // Funzione per copiare negli appunti
+        // Monitora i click sugli analyzer per aggiornare il checkbox "All"
+        function updateSelectAllState() {
+            const checkboxes = document.querySelectorAll('#analyzer_list input[type="checkbox"]');
+            const selectAllCheckbox = document.getElementById('select-all-checkbox');
+            
+            if (checkboxes.length === 0) return;
+            
+            const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+            const someChecked = Array.from(checkboxes).some(cb => cb.checked);
+            
+            if (allChecked) {
+                selectAllCheckbox.checked = true;
+                selectAllCheckbox.indeterminate = false;
+            } else if (someChecked) {
+                selectAllCheckbox.checked = false;
+                selectAllCheckbox.indeterminate = true;
+            } else {
+                selectAllCheckbox.checked = false;
+                selectAllCheckbox.indeterminate = false;
+            }
+        }
+        
+        // Aggiungi listener agli analyzer quando vengono caricati
+        document.addEventListener('DOMContentLoaded', function() {
+            // Usa MutationObserver per rilevare quando gli analyzer vengono aggiunti
+            const observer = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    if (mutation.addedNodes.length) {
+                        const analyzerCheckboxes = document.querySelectorAll('#analyzer_list input[type="checkbox"]');
+                        analyzerCheckboxes.forEach(cb => {
+                            cb.addEventListener('change', updateSelectAllState);
+                        });
+                    }
+                });
+            });
+            
+            const analyzerList = document.getElementById('analyzer_list');
+            if (analyzerList) {
+                observer.observe(analyzerList, { childList: true, subtree: true });
+            }
+        });
+        
         function copyToClipboard(text, button) {
-            // Usa l'API moderna Clipboard se disponibile
             if (navigator.clipboard && navigator.clipboard.writeText) {
                 navigator.clipboard.writeText(text).then(function() {
                     showCopyFeedback(button, true);
                 }).catch(function(err) {
-                    console.error('Errore nella copia:', err);
-                    // Fallback al metodo tradizionale
                     fallbackCopyToClipboard(text, button);
                 });
             } else {
-                // Fallback per browser più vecchi
                 fallbackCopyToClipboard(text, button);
             }
         }
         
-        // Metodo fallback per browser che non supportano Clipboard API
         function fallbackCopyToClipboard(text, button) {
             const textArea = document.createElement("textarea");
             textArea.value = text;
             textArea.style.position = "fixed";
             textArea.style.top = "-9999px";
-            textArea.style.left = "-9999px";
             document.body.appendChild(textArea);
-            textArea.focus();
             textArea.select();
             
             try {
                 const successful = document.execCommand('copy');
                 showCopyFeedback(button, successful);
             } catch (err) {
-                console.error('Errore nella copia fallback:', err);
                 showCopyFeedback(button, false);
             }
             
             document.body.removeChild(textArea);
         }
         
-        // Mostra feedback visivo dopo la copia
         function showCopyFeedback(button, success) {
             const icon = button.querySelector('i');
             const originalClass = icon.className;
@@ -143,28 +293,35 @@
             if (success) {
                 button.classList.add('copied');
                 icon.className = 'fas fa-check';
-                
                 setTimeout(function() {
                     button.classList.remove('copied');
                     icon.className = originalClass;
                 }, 1500);
-            } else {
-                icon.className = 'fas fa-times';
-                setTimeout(function() {
-                    icon.className = originalClass;
-                }, 1500);
             }
+        }
+        
+        // TLP/PAP Selector
+        function selectTLP(level) {
+            document.querySelectorAll('.tlp-pap-badge[data-type="tlp"]').forEach(el => {
+                el.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            document.getElementById('tlp-input').value = level;
+        }
+        
+        function selectPAP(level) {
+            document.querySelectorAll('.tlp-pap-badge[data-type="pap"]').forEach(el => {
+                el.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            document.getElementById('pap-input').value = level;
         }
    </script>
 
   </head>
   <body>
 
-<!-- MODAL RIMOSSO - Non serve più bloccare l'utente -->
-
- 
    <div class="s003">
-
 
       <form action="/analysis" name="form" method="POST">
         <div class="inner-form">
@@ -172,7 +329,7 @@
           <div class="input-field first-wrap">
             <div class="input-select">
               <select id="typefield" data-trigger="" name="DataType" class="input-field first-wrap"  onchange="getAnalyzer(this,'object')">
-                <option label="_DataType" value="" disabled selected>_DataType</option>
+                <option label="_DataType" value="_disabled" selected>_DataType</option>
                 <option label="domain" value="domain">domain</option>
                 <option label="url" value="url">url</option>
                 <option label="fqdn" value="fqdn">fqdn</option>
@@ -199,7 +356,6 @@
 	    {% endif %}	    
           </div>
           <div class="input-field third-wrap">
-            <!-- RIMOSSO: data-toggle="modal" data-target="#basicModal" -->
             <button class="btn-search" type="submit">
               <svg class="svg-inline--fa fa-search fa-w-16" aria-hidden="true" data-prefix="fas" data-icon="search" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
                 <path fill="currentColor" d="M505 442.7L405.3 343c-4.5-4.5-10.6-7-17-7H372c27.6-35.3 44-79.7 44-128C416 93.1 322.9 0 208 0S0 93.1 0 208s93.1 208 208 208c48.3 0 92.7-16.4 128-44v16.3c0 6.4 2.5 12.5 7 17l99.7 99.7c9.4 9.4 24.6 9.4 33.9 0l28.3-28.3c9.4-9.4 9.4-24.6.1-34zM208 336c-70.7 0-128-57.2-128-128 0-70.7 57.2-128 128-128 70.7 0 128 57.2 128 128 0 70.7-57.2 128-128 128z"></path>
@@ -207,28 +363,71 @@
             </button>
           </div>
         </div>
+        
+        <!-- TLP/PAP Selector + Analyzer Controls - TUTTO SULLA STESSA RIGA -->
+        <div class="tlp-pap-selector">
+          <div class="tlp-pap-group">
+            <span class="tlp-pap-label">
+              TLP
+              <span class="tlp-pap-info">
+                <i class="fas fa-info-circle"></i>
+                <span class="tlp-pap-tooltip">Traffic Light Protocol</span>
+              </span>
+            </span>
+            <input type="hidden" name="tlp" id="tlp-input" value="2">
+            <span class="tlp-pap-badge tlp-white" data-type="tlp" onclick="selectTLP(0)">White</span>
+            <span class="tlp-pap-badge tlp-green active" data-type="tlp" onclick="selectTLP(1)">Green</span>
+            <span class="tlp-pap-badge tlp-amber" data-type="tlp" onclick="selectTLP(2)">Amber</span>
+            <span class="tlp-pap-badge tlp-red" data-type="tlp" onclick="selectTLP(3)">Red</span>
+          </div>
+          
+          <div class="tlp-pap-group">
+            <span class="tlp-pap-label">
+              PAP
+              <span class="tlp-pap-info">
+                <i class="fas fa-info-circle"></i>
+                <span class="tlp-pap-tooltip">Permissible Actions Protocol</span>
+              </span>
+            </span>
+            <input type="hidden" name="pap" id="pap-input" value="2">
+            <span class="tlp-pap-badge pap-white" data-type="pap" onclick="selectPAP(0)">White</span>
+            <span class="tlp-pap-badge pap-green active" data-type="pap" onclick="selectPAP(1)">Green</span>
+            <span class="tlp-pap-badge pap-amber" data-type="pap" onclick="selectPAP(2)">Amber</span>
+            <span class="tlp-pap-badge pap-red" data-type="pap" onclick="selectPAP(3)">Red</span>
+          </div>
+          
+          <!-- Select All Analyzers - SULLA STESSA RIGA -->
+	        <div class="tlp-pap-group" id="analyzer-selector-container" style="display: flex;">
+            <span class="tlp-pap-label">
+              Analyzers
+            </span>
+            <div class="pretty p-switch p-fill">
+              <input type="checkbox" id="select-all-checkbox" onclick="CheckAll(this)" checked="">
+              <div class="state">
+                <label id="select-all-label">All (<span id="analyzer-count">1</span>)</label>
+              </div>
+            </div>
+          </div>
+          <!-- Fine Select All Analyzers -->
+
+        </div>
+        
 	<div class="form-check form-check-inline" id="analyzer_list" style="margin-top: 10px">
 	</div>
       </form>
+      
       {% if recent %}
 <div class="recent-searches mt-4 p-3 bg-light rounded" style="width: 100%; max-width: 790px;">
   <h4 class="mb-3 text-center">Recent Searches</h4>
   {% for dtype, datas in recent.items() %}
   <h5 class="text-muted">
-    {%- if dtype == 'ip' -%}
-      <i class="fas fa-globe" style="margin-right: 8px;"></i>
-    {%- elif dtype == 'domain' -%}
-      <i class="fas fa-link" style="margin-right: 8px;"></i>
-    {%- elif dtype == 'url' -%}
-      <i class="fas fa-external-link-alt" style="margin-right: 8px;"></i>
-    {%- elif dtype == 'hash' -%}
-      <i class="fas fa-hashtag" style="margin-right: 8px;"></i>
-    {%- elif dtype == 'mail' -%}
-      <i class="fas fa-envelope" style="margin-right: 8px;"></i>
-    {%- elif dtype == 'fqdn' -%}
-      <i class="fas fa-sitemap" style="margin-right: 8px;"></i>
-    {%- else -%}
-      <i class="fas fa-file" style="margin-right: 8px;"></i>
+    {%- if dtype == 'ip' -%}<i class="fas fa-globe" style="margin-right: 8px;"></i>
+    {%- elif dtype == 'domain' -%}<i class="fas fa-link" style="margin-right: 8px;"></i>
+    {%- elif dtype == 'url' -%}<i class="fas fa-external-link-alt" style="margin-right: 8px;"></i>
+    {%- elif dtype == 'hash' -%}<i class="fas fa-hashtag" style="margin-right: 8px;"></i>
+    {%- elif dtype == 'mail' -%}<i class="fas fa-envelope" style="margin-right: 8px;"></i>
+    {%- elif dtype == 'fqdn' -%}<i class="fas fa-sitemap" style="margin-right: 8px;"></i>
+    {%- else -%}<i class="fas fa-file" style="margin-right: 8px;"></i>
     {%- endif -%}
     {{ dtype | title }}
   </h5>
@@ -238,9 +437,7 @@
       <div style="display: flex; align-items: center; gap: 8px;">
         <a href="/allReports?observable={{ data|urlencode }}&datatype={{ dtype }}" 
            style="text-decoration: none; color: inherit; flex: 1;">
-          <strong style="display: block; padding: 8px 4px; font-size: 1.05em; color: #333;">
-            {{ data }}
-          </strong>
+          <strong style="display: block; padding: 8px 4px; font-size: 1.05em; color: #333;">{{ data }}</strong>
         </a>
         <button class="btn btn-sm btn-outline-secondary copy-btn" 
                 onclick="copyToClipboard('{{ data }}', this)"
@@ -250,20 +447,13 @@
         </button>
       </div>
       
-      <!-- Contatore analisi + pulsante per caricare badge -->
       <div class="mt-1">
-            <button
-                type="button"
-                class="btn btn-sm btn-outline-info load-badges-btn"
+        <button type="button" class="btn btn-sm btn-outline-info load-badges-btn"
                 data-observable="{{ data|replace('.', '_')|replace('/', '_') }}"
                 data-jobids='{{ jobids | tojson | safe }}'>
-          <i class="fas fa-eye"></i> 
-          Show badges ({{ jobids|length }} analyses)
+          <i class="fas fa-eye"></i> Show badges ({{ jobids|length }} analyses)
         </button>
-   
-        <div id="taxonomies-{{ data|replace('.', '_')|replace('/', '_') }}" style="margin-top: 8px;">
-          <!-- Badge verranno caricati qui al click -->
-        </div>
+        <div id="taxonomies-{{ data|replace('.', '_')|replace('/', '_') }}" style="margin-top: 8px;"></div>
       </div>
     </li>
     {% endfor %}
@@ -272,8 +462,6 @@
 </div>
 {% endif %}
 
-
-<!-- Script badges -->
 <script>
 const loadedBadges = new Set();
 
@@ -284,21 +472,16 @@ function loadBadges(observableId, jobIds) {
     const container = $('#taxonomies-' + observableId);
     const btn = $('.load-badges-btn[data-observable="' + observableId + '"]');
 
-    btn.prop('disabled', true)
-       .html('<i class="fas fa-spinner fa-spin"></i> Loading...');
-
+    btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Loading...');
     container.empty();
 
     let completed = 0;
-
     jobIds.forEach(jobId => {
         $.get('/getShort?JobId=' + jobId, function (html) {
             container.append(html);
         }).always(function () {
             completed++;
-            if (completed === jobIds.length) {
-                btn.hide();
-            }
+            if (completed === jobIds.length) btn.hide();
         });
     });
 }
@@ -306,27 +489,20 @@ function loadBadges(observableId, jobIds) {
 $(document).on('click', '.load-badges-btn', function () {
     const btn = $(this);
     const observableId = btn.data('observable');
-
-    let jobIdsRaw = btn.attr('data-jobids');
     let jobIds = [];
-
     try {
-        jobIds = JSON.parse(jobIdsRaw);
+        jobIds = JSON.parse(btn.attr('data-jobids'));
     } catch (e) {
-        console.error('Invalid jobIds JSON:', jobIdsRaw);
+        console.error('Invalid jobIds JSON');
         return;
     }
-
     if (!Array.isArray(jobIds) || jobIds.length === 0) {
         btn.hide();
         return;
     }
-
     loadBadges(observableId, jobIds);
 });
 </script>
-
-
 
     <script>  
     {% if t %}
@@ -345,12 +521,10 @@ $(document).on('click', '.load-badges-btn', function () {
     </script>
     <script src="js/extention/choices.js"></script>
     <script>
-      const choices = new Choices('[data-trigger]',
-      {
+      const choices = new Choices('[data-trigger]', {
         searchEnabled: false,
         itemSelectText: '',
       });
-
     </script>
   </body>
 </html>

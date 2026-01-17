@@ -433,7 +433,8 @@
       <div class="tab-pane fade" 
            id="json_{{ artifact.id }}" 
            role="tabpanel">
-        <pre><code class="language-json">{{ artifact | tojson(indent=2) }}</code></pre>
+        {% set json_data = artifact.json() %}
+        <pre><code class="language-json">{{ json_data | tojson(indent=2) }}</code></pre>
       </div>
 
     </div>

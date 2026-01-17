@@ -25,7 +25,8 @@ app = Flask(__name__,
 # Registrazione del blueprint delle route
 app.register_blueprint(routes_bp)
 
-# Template filters (usati nei template Jinja2)
+# ============ Template Filters ============
+
 @app.template_filter('fang')
 def fang(s):
     """Custom filter: upper-case a string"""
@@ -34,11 +35,14 @@ def fang(s):
     except Exception:
         return s
 
+
 @app.template_filter('urlencode')
 def urlencode_filter(s):
     """Custom filter: URL encode a string"""
     return quote(str(s))
 
+
+# ============ Application Entry Point ============
 
 if __name__ == '__main__':
     app.run(debug=False)

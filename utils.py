@@ -199,25 +199,60 @@ def get_recent_searches():
         logger.error(f"Errore nel recupero delle ricerche recenti: {str(e)}")
         return {}
 
-
-def run_analysis(analyzer: str, datatype: str, data: str) -> dict:
-    """Esegue un'analisi tramite un analyzer specifico."""
+def run_analysis(analyzer: str, datatype: str, data: str, tlp: int = None, pap: int = None) -> dict:
+    """
+    Esegue un'analisi tramite un analyzer specifico.
+    
+    Args:
+        analyzer: Nome dell'analyzer
+        datatype: Tipo di dato (ip, domain, url, hash, etc.)
+        data: Dato da analizzare
+        tlp: Traffic Light Protocol level (0-3). Se None, usa config.DEFAULT_TLP
+        pap: Permissible Actions Protocol level (0-3). Se None, usa config.DEFAULT_PAP
+    
+    Returns:
+        dict: Risultato JSON del job sottomesso
+    
+    TLP/PAP Levels:
+        0 = WHITE
+        1 = GREEN
+        2 = AMBER (default)
+        3 = RED
+    """
+    # Usa i valori di default se non specificati
+    if tlp is None:
+        tlp = config.DEFAULT_TLP
+    if pap is None:
+        pap = config.DEFAULT_PAP
+    
+    # Validazione
+    if not (0 <= tlp <= 3):
+        logger.warning(f"TLP invalido {tlp}, uso default {config.DEFAULT_TLP}")
+        tlp = config.DEFAULT_TLP
+    if not (0 <= pap <= 3):
+        logger.warning(f"PAP invalido {pap}, uso default {config.DEFAULT_PAP}")
+        pap = config.DEFAULT_PAP
+    
     try:
-        #job = cortex_api.analyzers.run_by_name(...)
         job = cortex_api_call(
             cortex_api.analyzers.run_by_name,
             analyzer,
-        {
-            'data': data,
-            'dataType': datatype,
-            'pap': config.DEFAULT_PAP,
-            'tlp': config.DEFAULT_TLP
-        }, force=1)
-        logger.info(f"Job avviato: {analyzer} per {datatype} '{data}' (ID: {job.id})")
+            {
+                'data': data,
+                'dataType': datatype,
+                'pap': pap,
+                'tlp': tlp
+            }, 
+            force=1
+        )
+        
+        logger.info(f"Job avviato: {analyzer} per {datatype} '{data}' (ID: {job.id}) - TLP:{tlp} PAP:{pap}")
         return job.json()
+        
     except Exception as e:
         logger.error(f"Errore durante l'avvio dell'analisi: {str(e)}")
         raise
+
 
 
 def poll_job(job_id: str, max_attempts: int = None, initial_delay: int = None):

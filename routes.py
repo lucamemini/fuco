@@ -7,6 +7,7 @@ import logging
 import sys
 from typing import List, Optional
 from urllib.parse import quote
+from functools import wraps
 
 from flask import render_template, request, jsonify, Blueprint, current_app, abort
 from pydantic import BaseModel, Field, validator
@@ -30,6 +31,54 @@ logger = logging.getLogger(__name__)
 
 # Blueprint per le route
 routes_bp = Blueprint('routes', __name__)
+
+# ============ IP Filtering Decorator ============
+
+def ip_whitelist_required(allowed_ips=None):
+    """
+    Decorator per limitare l'accesso a specifici IP.
+    
+    Args:
+        allowed_ips: Lista di IP consentiti. Se None, usa config.ALLOWED_IPS
+    
+    Usage:
+        @ip_whitelist_required(['127.0.0.1', '192.168.1.100'])
+        def my_route():
+            ...
+    """
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            # Usa gli IP dal parametro o dal config
+            whitelist = allowed_ips or getattr(config, 'ALLOWED_IPS', ['127.0.0.1', '::1'])
+            
+            # Ottieni l'IP del client
+            if request.headers.get('X-Forwarded-For'):
+                # Se dietro reverse proxy (nginx, apache)
+                client_ip = request.headers.get('X-Forwarded-For').split(',')[0].strip()
+            elif request.headers.get('X-Real-IP'):
+                # Header alternativo per reverse proxy
+                client_ip = request.headers.get('X-Real-IP')
+            else:
+                # Connessione diretta
+                client_ip = request.remote_addr
+            
+            logger.debug(f"IP client rilevato: {client_ip}")
+            
+            # Verifica se l'IP è nella whitelist
+            if client_ip not in whitelist:
+                logger.warning(f"Accesso negato per IP non autorizzato: {client_ip}")
+                return jsonify({
+                    'error': 'Access denied',
+                    'message': 'Your IP address is not authorized to access this resource'
+                }), 403
+            
+            logger.debug(f"IP {client_ip} autorizzato")
+            return f(*args, **kwargs)
+        
+        return decorated_function
+    return decorator
+
 
 # ============ Modelli Pydantic per validazione ============
 
@@ -188,7 +237,7 @@ def get_analyzer():
 def analysis():
     """
     Renderizza IMMEDIATAMENTE la pagina report.
-    I job vengono sottomessi via AJAX dal browser.
+    I job vengono sottomessi via AJAX dal browser con TLP/PAP custom.
     """
     try:
         data = request.form.get('tosearch')
@@ -203,19 +252,36 @@ def analysis():
         if not analyzer_list:
             return error_response("Nessun analyzer selezionato", 400)
         
-        logger.info(f"Richiesta analisi per '{data}' ({datatype}) con {len(analyzer_list)} analyzer")
+        # NUOVO: Recupera TLP/PAP dal form
+        try:
+            tlp = int(request.form.get('tlp', config.DEFAULT_TLP))
+            pap = int(request.form.get('pap', config.DEFAULT_PAP))
+        except (ValueError, TypeError):
+            tlp = config.DEFAULT_TLP
+            pap = config.DEFAULT_PAP
+        
+        # Validazione TLP/PAP (0-3)
+        if not (0 <= tlp <= 3):
+            logger.warning(f"TLP invalido ricevuto: {tlp}, uso default {config.DEFAULT_TLP}")
+            tlp = config.DEFAULT_TLP
+        if not (0 <= pap <= 3):
+            logger.warning(f"PAP invalido ricevuto: {pap}, uso default {config.DEFAULT_PAP}")
+            pap = config.DEFAULT_PAP
+        
+        logger.info(f"Richiesta analisi per '{data}' ({datatype}) con {len(analyzer_list)} analyzer - TLP:{tlp} PAP:{pap}")
         
         # Prepara i dati per il template (SENZA sottomettere job)
         result = {
             'fuco': {
                 'question': data,
-                'datatype': datatype
+                'datatype': datatype,
+                'tlp': tlp,
+                'pap': pap
             },
-            'analyzers': analyzer_list  # Passiamo solo la lista di analyzer
+            'analyzers': sorted(analyzer_list, key=str.lower)
         }
-        result['analyzers'] = sorted(analyzer_list, key=str.lower)
         
-        # Renderizza IMMEDIATAMENTE (< 50ms)
+        # Renderizza IMMEDIATAMENTE
         logger.info("Rendering immediato della pagina report")
         return render_template('report_async.html', data=result)
         
@@ -223,12 +289,12 @@ def analysis():
         logger.error(f"Errore in analysis(): {str(e)}", exc_info=True)
         return error_response(str(e))
 
-
 @routes_bp.route('/api/submit_job', methods=['POST'])
 def api_submit_job():
     """
     API per sottomettere UN SINGOLO job a Cortex.
     Chiamata via AJAX dal browser.
+    NUOVO: Supporta TLP/PAP custom per job.
     """
     try:
         request_data = request.get_json()
@@ -239,18 +305,34 @@ def api_submit_job():
         datatype = request_data.get('datatype')
         data = request_data.get('data')
         
+        # NUOVO: Recupera TLP/PAP (opzionali, usa default se mancanti)
+        try:
+            tlp = int(request_data.get('tlp', config.DEFAULT_TLP))
+            pap = int(request_data.get('pap', config.DEFAULT_PAP))
+        except (ValueError, TypeError):
+            tlp = config.DEFAULT_TLP
+            pap = config.DEFAULT_PAP
+        
+        # Validazione
         if not all([analyzer, datatype, data]):
             return error_response("Parametri mancanti (analyzer, datatype, data)", 400)
         
-        logger.info(f"Sottomissione job: {analyzer} per {data}")
+        if not (0 <= tlp <= 3):
+            tlp = config.DEFAULT_TLP
+        if not (0 <= pap <= 3):
+            pap = config.DEFAULT_PAP
         
-        # Sottometti il job a Cortex
-        job_result = utils.run_analysis(analyzer, datatype, data)
+        logger.info(f"Sottomissione job: {analyzer} per {data} - TLP:{tlp} PAP:{pap}")
+        
+        # Sottometti il job a Cortex CON TLP/PAP custom
+        job_result = utils.run_analysis(analyzer, datatype, data, tlp=tlp, pap=pap)
         
         return jsonify({
             'status': 'success',
             'job_id': job_result['id'],
-            'analyzer': analyzer
+            'analyzer': analyzer,
+            'tlp': tlp,
+            'pap': pap
         })
         
     except Exception as e:
@@ -259,7 +341,6 @@ def api_submit_job():
             'status': 'error',
             'error': str(e)
         }), 500
-
 
 @routes_bp.route('/api/poll_job/<job_id>', methods=['GET'])
 def api_poll_job(job_id):
@@ -508,7 +589,6 @@ def get_analysis():
     if not analysis_id:
         abort(400, "Missing analysis id")
 
-    #report = utils.cortex_api.jobs.get_report(analysis_id)
     report = utils.get_cached_report(analysis_id)
 
     template_name = utils.resolve_long_template(report, current_app.root_path)
@@ -576,12 +656,10 @@ def all_reports():
         
         from utils import cortex_api
         
-        # Query semplice senza filtri (cortex4py ha problemi con And/Eq)
-        # Recuperiamo tutti i job recenti e filtriamo manualmente
         try:
             logger.info("Recupero job recenti da Cortex")
             all_jobs = list(cortex_api.jobs.find_all(
-                {},  # Query vuota
+                {},
                 range=config.LAST_ANALYSIS_RANGE, 
                 sort='-createdAt'
             ))
@@ -603,16 +681,6 @@ def all_reports():
         
         if not jobs:
             logger.info(f"Nessun report trovato per {observable}")
-            
-            # Debug: mostra quali job esistono per capire il problema
-            try:
-                logger.info("DEBUG: Recupero ultimi 10 job per debug")
-                all_recent = list(cortex_api.jobs.find_all({}, range='0-10', sort='-createdAt'))
-                for j in all_recent:
-                    logger.debug(f"Job disponibile: data={j.data}, dataType={j.dataType}, status={j.status}, id={j.id}")
-            except Exception as e:
-                logger.error(f"Errore debug: {str(e)}")
-            
             return render_template('no_reports.html', 
                                  observable=observable, 
                                  datatype=datatype)
@@ -623,7 +691,7 @@ def all_reports():
                 'question': observable,
                 'datatype': datatype
             },
-            'jobs': []  # Lista di job con metadata
+            'jobs': []
         }
         
         # Raccoglie i job con le loro informazioni
@@ -646,14 +714,16 @@ def all_reports():
     except Exception as e:
         logger.error(f"Errore in all_reports(): {str(e)}", exc_info=True)
         return error_response(str(e), 500)
-    
-    # Aggiungi in routes.py - utile per debug
+
+
+# ============ API Cache (PROTETTE DA IP WHITELIST) ============
 
 @routes_bp.route('/api/cache/stats', methods=['GET'])
+@ip_whitelist_required()  # Usa la configurazione di default da config.py
 def cache_stats():
     """
     Endpoint di debug per vedere lo stato della cache.
-    Rimuovi in produzione o proteggi con autenticazione.
+    PROTETTO: Solo IP nella whitelist possono accedere.
     """
     try:
         stats = utils.get_cache_stats()
@@ -664,10 +734,11 @@ def cache_stats():
 
 
 @routes_bp.route('/api/cache/clear', methods=['POST'])
+@ip_whitelist_required()  # Usa la configurazione di default da config.py
 def clear_cache():
     """
     Endpoint per svuotare la cache manualmente.
-    ATTENZIONE: Rimuovi in produzione o proteggi con autenticazione.
+    PROTETTO: Solo IP nella whitelist possono accedere.
     """
     try:
         data = request.get_json()
