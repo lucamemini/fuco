@@ -3,7 +3,7 @@ import json
 from cortex4py.api import Api
 from cortex4py.query import *
 
-import fucoconfig as cfg
+import cortexconfig as cfg
 api = Api(cfg.cortex["host"], cfg.cortex["apikey"])
 
 id = "MY7ggIQBC9TJKwsv3GsV"

@@ -1,116 +1,244 @@
 {% if artifact.status == "Success" %}
-{% set content = artifact.report.full %}
+{% set content = artifact.report.full if artifact.report.full is defined else {} %}
+
 <div class="card border-success">
-    <div class="card-header">
+  <div class="card-header">
     <ul class="nav nav-tabs card-header-tabs">
       <li class="nav-item">
-        <a class="nav-link active" class="nav-link active" id="home-tab_{{ artifact.id }}" data-bs-toggle="tab" data-bs-target="#home_{{ artifact.id }}" role="tab" aria-controls="home_{{ artifact.id }}" aria-selected="true">Result</a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link" id="json-tab_{{ artifact.id }}" data-bs-toggle="tab" data-bs-target="#json_{{ artifact.id }}" role="tab" aria-controls="json_{{ artifact.id }}" aria-selected="false">Json</a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link disabled">Ext. Analisys
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-link-45deg" viewBox="0 0 16 16">
-          <path d="M4.715 6.542 3.343 7.914a3 3 0 1 0 4.243 4.243l1.828-1.829A3 3 0 0 0 8.586 5.5L8 6.086a1.002 1.002 0 0 0-.154.199 2 2 0 0 1 .861 3.337L6.88 11.45a2 2 0 1 1-2.83-2.83l.793-.792a4.018 4.018 0 0 1-.128-1.287z"/>
-          <path d="M6.586 4.672A3 3 0 0 0 7.414 9.5l.775-.776a2 2 0 0 1-.896-3.346L9.12 3.55a2 2 0 1 1 2.83 2.83l-.793.792c.112.42.155.855.128 1.287l1.372-1.372a3 3 0 1 0-4.243-4.243L6.586 4.672z"/>
-        </svg>
+        <a class="nav-link active" 
+           id="home-tab_{{ artifact.id }}" 
+           data-bs-toggle="tab" 
+           data-bs-target="#home_{{ artifact.id }}" 
+           role="tab">
+          Results
         </a>
       </li>
+      <li class="nav-item">
+        <a class="nav-link" 
+           id="json-tab_{{ artifact.id }}" 
+           data-bs-toggle="tab" 
+           data-bs-target="#json_{{ artifact.id }}" 
+           role="tab">
+          JSON
+        </a>
+      </li>
+    </ul>
+  </div>
+
+  <div class="card-body">
+    <div class="tab-content">
+
+      {# TAB RESULTS #}
+      <div class="tab-pane fade show active" 
+           id="home_{{ artifact.id }}" 
+           role="tabpanel">
+
+        <div class="panel panel-info">
+          <div class="panel-heading">
+            <h5>
+              <i class="fas fa-certificate"></i>
+              <a target="_blank" href="https://www.circl.lu/services/passive-ssl/">CIRCL.lu</a> 
+              Passive SSL Report
+            </h5>
+          </div>
+
+          <div class="panel-body">
+
+            {# Certificate Details #}
+            {% if content.cert is defined and content.cert.info is defined %}
+            <div class="card mb-3">
+              <div class="card-header bg-light">
+                <strong><i class="fas fa-certificate"></i> Certificate Information</strong>
+              </div>
+              <div class="card-body">
+                <dl class="row">
+                  
+                  {% if content.cert.info.fingerprint is defined %}
+                  <dt class="col-sm-3">Fingerprint:</dt>
+                  <dd class="col-sm-9">
+                    <code class="text-break">{{ content.cert.info.fingerprint }}</code>
+                  </dd>
+                  {% endif %}
+
+                  {% if content.cert.info.subject is defined %}
+                  <dt class="col-sm-3">Subject:</dt>
+                  <dd class="col-sm-9">
+                    <code class="text-break">{{ content.cert.info.subject }}</code>
+                  </dd>
+                  {% endif %}
+
+                  {% if content.cert.info.issuer is defined %}
+                  <dt class="col-sm-3">Issuer:</dt>
+                  <dd class="col-sm-9">
+                    <code class="text-break">{{ content.cert.info.issuer }}</code>
+                  </dd>
+                  {% endif %}
+
+                  {% if content.cert.info.keylength is defined %}
+                  <dt class="col-sm-3">Key Length:</dt>
+                  <dd class="col-sm-9">
+                    <span class="badge bg-info">{{ content.cert.info.keylength }} bits</span>
+                  </dd>
+                  {% endif %}
+
+                  {% if content.cert.info.not_before is defined %}
+                  <dt class="col-sm-3">Valid From:</dt>
+                  <dd class="col-sm-9">
+                    <small>{{ content.cert.info.not_before }}</small>
+                  </dd>
+                  {% endif %}
+
+                  {% if content.cert.info.not_after is defined %}
+                  <dt class="col-sm-3">Valid Until:</dt>
+                  <dd class="col-sm-9">
+                    <small>{{ content.cert.info.not_after }}</small>
+                  </dd>
+                  {% endif %}
+
+                </dl>
+
+                {# Public Key (Collapsible) #}
+                {% if content.cert.info.key is defined %}
+                <div class="mt-3">
+                  <button class="btn btn-sm btn-outline-secondary" 
+                          type="button" 
+                          data-bs-toggle="collapse" 
+                          data-bs-target="#publickey_{{ artifact.id }}">
+                    <i class="fas fa-key"></i> Show Public Key
+                  </button>
+                  <div class="collapse mt-2" id="publickey_{{ artifact.id }}">
+                    <pre class="bg-light p-3 rounded"><code>{{ content.cert.info.key }}</code></pre>
+                  </div>
+                </div>
+                {% endif %}
+
+              </div>
+            </div>
+            {% endif %}
+
+            {# IP Addresses using this certificate #}
+            {% if content.ips is defined and content.ips | length > 0 %}
+            <div class="card mb-3">
+              <div class="card-header bg-light">
+                <strong><i class="fas fa-network-wired"></i> IP Addresses Using This Certificate</strong>
+                <span class="badge bg-primary float-end">{{ content.ips | length }}</span>
+              </div>
+              <div class="card-body">
+                <div class="row">
+                  {% for ip in content.ips %}
+                  <div class="col-md-4 mb-2">
+                    <code>{{ ip }}</code>
+                  </div>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+            {% endif %}
+
+            {# Single IP Address Report #}
+            {% if content.ip is defined %}
+            <div class="card mb-3">
+              <div class="card-header bg-light">
+                <strong><i class="fas fa-server"></i> IP Address Information</strong>
+              </div>
+              <div class="card-body">
+                <dl class="row mb-0">
+                  <dt class="col-sm-3">IP Address:</dt>
+                  <dd class="col-sm-9"><code>{{ content.ip }}</code></dd>
+                </dl>
+              </div>
+            </div>
+            {% endif %}
+
+            {# Certificates used by IP #}
+            {% if content.certificates is defined and content.certificates | length > 0 %}
+            <div class="card mb-3">
+              <div class="card-header bg-light">
+                <strong><i class="fas fa-certificate"></i> Certificates Used by This IP</strong>
+                <span class="badge bg-primary float-end">{{ content.certificates | length }}</span>
+              </div>
+              <div class="card-body">
+                {% for cert in content.certificates %}
+                <div class="card mb-2">
+                  <div class="card-body py-2">
+                    {% if cert.fingerprint is defined %}
+                    <strong>Fingerprint:</strong> 
+                    <code class="text-break">{{ cert.fingerprint }}</code><br>
+                    {% endif %}
+                    
+                    {% if cert.subject is defined %}
+                    <strong>Subject:</strong> 
+                    <code class="text-break">{{ cert.subject }}</code>
+                    {% endif %}
+                  </div>
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+            {% endif %}
+
+            {# No Data Available #}
+            {% if not (content.cert is defined or content.ip is defined or content.ips is defined or content.certificates is defined) %}
+            <div class="alert alert-warning">
+              <i class="fas fa-exclamation-triangle"></i>
+              <strong>No SSL/TLS certificate data found</strong> for this observable.
+            </div>
+            {% endif %}
+
+            {# Additional Metadata #}
+            {% if content.seen is defined %}
+            <div class="card">
+              <div class="card-header bg-light">
+                <strong><i class="fas fa-clock"></i> Observation Details</strong>
+              </div>
+              <div class="card-body">
+                <dl class="row mb-0">
+                  {% if content.seen.first is defined %}
+                  <dt class="col-sm-3">First Seen:</dt>
+                  <dd class="col-sm-9"><small>{{ content.seen.first }}</small></dd>
+                  {% endif %}
+                  
+                  {% if content.seen.last is defined %}
+                  <dt class="col-sm-3">Last Seen:</dt>
+                  <dd class="col-sm-9"><small>{{ content.seen.last }}</small></dd>
+                  {% endif %}
+                </dl>
+              </div>
+            </div>
+            {% endif %}
+
+          </div>
+        </div>
+
+      </div>
+
+      {# TAB JSON #}
+      <div class="tab-pane fade" 
+           id="json_{{ artifact.id }}" 
+           role="tabpanel">
+        {% set json_data = artifact.json() %}
+        <pre><code class="language-json">{{ json_data | tojson(indent=2) }}</code></pre>
+      </div>
+
     </div>
-    <div class="card-body">
-    <div class="tab-content" id="myTabContent">
-     <div class="tab-pane fade show active" id="home_{{ artifact.id }}" role="tabpanel" aria-labelledby="home-tab_{{ artifact.id }}">
-
-<div class="panel panel-info" >
-	<div class="panel-heading">
-		<a target="_blank" href="http://circl.lu/services/passive-ssl/">CIRCL.lu</a> Passive SSL Report
-	</div>
-	<div class="panel-body">
-
-		<!-- Certificate details -->
-		<div >
-			<dl class="dl-horizontal">
-				<dt>Certificate fingerprint</dt>
-				<dd class="wrap">{{content.cert.info.fingerprint}}</dd>
-			</dl>
-
-			<dl class="dl-horizontal">
-				<dt>Subject</dt>
-				<dd class="wrap">{{content.cert.info.subject}}</dd>
-			</dl>
-
-			<dl class="dl-horizontal">
-				<dt>Issuer</dt>
-				<dd class="wrap">{{content.cert.info.issuer}}</dd>
-			</dl>
-
-			<dl class="dl-horizontal">
-				<dt>Key length</dt>
-				<dd class="wrap">{{content.cert.info.keylength}}</dd>
-			</dl>
-
-			<dl class="dl-horizontal">
-				<dt>Key</dt>
-				<dd class="wrap"><pre>{{content.cert.info.key}}</pre></dd>
-			</dl>
-
-			<dl class="dl-horizontal">
-				<dt>Valid from</dt>
-				<dd class="wrap">{{content.cert.info.not_before}}</dd>
-			</dl>
-
-			<dl class="dl-horizontal">
-				<dt>Valid until</dt>
-				<dd class="wrap">{{content.cert.info.not_after}}</dd>
-			</dl>
-		</div>
-
-		<!-- IP-Addresses in certificate report -->
-		<div >
-			<dl class="dl-horizontal">
-				<dt>IPs used that certificate: </dt>
-				<dd class="wrap">
-					<span >{{ip}}<br /></span>
-				</dd>
-			</dl>
-		</div>
-
-		<!-- IP-Address report -->
-		<div >
-			<dl class="dl-horizontal">
-				<dt>IP-Address:</dt>
-				<dd>{{content.ip}}</dd>
-			</dl>
-			<dl class="dl-horizontal" >
-				<dt>Used certificate:</dt>
-				<dd>Fingerprint: {{cert.fingerprint}}<br />Subject: {{cert.subject}}</dd>
-			</dl>
-		</div>
-	</div>
+  </div>
 </div>
 
-     </div>
-     <div class="tab-pane fade" id="json_{{ artifact.id }}" role="tabpanel" aria-labelledby="json-tab_{{ artifact.id }}">
-        <pre>
-        <code>
-{{ artifact | string }}
-        </code>
-        </pre>
-    </div>
-    </div> <!-- tab content -->
-    </div> <!-- card body -->
-</div>
 {% else %}
-<!-- General error -->
+{# Error State #}
 <div class="card border-danger">
-        <div class="card-header alert alert-danger">
-                <strong>Error</strong>
-        </div>
-        <div class="card-body">
-                <strong>{{(artifact.data)}}</strong><br>
-                {{ artifact.report.errorMessage}}
-        </div>
+  <div class="card-header bg-danger text-white">
+    <i class="fas fa-exclamation-triangle"></i> <strong>Analysis Error</strong>
+  </div>
+  <div class="card-body">
+    <h5>Observable: <code>{{ artifact.data }}</code></h5>
+    <div class="alert alert-danger mt-3">
+      {{ artifact.report.errorMessage if artifact.report and artifact.report.errorMessage is defined else 'Unknown error occurred' }}
     </div>
+    
+    {% if artifact.status %}
+    <p class="text-muted">Status: <strong>{{ artifact.status }}</strong></p>
+    {% endif %}
+  </div>
 </div>
 {% endif %}

@@ -12,7 +12,7 @@ from cortex4py.query import *
 from flask_apscheduler import APScheduler
 import json, threading, time
 
-import fucoconfig as cfg
+import cortexconfig as cfg
 api = Api(cfg.cortex["host"], cfg.cortex["apikey"])
 
 ## thx to  Clivant a.k.a Chai Heng

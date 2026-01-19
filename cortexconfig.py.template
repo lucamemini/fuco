@@ -1,0 +1,14 @@
+#!/usr/bin/env python3
+"""
+Template di configurazione per Cortex
+
+ISTRUZIONI:
+1. Copia questo file in 'cortexconfig.py'
+2. Modifica i valori con i dati del tuo server Cortex
+3. NON committare cortexconfig.py (è in .gitignore)
+"""
+
+cortex = {
+    "host": "https://your-cortex-server.example.com",
+    "apikey": "your-cortex-api-key-here"
+}

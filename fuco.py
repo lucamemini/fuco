@@ -3,11 +3,13 @@ FUCO - Search Engine for Cortex
 Entry point dell'applicazione Flask
 """
 import logging
+import sys
 from flask import Flask
 from urllib.parse import quote
 
 import config
 from routes import routes_bp
+from cache_manager import CacheManager
 
 # Configurazione logging
 logging.basicConfig(
@@ -16,7 +18,95 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Inizializzazione app Flask
+# ============ Validazione e Setup Configurazione ============
+
+def validate_and_setup_config():
+    """
+    Valida la configurazione e costruisce parametri necessari.
+    Esegue controlli di coerenza e fallback se necessario.
+    
+    Returns:
+        dict: Configurazione validata
+    """
+    validated = {
+        'cache_type': config.CACHE_TYPE,
+        'redis_url': None
+    }
+    
+    # Validazione CACHE_TYPE
+    if config.CACHE_TYPE not in ['memory', 'redis']:
+        logger.warning(
+            f"CACHE_TYPE '{config.CACHE_TYPE}' non valido. "
+            f"Valori ammessi: 'memory', 'redis'. "
+            f"Uso 'memory' come fallback."
+        )
+        validated['cache_type'] = 'memory'
+    
+    # Costruzione Redis URL se necessario
+    if validated['cache_type'] == 'redis':
+        
+        # Priorità: REDIS_URL > costruzione da REDIS_HOST/PORT
+        if config.REDIS_URL:
+            validated['redis_url'] = config.REDIS_URL
+            logger.info(f"Redis URL configurato: {_mask_password(config.REDIS_URL)}")
+        
+        else:
+            # Costruisci URL da componenti
+            if config.REDIS_PASSWORD:
+                validated['redis_url'] = (
+                    f'redis://:{config.REDIS_PASSWORD}@'
+                    f'{config.REDIS_HOST}:{config.REDIS_PORT}/{config.REDIS_DB}'
+                )
+            else:
+                validated['redis_url'] = (
+                    f'redis://{config.REDIS_HOST}:{config.REDIS_PORT}/{config.REDIS_DB}'
+                )
+            
+            logger.info(
+                f"Redis URL costruito da config: "
+                f"{_mask_password(validated['redis_url'])}"
+            )
+        
+        # Verifica parametri Redis
+        if not validated['redis_url']:
+            logger.error(
+                "CACHE_TYPE='redis' ma configurazione Redis mancante. "
+                "Fallback a 'memory'."
+            )
+            validated['cache_type'] = 'memory'
+            validated['redis_url'] = None
+    
+    # Log configurazione finale
+    if validated['cache_type'] == 'redis':
+        logger.info(
+            f"Cache configurata: Redis ({_mask_password(validated['redis_url'])}), "
+            f"TTL: {config.CACHE_TTL_MINUTES} minuti"
+        )
+    else:
+        logger.info(
+            f"Cache configurata: Memory (in-process), "
+            f"TTL: {config.CACHE_TTL_MINUTES} minuti"
+        )
+    
+    return validated
+
+
+def _mask_password(url: str) -> str:
+    """Maschera password nell'URL per i log"""
+    if not url or ':@' not in url:
+        return url
+    
+    parts = url.split(':@')
+    if len(parts) == 2:
+        return f"{parts[0].rsplit(':', 1)[0]}:***@{parts[1]}"
+    return url
+
+
+# Validazione configurazione all'avvio
+validated_config = validate_and_setup_config()
+
+# ============ Inizializzazione Flask App ============
+
 app = Flask(__name__,
             static_url_path='',
             static_folder='web/static',
@@ -24,6 +114,31 @@ app = Flask(__name__,
 
 # Registrazione del blueprint delle route
 app.register_blueprint(routes_bp)
+
+# ============ Inizializzazione Cache Manager ============
+
+# Inizializza cache manager con configurazione validata
+cache_manager = CacheManager(redis_url=validated_config['redis_url'])
+
+# Rendi disponibile globalmente
+app.cache_manager = cache_manager
+
+# ============ Cleanup Periodico (solo Memory Cache) ============
+
+if validated_config['cache_type'] == 'memory':
+    from flask_apscheduler import APScheduler
+    
+    scheduler = APScheduler()
+    scheduler.init_app(app)
+    scheduler.start()
+    
+    @scheduler.task('interval', id='cleanup_cache', minutes=10)
+    def cleanup_expired_cache():
+        """Pulisce entry scadute dalla memory cache ogni 10 minuti"""
+        with app.app_context():
+            removed = cache_manager.cleanup_expired()
+            if removed > 0:
+                logger.info(f"Cleanup automatico: {removed} entry rimosse")
 
 # ============ Template Filters ============
 
@@ -45,4 +160,20 @@ def urlencode_filter(s):
 # ============ Application Entry Point ============
 
 if __name__ == '__main__':
+    # Verifica connessione a Cortex prima di avviare
+    try:
+        import cortexconfig as cortex_cfg
+        logger.info(f"Cortex configurato: {cortex_cfg.cortex['host']}")
+    except ImportError:
+        logger.error(
+            "File cortexconfig.py non trovato! "
+            "Copia cortexconfig.py.template in cortexconfig.py e configuralo."
+        )
+        sys.exit(1)
+    except Exception as e:
+        logger.error(f"Errore nel caricamento cortexconfig.py: {e}")
+        sys.exit(1)
+    
+    # Avvia applicazione
+    logger.info("Avvio FUCO in modalità development...")
     app.run(debug=False)

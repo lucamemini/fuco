@@ -5,7 +5,7 @@ import time
 from cortex4py.api import Api
 from cortex4py.query import *
 
-import fucoconfig as cfg
+import cortexconfig as cfg
 api = Api(cfg.cortex["host"], cfg.cortex["apikey"])
 
 # Get enabled analyzers

@@ -17,6 +17,9 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import utils
 import config
 
+from datetime import datetime
+from flask import jsonify, current_app
+
 # printing 
 try:
     if not sys.platform.startswith("win"):
@@ -205,12 +208,20 @@ def render_report_html(report, app_root_path):
 def home():
     """Homepage con form di ricerca e ricerche recenti."""
     try:
+        # DEBUG
         q_param = request.args.get('q')
         type_param = request.args.get('t')
+
+        # Se non è stringa, è un problema del frontend
+        if not isinstance(type_param, str):
+#           logger.error("TYPE NON È STRINGA!")
+           q_param = ''
+           type_param = '_default'
+           
         if q_param and type_param:
             return render_template('index.html', q=q_param, t=type_param)
         else:
-            result = utils.get_analyzer_by_type("domain")
+            result = utils.get_analyzer_by_type("_default")
             recent = utils.get_recent_searches()
             return render_template('index.html', t=result, recent=recent)
     except Exception as e:
@@ -717,6 +728,56 @@ def all_reports():
 
 
 # ============ API Cache (PROTETTE DA IP WHITELIST) ============
+
+@routes_bp.route('/health', methods=['GET'])
+def health_check():
+    """
+    Health check endpoint per monitoring/load balancer.
+    Verifica stato cache e connessione Cortex.
+    """
+    health = {
+        'status': 'healthy',
+        'timestamp': datetime.now().isoformat(),
+        'version': 'FUCO 1.0',
+        'components': {}
+    }
+    
+    # Check cache backend
+    try:
+        cache_manager = current_app.cache_manager
+        if cache_manager.ping():
+            health['components']['cache'] = {
+                'status': 'ok',
+                'type': config.CACHE_TYPE
+            }
+        else:
+            health['components']['cache'] = {
+                'status': 'down',
+                'type': config.CACHE_TYPE
+            }
+            health['status'] = 'degraded'
+    except Exception as e:
+        health['components']['cache'] = {
+            'status': 'error',
+            'error': str(e)
+        }
+        health['status'] = 'degraded'
+    
+    # Check Cortex (opzionale, commentabile se troppo lento)
+    try:
+        from utils import cortex_api
+        cortex_api.analyzers.find_all({}, range='0-1')
+        health['components']['cortex'] = {'status': 'ok'}
+    except Exception as e:
+        health['components']['cortex'] = {
+            'status': 'error',
+            'error': str(e)
+        }
+        health['status'] = 'degraded'
+    
+    status_code = 200 if health['status'] == 'healthy' else 503
+    return jsonify(health), status_code
+
 
 @routes_bp.route('/api/cache/stats', methods=['GET'])
 @ip_whitelist_required()  # Usa la configurazione di default da config.py

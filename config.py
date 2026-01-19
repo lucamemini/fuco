@@ -1,3 +1,7 @@
+# ============================================================================
+# config.py - Configurazione Completa
+# ============================================================================
+
 """
 Configurazioni e costanti per l'applicazione FUCO
 """
@@ -31,8 +35,33 @@ JOB_SEARCH_RANGE = '0-50'
 JOB_RECENT_LIMIT = 10
 LAST_ANALYSIS_RANGE = '0-150'
 
-# Local Cache (in minuti)
+# ============ CACHE CONFIGURATION ============
+
+# Tipo di cache: "memory" o "redis"
+# memory = Cache in-memory (volatile, si perde al restart)
+# redis  = Cache persistente con Redis (richiede Redis server)
+CACHE_TYPE = 'memory'  # Cambia in 'redis' per usare Redis
+
+# TTL Cache (in minuti) - tempo di vita dei report in cache
 CACHE_TTL_MINUTES = 30
+
+# ---- Configurazione Redis (usata solo se CACHE_TYPE == 'redis') ----
+# Decommenta e configura se usi Redis
+
+REDIS_HOST = 'localhost'
+REDIS_PORT = 6379
+REDIS_DB = 0
+REDIS_PASSWORD = None  # None se Redis non ha password, altrimenti stringa
+
+# Oppure usa direttamente Redis URL (ha precedenza su host/port)
+# Formato: redis://[:password@]host:port/db
+REDIS_URL = None  # Es: 'redis://localhost:6379/0' o 'redis://:mypass@localhost:6379/0'
+
+# Timeout connessione Redis (secondi)
+REDIS_SOCKET_TIMEOUT = 5
+REDIS_SOCKET_CONNECT_TIMEOUT = 5
+
+# ============ Fine CACHE CONFIGURATION ============
 
 # Analyzer types
 ANALYZER_TYPES = ["domain", "ip", "url", "file", "hash", "mail", "mail_subject", "other"]
@@ -52,21 +81,8 @@ LOG_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 # ============ IP Whitelist per API Cache ============
 
 # Lista IP autorizzati ad accedere alle API di gestione cache
-# IMPORTANTE: Modifica questa lista con i tuoi IP fidati!
 ALLOWED_IPS = [
     '127.0.0.1',      # Localhost IPv4
     '::1',            # Localhost IPv6
     # Aggiungi qui gli IP dei tuoi server/admin
-    # Esempi:
-    # '192.168.1.100',  # Server interno
-    # '10.0.0.5',       # Admin workstation
-    # '203.0.113.42',   # IP pubblico ufficio
 ]
-
-# Configurazione alternativa: Leggi da variabile d'ambiente
-# Utile per deployment con Docker/Kubernetes
-_env_allowed_ips = os.getenv('FUCO_ALLOWED_IPS')
-if _env_allowed_ips:
-    # Formato: "192.168.1.1,192.168.1.2,10.0.0.5"
-    ALLOWED_IPS = [ip.strip() for ip in _env_allowed_ips.split(',') if ip.strip()]
-    logging.info(f"IP whitelist caricata da variabile d'ambiente: {len(ALLOWED_IPS)} IP")

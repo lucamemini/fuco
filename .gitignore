@@ -1,3 +1,14 @@
-__pycache__
-fucoconfig.py
-venv
+# Cortex configuration (contiene API key)
+cortexconfig.py
+
+# Cache database (se usi SQLite per history)
+*.db
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/

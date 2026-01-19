@@ -5,7 +5,7 @@ import time
 from cortex4py.api import Api
 from cortex4py.query import *
 
-import fucoconfig as cfg
+import cortexconfig as cfg
 api = Api(cfg.cortex["host"], cfg.cortex["apikey"])
 
 # Fetch the last 10 successful jobs that have been executed against domain names

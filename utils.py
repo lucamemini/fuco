@@ -12,14 +12,14 @@ from typing import Optional
 
 from jinja2 import Environment, FileSystemLoader
 
-# cache
-from functools import lru_cache
-from datetime import datetime, timedelta
-
-import fucoconfig as cfg
+import cortexconfig as cfg
 from cortex4py.api import Api
 from cortex4py.query import And, Eq
 import config
+
+# cache
+#from cache_manager import cache_manager
+from flask import current_app
 
 # Configurazione logging
 logger = logging.getLogger(__name__)
@@ -27,48 +27,38 @@ logger = logging.getLogger(__name__)
 # API Cortex
 cortex_api = Api(cfg.cortex["host"], cfg.cortex["apikey"])
 
-
-"""
-Fix della cache - NON salvare report incompleti
-"""
-
-# Cache per report (semplice, in-memory)
-_report_cache = {}
-_cache_ttl = timedelta(minutes=config.CACHE_TTL_MINUTES)
-
 def get_cached_report(job_id):
     """
     Recupera report dalla cache o da Cortex.
-    IMPORTANTE: Salva in cache SOLO i report con status finale (Success/Failure).
+    Usa il CacheManager configurato in fuco.py
     """
-    # 1. Controlla se è in cache
-    if job_id in _report_cache:
-        cached_time, report = _report_cache[job_id]
-        
-        # Verifica se la cache non è scaduta
-        if datetime.now() - cached_time < _cache_ttl:
-            logger.debug(f"Report {job_id} recuperato da cache (status: {report.status})")
-            return report
-        else:
-            # Cache scaduta, rimuovi
-            logger.debug(f"Cache scaduta per job {job_id}, ricarico da Cortex")
-            del _report_cache[job_id]
+    from flask import current_app
+    cache_manager = current_app.cache_manager
     
-    # 2. Non in cache o scaduta, recupera da Cortex
+    # 1. Controlla cache
+    report = cache_manager.get_report(job_id)
+    if report:
+        logger.debug(f"Report {job_id} recuperato da cache")
+        return report
+    
+    # 2. Non in cache, recupera da Cortex
     logger.info(f"Report {job_id} non in cache, recupero da Cortex")
     
     try:
         report = cortex_api_call(cortex_api.jobs.get_report, job_id)
         
-        # 3. IMPORTANTE: Salva in cache SOLO se lo status è FINALE
+        # 3. Salva in cache SOLO se status finale
         final_statuses = ("Success", "Failure", "Deleted")
         
         if hasattr(report, 'status') and report.status in final_statuses:
-            _report_cache[job_id] = (datetime.now(), report)
-            logger.info(f"Report {job_id} salvato in cache (status finale: {report.status})")
+            cache_manager.set_report(job_id, report)
+            logger.info(f"Report {job_id} salvato in cache (status: {report.status})")
         else:
             current_status = getattr(report, 'status', 'Unknown')
-            logger.debug(f"Report {job_id} NON salvato in cache (status non finale: {current_status})")
+            logger.debug(
+                f"Report {job_id} NON salvato in cache "
+                f"(status non finale: {current_status})"
+            )
         
         return report
         
@@ -82,41 +72,30 @@ def clear_report_cache(job_id=None):
     Pulisce la cache dei report.
     
     Args:
-        job_id: Se specificato, rimuove solo quel report. Altrimenti pulisce tutta la cache.
+        job_id: Se specificato, rimuove solo quel report. 
+                Altrimenti pulisce tutta la cache.
     """
-    global _report_cache
+    from flask import current_app
+    cache_manager = current_app.cache_manager
     
     if job_id:
-        if job_id in _report_cache:
-            del _report_cache[job_id]
+        success = cache_manager.delete_report(job_id)
+        if success:
             logger.info(f"Report {job_id} rimosso dalla cache")
+        return success
     else:
-        _report_cache.clear()
-        logger.info("Cache completa svuotata")
+        success = cache_manager.clear_all()
+        if success:
+            logger.info("Cache completa svuotata")
+        return success
 
 
 def get_cache_stats():
-    """Ritorna statistiche sulla cache per debug."""
-    total_cached = len(_report_cache)
-    
-    stats = {
-        'total_reports': total_cached,
-        'by_status': {},
-        'oldest_entry': None,
-        'newest_entry': None
-    }
-    
-    if total_cached > 0:
-        timestamps = []
-        for job_id, (cached_time, report) in _report_cache.items():
-            status = getattr(report, 'status', 'Unknown')
-            stats['by_status'][status] = stats['by_status'].get(status, 0) + 1
-            timestamps.append(cached_time)
-        
-        stats['oldest_entry'] = min(timestamps).isoformat()
-        stats['newest_entry'] = max(timestamps).isoformat()
-    
-    return stats
+    """Ritorna statistiche sulla cache."""
+    from flask import current_app
+    cache_manager = current_app.cache_manager
+    return cache_manager.get_stats()
+
 
 # Wrapper per chiamate API con retry
 def cortex_api_call(func, *args, **kwargs):

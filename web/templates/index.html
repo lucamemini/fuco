@@ -504,11 +504,13 @@ $(document).on('click', '.load-badges-btn', function () {
 });
 </script>
 
-    <script>  
+    <script>
+    /*  
     {% if t %}
-	$('#typefield').val('{{ t }}');
-	getAnalyzer('{{ t }}','value')
+    $('#typefield').val('{{ t }}'); 
+	  //getAnalyzer('{{ t }}','value')
     {% endif %}
+    */
     {% if q %}
     setTimeout(function() {
         var checkboxes = document.querySelectorAll('#analyzer_list input[type="checkbox"]');

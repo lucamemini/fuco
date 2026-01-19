@@ -1,83 +1,158 @@
 {% if artifact.status == "Success" %}
-{% set content = artifact.report.full %}
+{% set content = artifact.report.full if artifact.report.full is defined else {} %}
+
 <div class="card border-success">
-    <div class="card-header">
+  <div class="card-header">
     <ul class="nav nav-tabs card-header-tabs">
       <li class="nav-item">
-        <a class="nav-link active" class="nav-link active" id="home-tab_{{ artifact.id }}" data-bs-toggle="tab" data-bs-target="#home_{{ artifact.id }}" role="tab" aria-controls="home_{{ artifact.id }}" aria-selected="true">Result</a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link" id="json-tab_{{ artifact.id }}" data-bs-toggle="tab" data-bs-target="#json_{{ artifact.id }}" role="tab" aria-controls="json_{{ artifact.id }}" aria-selected="false">Json</a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link disabled">Ext. Analisys
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-link-45deg" viewBox="0 0 16 16">
-          <path d="M4.715 6.542 3.343 7.914a3 3 0 1 0 4.243 4.243l1.828-1.829A3 3 0 0 0 8.586 5.5L8 6.086a1.002 1.002 0 0 0-.154.199 2 2 0 0 1 .861 3.337L6.88 11.45a2 2 0 1 1-2.83-2.83l.793-.792a4.018 4.018 0 0 1-.128-1.287z"/>
-          <path d="M6.586 4.672A3 3 0 0 0 7.414 9.5l.775-.776a2 2 0 0 1-.896-3.346L9.12 3.55a2 2 0 1 1 2.83 2.83l-.793.792c.112.42.155.855.128 1.287l1.372-1.372a3 3 0 1 0-4.243-4.243L6.586 4.672z"/>
-        </svg>
+        <a class="nav-link active" 
+           id="home-tab_{{ artifact.id }}" 
+           data-bs-toggle="tab" 
+           data-bs-target="#home_{{ artifact.id }}" 
+           role="tab">
+          Results
         </a>
       </li>
-    </div>
-    <div class="card-body">
-    <div class="tab-content" id="myTabContent">
-     <div class="tab-pane fade show active" id="home_{{ artifact.id }}" role="tabpanel" aria-labelledby="home-tab_{{ artifact.id }}">
+      <li class="nav-item">
+        <a class="nav-link" 
+           id="json-tab_{{ artifact.id }}" 
+           data-bs-toggle="tab" 
+           data-bs-target="#json_{{ artifact.id }}" 
+           role="tab">
+          JSON
+        </a>
+      </li>
+    </ul>
+  </div>
 
-<div class="panel panel-info" >
-	<div class="panel-heading">
-		<a target="_blank" href="http://circl.lu/services/passive-dns/">CIRCL.lu</a> Passive DNS Report
-	</div>
-	<div class="panel-body">
-		<!-- Domain details -->
-	{% if content.results|length |length == 0 %}
-        <p >
-            No result found.
-        </p>
-	{% else %}
-        <table class="table" >
-            <thead>
-                <th>Count</th>
-                <th>rrtype</th>
-                <th>rdata</th>
-                <th>First time</th>
-                <th>Last time</th>
-            </thead>
-            <tbody >
-	        {% for r in content.results %}
-                <tr>
-                    <td>{{r.count}}</td>
-                    <td>{{r.rrtype}}</td>
-                    <td>{{r.rdata}}</td>
-                    <td>{{r.time_first}}</td>
-                    <td>{{r.time_last}}</td>
-                </tr>
-		{% endfor %}
-            </tbody>
-        </table>
-	{% endif %}
-	</div>
+  <div class="card-body">
+    <div class="tab-content">
+
+      {# TAB RESULTS #}
+      <div class="tab-pane fade show active" 
+           id="home_{{ artifact.id }}" 
+           role="tabpanel">
+
+        <div class="panel panel-info">
+          <div class="panel-heading">
+            <h5>
+              <i class="fas fa-network-wired"></i>
+              <a target="_blank" href="https://www.circl.lu/services/passive-dns/">CIRCL.lu</a> 
+              Passive DNS Report
+            </h5>
+          </div>
+
+          <div class="panel-body">
+            
+            {% if content.results is defined and content.results | length > 0 %}
+            
+            {# Header con conteggio #}
+            <div class="alert alert-info mb-3">
+              <i class="fas fa-info-circle"></i>
+              <strong>{{ content.results | length }}</strong> DNS records found
+            </div>
+
+            {# Tabella risultati #}
+            <div class="table-responsive">
+              <table class="table table-hover table-striped">
+                <thead class="table-light">
+                  <tr>
+                    <th style="width: 10%;">Count</th>
+                    <th style="width: 15%;">Record Type</th>
+                    <th style="width: 35%;">RData</th>
+                    <th style="width: 20%;">First Seen</th>
+                    <th style="width: 20%;">Last Seen</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for r in content.results %}
+                  <tr>
+                    <td>
+                      <span class="badge bg-primary">{{ r.count if r.count is defined else 'N/A' }}</span>
+                    </td>
+                    <td>
+                      <span class="badge bg-secondary">{{ r.rrtype if r.rrtype is defined else 'N/A' }}</span>
+                    </td>
+                    <td>
+                      <code class="text-break">{{ r.rdata if r.rdata is defined else 'N/A' }}</code>
+                    </td>
+                    <td>
+                      {% if r.time_first is defined %}
+                        <small>{{ r.time_first }}</small>
+                      {% else %}
+                        <span class="text-muted">—</span>
+                      {% endif %}
+                    </td>
+                    <td>
+                      {% if r.time_last is defined %}
+                        <small>{{ r.time_last }}</small>
+                      {% else %}
+                        <span class="text-muted">—</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+
+            {% else %}
+            
+            {# Nessun risultato #}
+            <div class="alert alert-warning">
+              <i class="fas fa-exclamation-triangle"></i>
+              <strong>No DNS records found</strong> for this observable.
+            </div>
+            
+            {% endif %}
+
+            {# Additional Information #}
+            {% if content.origin is defined %}
+            <div class="card mt-3">
+              <div class="card-header bg-light">
+                <strong><i class="fas fa-database"></i> Source Information</strong>
+              </div>
+              <div class="card-body">
+                <dl class="row mb-0">
+                  <dt class="col-sm-3">Origin:</dt>
+                  <dd class="col-sm-9">{{ content.origin }}</dd>
+                </dl>
+              </div>
+            </div>
+            {% endif %}
+
+          </div>
+        </div>
+
+      </div>
+
+      {# TAB JSON #}
+      <div class="tab-pane fade" 
+           id="json_{{ artifact.id }}" 
+           role="tabpanel">
+        {% set json_data = artifact.json() %}
+        <pre><code class="language-json">{{ json_data | tojson(indent=2) }}</code></pre>
+      </div>
+
+    </div>
+  </div>
 </div>
 
-     </div>
-     <div class="tab-pane fade" id="json_{{ artifact.id }}" role="tabpanel" aria-labelledby="json-tab_{{ artifact.id }}">
-        <pre>
-        <code>
-{{ artifact | string }}
-        </code>
-        </pre>
-    </div>
-    </div> <!-- tab content -->
-    </div> <!-- card body -->
-</div>
 {% else %}
-<!-- General error -->
+{# Error State #}
 <div class="card border-danger">
-        <div class="card-header alert alert-danger">
-                <strong>Error</strong>
-        </div>
-        <div class="card-body">
-                <strong>{{(artifact.data)}}</strong><br>
-                {{ artifact.report.errorMessage}}
-        </div>
+  <div class="card-header bg-danger text-white">
+    <i class="fas fa-exclamation-triangle"></i> <strong>Analysis Error</strong>
+  </div>
+  <div class="card-body">
+    <h5>Observable: <code>{{ artifact.data }}</code></h5>
+    <div class="alert alert-danger mt-3">
+      {{ artifact.report.errorMessage if artifact.report and artifact.report.errorMessage is defined else 'Unknown error occurred' }}
     </div>
+    
+    {% if artifact.status %}
+    <p class="text-muted">Status: <strong>{{ artifact.status }}</strong></p>
+    {% endif %}
+  </div>
 </div>
 {% endif %}

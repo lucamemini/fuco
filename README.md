@@ -1,619 +1,572 @@
-# FUCO - Search Engine for Cortex
+# Cache Configuration
 
-FUCO (Fast Universal Cortex Observer) is a modern web interface for [TheHive Project's Cortex](https://github.com/TheHive-Project/Cortex), providing an intuitive search engine for security observables analysis.
+## Overview
 
-![FUCO Main Interface](https://github.com/lucamemini/fuco/blob/master/img/fuco_main.jpg?raw=true)
+FUCO implementa un sistema di cache configurabile per ottimizzare le performance e ridurre il carico sull'API di Cortex. La cache memorizza i report delle analisi completate, evitando richieste duplicate per lo stesso observable.
 
-## 📋 Table of Contents
+## Backend Disponibili
 
-- [What is FUCO?](#what-is-fuco)
-- [Key Features](#key-features)
-- [Prerequisites](#prerequisites)
-- [Installation](#installation)
-- [Configuration](#configuration)
-- [Running FUCO](#running-fuco)
-- [Usage Examples](#usage-examples)
-- [API Reference](#api-reference)
-- [Screenshots](#screenshots)
-- [Troubleshooting](#troubleshooting)
-- [Architecture](#architecture)
-- [Contributing](#contributing)
-- [License](#license)
+### 1. Memory Cache (Default)
 
-## What is FUCO?
+Cache in-memory basata su dizionario Python.
 
-FUCO acts as a front-end layer for Cortex, transforming the complexity of threat intelligence analysis into a simple, Google-like search experience. It allows security analysts to:
+**Caratteristiche:**
+- ✅ Nessuna dipendenza esterna
+- ✅ Setup immediato, zero configurazione
+- ✅ Ideale per sviluppo e testing
+- ✅ Cleanup automatico delle entry scadute
+- ❌ Dati volatili (si perdono al restart)
+- ❌ Non condivisa tra istanze multiple
+- ❌ Limitata dalla RAM del processo
 
-- **Search and analyze observables** (IPs, domains, URLs, hashes, emails) through a unified interface
-- **Leverage multiple analyzers** simultaneously for comprehensive threat assessment
-- **View historical analysis** with intelligent caching to reduce API calls
-- **Export reports** in various formats for documentation and sharing
-- **Process batch queries** for efficient bulk analysis
-
-The application streamlines the workflow of security operations teams by providing instant access to enriched threat intelligence from dozens of sources through Cortex's analyzer ecosystem.
-
-## 🚀 Key Features
-
-### 🔍 Unified Search Interface
-- Clean, intuitive search bar supporting multiple observable types
-- Automatic data type detection (IP, domain, URL, hash, email)
-- Multi-analyzer selection with bulk operations
-- Recent searches quick access
-
-### ⚡ Performance Optimized
-- Asynchronous job submission for instant page loading
-- Intelligent caching system to minimize redundant API calls
-- Concurrent polling for faster results aggregation
-- Progressive rendering of analysis results
-
-### 📊 Rich Reporting
-- Taxonomy-based quick summaries (short templates)
-- Detailed analyzer-specific reports (long templates)
-- Historical analysis view for any observable
-- PDF export capability (Linux only)
-
-### 🔌 RESTful API
-- `/api/short` - Fast taxonomy-only results
-- `/api/analysis` - Complete analysis reports
-- `/api/getAnalyzer` - Retrieve available analyzers
-- Support for programmatic integrations
-
-## 📦 Prerequisites
-
-### Required Software
-
-#### 1. Cortex Instance (v3.x or higher)
-- A running Cortex server from [TheHive Project](https://github.com/TheHive-Project/Cortex)
-- Configured analyzers for your use case
-- API key with appropriate permissions
-
-#### 2. Python Environment
-- Python 3.8 or higher
-- pip package manager
-- virtualenv (recommended)
-
-#### 3. System Dependencies
-- **Linux/macOS**: All features supported including PDF export
-- **Windows**: Core features supported, PDF export disabled
-
-### Optional but Recommended
-
-- Reverse proxy (nginx/Apache) for production deployment
-- SSL/TLS certificates for secure communication
-- Systemd service file for automatic startup (Linux)
-
-## 🔧 Installation
-
-### Quick Start (4 minutes)
-
-```bash
-# Clone the repository
-git clone https://github.com/lucamemini/fuco
-cd fuco
-
-# Create virtual environment
-python3 -m venv venv
-source venv/bin/activate
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Configure Cortex connection
-cp fucoconfig.py.template fucoconfig.py
-# Edit fucoconfig.py with your credentials
-
-# Run FUCO
-./run.sh
+**Configurazione:**
+```python
+# config.py
+CACHE_TYPE = 'memory'
+CACHE_TTL_MINUTES = 30
 ```
 
-Access at: [http://127.0.0.1:5000](http://127.0.0.1:5000)
+### 2. Redis Cache (Recommended for Production)
 
-### Detailed Installation Steps
+Cache persistente con Redis server.
 
-#### 1. Clone the Repository
+**Caratteristiche:**
+- ✅ Persistente tra restart dell'applicazione
+- ✅ Condivisibile tra istanze multiple (clustering)
+- ✅ TTL automatico gestito da Redis
+- ✅ Performance superiori
+- ✅ Monitoring e statistiche avanzate
+- ❌ Richiede Redis server esterno
 
-```bash
-git clone https://github.com/lucamemini/fuco
-cd fuco
-```
-
-#### 2. Create Python Virtual Environment
-
-```bash
-python3 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-```
-
-#### 3. Install Dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
-#### 4. Verify Cortex Connection
-
-Test the connection before configuring:
-
-```bash
-python3 -c "from utils import cortex_api; print(cortex_api.analyzers.find_all({}, range='0-5'))"
-```
-
-If successful, you should see a list of available analyzers.
-
-## ⚙️ Configuration
-
-### Basic Configuration
-
-1. **Copy the template configuration:**
-
-```bash
-cp fucoconfig.py.template fucoconfig.py
-```
-
-2. **Edit `fucoconfig.py` with your Cortex details:**
+**Configurazione:**
 
 ```python
-cortex = {
-    "host": "https://your-cortex-server.example.com",
-    "apikey": "your-cortex-api-key-here"
-}
+# config.py
+CACHE_TYPE = 'redis'
+CACHE_TTL_MINUTES = 30
+
+# Opzione 1: Configurazione per componenti
+REDIS_HOST = 'localhost'
+REDIS_PORT = 6379
+REDIS_DB = 0
+REDIS_PASSWORD = None  # None se no password
+
+# Opzione 2: URL completo (ha precedenza)
+REDIS_URL = 'redis://localhost:6379/0'
+# Con password: 'redis://:mypassword@localhost:6379/0'
+
+# Timeout connessione
+REDIS_SOCKET_TIMEOUT = 5
+REDIS_SOCKET_CONNECT_TIMEOUT = 5
 ```
 
-**Important**: Ensure your Cortex API key has the following permissions:
-- Read analyzers
-- Submit jobs
-- Read job results
+## Setup e Installazione
 
-### Advanced Configuration
+### Memory Cache
 
-Edit `config.py` to customize behavior:
+Già attivo di default, nessuna configurazione necessaria.
 
-| Parameter | Default | Description |
-|-----------|---------|-------------|
-| `DEFAULT_PAP` | 2 (AMBER) | Default PAP level for job submission |
-| `DEFAULT_TLP` | 2 (AMBER) | Default TLP level for job submission |
-| `API_SHORT_MAX_ATTEMPTS` | 15 | Polling attempts for short API |
-| `API_SHORT_INITIAL_DELAY` | 5 | Initial delay between polls (seconds) |
-| `CACHE_TTL_MINUTES` | 30 | Cache lifetime for reports |
-| `JOB_RECENT_LIMIT` | 10 | Number of recent searches to display |
+### Redis Cache
 
-### TLP/PAP Levels Reference
+#### 1. Installa Redis
+
+**Ubuntu/Debian:**
+```bash
+sudo apt-get update
+sudo apt-get install redis-server
+sudo systemctl start redis-server
+sudo systemctl enable redis-server
+```
+
+**macOS:**
+```bash
+brew install redis
+brew services start redis
+```
+
+**Docker:**
+```bash
+docker run -d --name fuco-redis \
+  -p 6379:6379 \
+  redis:7-alpine
+```
+
+**Windows:**
+```powershell
+# Usa Docker o WSL2
+wsl --install
+# Poi installa Redis in WSL
+```
+
+#### 2. Installa Python Redis Client
+
+```bash
+pip install redis
+```
+
+#### 3. Configura FUCO
+
+Modifica `config.py`:
 
 ```python
-# WHITE: 0
-# GREEN: 1
-# AMBER: 2
-# RED: 3
+CACHE_TYPE = 'redis'
+REDIS_HOST = 'localhost'  # O IP del tuo server Redis
+REDIS_PORT = 6379
+REDIS_DB = 0
 ```
 
-## 🏃 Running FUCO
-
-### Development Mode
+#### 4. Verifica Connessione
 
 ```bash
-./run.sh
-```
+# Test Redis
+redis-cli ping
+# Dovrebbe rispondere: PONG
 
-Or manually:
-
-```bash
-source venv/bin/activate
+# Avvia FUCO
 python fuco.py
+
+# Verifica nei log:
+# INFO - Inizializzato RedisCacheBackend (redis://localhost:6379/0)
+# INFO - CacheManager inizializzato: backend=redis, ttl=30m
 ```
 
-### Production Deployment
+## Fallback Automatico
 
-For production use, deploy with a WSGI server like Gunicorn:
+Se FUCO è configurato per Redis ma:
+- Redis non è installato (`pip install redis` non eseguito)
+- Redis server non è raggiungibile
+- Errore di connessione/autenticazione
 
-```bash
-# Install gunicorn
-pip install gunicorn
+**FUCO automaticamente:**
+1. Logga l'errore
+2. Fa fallback a Memory Cache
+3. Continua a funzionare normalmente
 
-# Run with appropriate workers (adjust based on CPU cores)
-gunicorn --workers 4 \
-         --bind 0.0.0.0:8000 \
-         --timeout 120 \
-         --access-logfile /var/log/fuco/access.log \
-         --error-logfile /var/log/fuco/error.log \
-         fuco:app
+**Log di esempio:**
+```
+ERROR - Errore connessione Redis: Connection refused. Fallback a MemoryCache
+INFO - Backend Memory attivato
 ```
 
-#### Nginx Reverse Proxy Configuration
+## Funzionalità Cache
 
-```nginx
-server {
-    listen 80;
-    server_name fuco.yourdomain.com;
-    
-    location / {
-        proxy_pass http://127.0.0.1:8000;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_read_timeout 300;
-    }
-    
-    location /static {
-        alias /path/to/fuco/web/static;
-        expires 30d;
-    }
-}
-```
+### Time-To-Live (TTL)
 
-#### Systemd Service (Linux)
+I report rimangono in cache per il tempo configurato:
 
-Create `/etc/systemd/system/fuco.service`:
-
-```ini
-[Unit]
-Description=FUCO - Cortex Search Engine
-After=network.target
-
-[Service]
-Type=notify
-User=www-data
-Group=www-data
-WorkingDirectory=/opt/fuco
-Environment="PATH=/opt/fuco/venv/bin"
-ExecStart=/opt/fuco/venv/bin/gunicorn --workers 4 --bind 0.0.0.0:8000 fuco:app
-Restart=always
-
-[Install]
-WantedBy=multi-user.target
-```
-
-Enable and start:
-
-```bash
-sudo systemctl enable fuco
-sudo systemctl start fuco
-```
-
-## 💡 Usage Examples
-
-### Web Interface
-
-1. Navigate to the home page
-2. Select observable type (or leave for auto-detection)
-3. Enter the observable (e.g., `8.8.8.8`, `example.com`)
-4. Select desired analyzers
-5. Click search
-
-### API Usage
-
-#### Quick Taxonomy Check
-
-```bash
-curl -X POST http://localhost:5000/api/short \
-  -H "Content-Type: application/json" \
-  -d '{
-    "Data": "8.8.8.8",
-    "DataType": "ip",
-    "analyzer_list": ["Shodan_Host", "AbuseIPDB"]
-  }'
-```
-
-**Response:**
-
-```json
-[
-  {
-    "input": "8.8.8.8",
-    "analyzer": "Shodan_Host",
-    "status": "Success",
-    "taxonomies": [
-      {
-        "level": "info",
-        "namespace": "Shodan",
-        "predicate": "Host",
-        "value": "Found"
-      }
-    ]
-  }
-]
-```
-
-#### Full Analysis
-
-```bash
-curl -X POST http://localhost:5000/api/analysis \
-  -H "Content-Type: application/json" \
-  -d '{
-    "Data": "malicious-domain.com",
-    "DataType": "domain",
-    "analyzer_list": ["VirusTotal_GetReport", "GoogleSafeBrowsing"]
-  }'
-```
-
-#### Batch IP Analysis
-
-FUCO supports comma-separated IP addresses:
-
-```bash
-curl -X POST http://localhost:5000/api/short \
-  -H "Content-Type: application/json" \
-  -d '{
-    "Data": "1.1.1.1, 8.8.8.8, 9.9.9.9",
-    "DataType": "ip",
-    "analyzer_list": ["Shodan_Host", "MaxMind_GeoIP"]
-  }'
-```
-
-#### Get Available Analyzers
-
-```bash
-curl http://localhost:5000/api/getAnalyzer
-```
-
-## 📚 API Reference
-
-### Endpoints
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/` | GET | Web interface home page |
-| `/analysis` | POST | Submit analysis via web form |
-| `/api/short` | POST | Quick taxonomy-only API |
-| `/api/analysis` | POST | Full analysis API |
-| `/api/getAnalyzer` | GET | List available analyzers |
-| `/api/submit_job` | POST | Submit single job (AJAX) |
-| `/api/poll_job/<job_id>` | GET | Poll job status |
-| `/getShort?JobId=<id>` | GET | Get taxonomy HTML for job |
-| `/getAnalisys?JobId=<id>` | GET | Get full report HTML for job |
-| `/allReports?observable=<val>&datatype=<type>` | GET | View all reports for observable |
-
-### Request/Response Examples
-
-#### POST /api/short
-
-**Request:**
-```json
-{
-  "Data": "example.com",
-  "DataType": "domain",
-  "analyzer_list": ["VirusTotal_GetReport"]
-}
-```
-
-**Response:**
-```json
-[
-  {
-    "input": "example.com",
-    "analyzer": "VirusTotal_GetReport",
-    "status": "Success",
-    "taxonomies": [
-      {
-        "level": "safe",
-        "namespace": "VT",
-        "predicate": "Score",
-        "value": "0/90"
-      }
-    ]
-  }
-]
-```
-
-## 📸 Screenshots
-
-### Search Interface
-![FUCO Search](https://github.com/lucamemini/fuco/blob/master/img/fuco_search.jpg?raw=true)
-
-### Results View
-![FUCO Results](https://github.com/lucamemini/fuco/blob/master/img/fuco_result.jpg?raw=true)
-
-## 🔍 Troubleshooting
-
-### Common Issues
-
-#### Connection to Cortex fails
-
-**Symptoms:** API errors, "Connection refused"
-
-**Solutions:**
-```bash
-# Verify Cortex is running
-curl -k https://your-cortex-server/api/status
-
-# Check API key permissions in Cortex UI
-# Ensure firewall allows connections to Cortex port
-
-# Test from FUCO server
-telnet your-cortex-server 9001
-```
-
-#### No analyzers showing
-
-**Symptoms:** Empty analyzer list
-
-**Solutions:**
-- Verify analyzers are enabled in Cortex UI
-- Check analyzer configuration in Cortex
-- Review FUCO logs: `tail -f /var/log/fuco/error.log`
-- Test API key permissions
-
-#### Jobs timing out
-
-**Symptoms:** "Timeout" status, incomplete results
-
-**Solutions:**
 ```python
-# Increase timeout in config.py
-API_SHORT_MAX_ATTEMPTS = 30  # from 15
-API_SHORT_INITIAL_DELAY = 10  # from 5
+# config.py
+CACHE_TTL_MINUTES = 30  # 30 minuti (default)
 ```
 
-- Check Cortex analyzer performance
-- Review Cortex worker logs
-- Verify network latency
+**Note:**
+- Solo report con status **finale** vengono cachati (`Success`, `Failure`, `Deleted`)
+- Report `InProgress` o `Waiting` NON vengono cachati
+- Per Redis, il TTL è gestito automaticamente dal server
+- Per Memory, cleanup automatico ogni 10 minuti
 
-#### PDF export not working
+### Namespace Chiavi
 
-**Symptoms:** Error when exporting to PDF
+Tutte le chiavi cache usano il namespace `fuco:` per evitare conflitti:
 
-**Solutions:**
-```bash
-# Ensure running on Linux/macOS (Windows not supported)
-
-# Install WeasyPrint dependencies (Ubuntu/Debian)
-sudo apt-get install libpango-1.0-0 libpangocairo-1.0-0 libgdk-pixbuf2.0-0 libffi-dev shared-mime-info
-
-# Install WeasyPrint dependencies (CentOS/RHEL)
-sudo yum install pango gdk-pixbuf2 libffi-devel
-
-# Reinstall WeasyPrint
-pip install --upgrade weasyprint
+```
+fuco:report:job_abc123
+fuco:report:job_xyz789
 ```
 
-#### Cache issues
+### API di Gestione
 
-**Symptoms:** Stale data, outdated results
+#### 1. Statistiche Cache
 
-**Solutions:**
 ```bash
-# Clear cache via API
+# GET /api/cache/stats
+curl http://localhost:5000/api/cache/stats
+
+# Response
+{
+  "backend": "redis",
+  "total_items": 156,
+  "by_prefix": {
+    "report": 156
+  },
+  "memory_usage": "2.5M",
+  "peak_memory": "3.1M",
+  "ttl_minutes": 30,
+  "cache_type": "redis"
+}
+```
+
+**Restrizioni:** Solo IP autorizzati (vedi `ALLOWED_IPS` in `config.py`)
+
+#### 2. Pulizia Cache
+
+```bash
+# Pulisci tutta la cache
 curl -X POST http://localhost:5000/api/cache/clear
 
-# Reduce cache TTL in config.py
-CACHE_TTL_MINUTES = 10  # from 30
+# Pulisci singolo report
+curl -X POST http://localhost:5000/api/cache/clear \
+  -H "Content-Type: application/json" \
+  -d '{"job_id": "abc123"}'
 ```
 
-### Debugging
+**Restrizioni:** Solo IP autorizzati
 
-Enable detailed logging:
+#### 3. Health Check
+
+```bash
+# GET /health
+curl http://localhost:5000/health
+
+# Response
+{
+  "status": "healthy",
+  "timestamp": "2026-01-18T10:30:00",
+  "version": "FUCO 1.0",
+  "components": {
+    "cache": {
+      "status": "ok",
+      "type": "redis"
+    },
+    "cortex": {
+      "status": "ok"
+    }
+  }
+}
+```
+
+## Monitoring Redis
+
+### Redis CLI
+
+```bash
+# Connetti a Redis
+redis-cli
+
+# Visualizza tutte le chiavi FUCO
+127.0.0.1:6379> KEYS fuco:*
+
+# Conta chiavi
+127.0.0.1:6379> DBSIZE
+
+# Info memoria
+127.0.0.1:6379> INFO memory
+
+# Monitora operazioni in tempo reale
+127.0.0.1:6379> MONITOR
+```
+
+### Redis Insight (GUI)
+
+Scarica da: https://redis.io/insight/
+
+- Visualizzazione grafica dei dati
+- Monitoring performance
+- Query builder
+
+## Configurazioni Avanzate
+
+### Redis con Password
 
 ```python
-# In config.py
-import logging
-LOG_LEVEL = logging.DEBUG
+# config.py
+REDIS_PASSWORD = 'your-secure-password'
+
+# Oppure via URL
+REDIS_URL = 'redis://:your-secure-password@localhost:6379/0'
 ```
 
-Check logs:
+### Redis Remoto
+
+```python
+# config.py
+REDIS_HOST = 'redis.example.com'
+REDIS_PORT = 6379
+REDIS_PASSWORD = 'your-password'
+
+# Con SSL/TLS
+REDIS_URL = 'rediss://:password@redis.example.com:6380/0'
+```
+
+### Redis Sentinel (High Availability)
+
+```python
+# Richiede configurazione custom del RedisCacheBackend
+# Vedi documentazione redis-py per Sentinel
+```
+
+### Multiple Databases
+
+```python
+# Database separati per ambienti
+REDIS_DB = 0  # Production
+REDIS_DB = 1  # Staging
+REDIS_DB = 2  # Development
+```
+
+## Performance Tuning
+
+### Memory Cache
+
+```python
+# Aumenta frequenza cleanup
+# fuco.py - scheduler interval
+@scheduler.task('interval', id='cleanup_cache', minutes=5)  # da 10 a 5
+```
+
+### Redis Cache
+
+```python
+# Riduci timeout per failover veloce
+REDIS_SOCKET_TIMEOUT = 2
+REDIS_SOCKET_CONNECT_TIMEOUT = 2
+
+# Aumenta TTL per ridurre load Cortex
+CACHE_TTL_MINUTES = 60  # 1 ora invece di 30 minuti
+```
+
+### Redis Configuration File
+
+Ottimizza `/etc/redis/redis.conf`:
+
+```conf
+# Limita memoria massima
+maxmemory 256mb
+
+# Policy di eviction (rimuovi chiavi meno usate)
+maxmemory-policy allkeys-lru
+
+# Salvataggio su disco (persistenza)
+save 900 1
+save 300 10
+save 60 10000
+
+# AOF per durabilità
+appendonly yes
+appendfsync everysec
+```
+
+## Troubleshooting
+
+### "Redis non installato"
+
 ```bash
-# Development
-python fuco.py 2>&1 | tee fuco.log
+# Installa client Python
+pip install redis
 
-# Production (systemd)
-journalctl -u fuco -f
+# Verifica installazione
+python -c "import redis; print(redis.__version__)"
 ```
 
-## 🏗️ Architecture
+### "Connection refused"
 
-FUCO follows a modern Flask architecture:
+```bash
+# Verifica che Redis sia in esecuzione
+sudo systemctl status redis-server
 
-```
-┌─────────────────┐
-│   Web Browser   │
-│  (JavaScript)   │
-└────────┬────────┘
-         │ HTTP/AJAX
-         │
-┌────────▼────────┐
-│  Flask App      │
-│  (fuco.py)      │
-├─────────────────┤
-│  Routes Layer   │  ← REST API & Web UI
-│  (routes.py)    │     - HTML rendering
-│                 │     - JSON API
-│                 │     - Request validation
-├─────────────────┤
-│  Business Logic │
-│  (utils.py)     │  ← - Analyzer management
-│                 │     - Job polling
-│                 │     - Caching
-│                 │     - Template rendering
-└────────┬────────┘
-         │ cortex4py
-         │
-┌────────▼────────┐
-│  Cortex API     │
-│  (TheHive)      │  ← - Analyzer execution
-│                 │     - Job management
-│                 │     - Result storage
-└─────────────────┘
+# Testa connessione
+redis-cli ping
+
+# Controlla bind address in /etc/redis/redis.conf
+# bind 127.0.0.1 ::1
+
+# Controlla porta
+netstat -tlnp | grep 6379
 ```
 
-### Component Responsibilities
+### "Authentication required"
 
-- **fuco.py**: Application entry point, Flask initialization
-- **routes.py**: HTTP routing, request handling, response formatting
-- **utils.py**: Core business logic, Cortex API interaction, caching
-- **config.py**: Configuration parameters and constants
-- **templates/**: Jinja2 templates for HTML rendering
-  - `short/`: Taxonomy summary templates
-  - `long/`: Detailed report templates
+```bash
+# Redis richiede password ma config.py non l'ha impostata
+# Opzione 1: Aggiungi password in config.py
+REDIS_PASSWORD = 'your-password'
 
-### Customizing Templates
-
-FUCO supports analyzer-specific templates:
-
-#### Short Templates (Taxonomy Summaries)
-
-Create `web/templates/short/AnalyzerName.short.html`:
-
-```html
-{% for taxonomy in taxonomies %}
-<span class="badge {{ taxonomy.css }}">
-    {{ taxonomy.namespace }}:{{ taxonomy.predicate }} = {{ taxonomy.value }}
-</span>
-{% endfor %}
+# Opzione 2: Disabilita auth in redis.conf
+# requirepass ""
 ```
 
-#### Long Templates (Detailed Reports)
+### "Memory usage troppo alta"
 
-Create `web/templates/long/AnalyzerName.long.html`:
+```bash
+# Verifica uso memoria
+redis-cli INFO memory
 
-```html
-<div class="analyzer-report">
-    <h3>{{ artifact.analyzerName }}</h3>
-    <pre>{{ artifact.report | tojson(indent=2) }}</pre>
-</div>
+# Pulisci cache manualmente
+redis-cli FLUSHDB
+
+# Riduci TTL in config.py
+CACHE_TTL_MINUTES = 15
 ```
 
-If no specific template exists, FUCO uses `generic.short.html` or `generic.long.html` automatically.
+### "Cache sempre vuota dopo restart"
 
-## 🤝 Contributing
+**Memory Cache:** Comportamento normale, cache volatile.
 
-Contributions are welcome! Here's how you can help:
+**Redis Cache:**
+```bash
+# Verifica salvataggio Redis
+redis-cli CONFIG GET save
 
-1. **Fork the repository**
-2. **Create a feature branch** (`git checkout -b feature/amazing-feature`)
-3. **Follow existing code style** (PEP 8 for Python)
-4. **Add tests** if applicable
-5. **Commit your changes** (`git commit -m 'Add amazing feature'`)
-6. **Push to the branch** (`git push origin feature/amazing-feature`)
-7. **Open a Pull Request**
+# Abilita persistenza in redis.conf
+save 900 1
+```
 
-### Development Guidelines
+## Best Practices
 
-- Use meaningful commit messages
-- Update documentation for new features
-- Ensure backward compatibility
-- Test with multiple Cortex versions
-- Add logging for debugging
+### Sviluppo
+- ✅ Usa Memory Cache
+- ✅ TTL breve (10-15 minuti)
+- ✅ Cleanup automatico attivo
 
-## 📄 License
+### Test/Staging
+- ✅ Usa Redis se disponibile, altrimenti Memory
+- ✅ TTL medio (30 minuti)
+- ✅ Monitora statistiche cache
 
-This project is open source. Please check the repository for license details.
+### Produzione
+- ✅ Sempre Redis Cache
+- ✅ TTL lungo (60+ minuti)
+- ✅ Redis persistente (AOF + RDB)
+- ✅ Monitoring attivo
+- ✅ Backup Redis periodici
+- ✅ Clustering multi-istanza FUCO + Redis
 
-## 👏 Credits
+### Sicurezza
+- 🔒 Redis con password (`requirepass` in redis.conf)
+- 🔒 Bind solo IP necessari (`bind 127.0.0.1`)
+- 🔒 Firewall per porta 6379
+- 🔒 API cache protette da IP whitelist
+- 🔒 Backup crittografati
 
-**Author**: [Luca Memini](mailto:luca@memini.it)
+## Esempi di Utilizzo
 
-**Built with**:
-- [TheHive Project - Cortex](https://github.com/TheHive-Project/Cortex)
-- [cortex4py](https://github.com/TheHive-Project/Cortex4py) Python library
-- [Flask](https://flask.palletsprojects.com/)
-- [Bootstrap](https://getbootstrap.com/)
+### Scenario 1: Laptop Development
 
-## 📞 Support
+```python
+# config.py
+CACHE_TYPE = 'memory'
+CACHE_TTL_MINUTES = 10
+```
 
-- **Issues**: [GitHub Issues](https://github.com/lucamemini/fuco/issues)
-- **Email**: luca@memini.it
-- **Documentation**: [Cortex Documentation](https://docs.thehive-project.org/cortex/)
+**Vantaggi:** Zero setup, funziona ovunque.
+
+### Scenario 2: Server Singolo Production
+
+```bash
+# Install Redis
+sudo apt-get install redis-server
+
+# config.py
+CACHE_TYPE = 'redis'
+REDIS_HOST = 'localhost'
+CACHE_TTL_MINUTES = 60
+```
+
+**Vantaggi:** Persistenza, performance.
+
+### Scenario 3: Cluster Load-Balanced
+
+```bash
+# Separate Redis server
+# redis-server.example.com
+
+# FUCO Instance 1 - config.py
+CACHE_TYPE = 'redis'
+REDIS_HOST = 'redis-server.example.com'
+REDIS_PASSWORD = 'secure-password'
+
+# FUCO Instance 2 - same config
+# Entrambe condividono la stessa cache Redis
+```
+
+**Vantaggi:** Cache condivisa, scalabilità orizzontale.
+
+### Scenario 4: Docker Compose
+
+```yaml
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+    networks:
+      - fuco_net
+
+  fuco:
+    build: .
+    environment:
+      # Redis hostname è nome service
+      REDIS_HOST: redis
+    depends_on:
+      - redis
+    networks:
+      - fuco_net
+
+volumes:
+  redis_data:
+
+networks:
+  fuco_net:
+```
+
+```python
+# config.py in container
+CACHE_TYPE = 'redis'
+REDIS_HOST = 'redis'  # Nome del service Docker
+```
+
+## Migration Guide
+
+### Da Memory a Redis
+
+1. Installa Redis server
+2. Installa `pip install redis`
+3. Modifica `config.py`:
+   ```python
+   CACHE_TYPE = 'redis'
+   ```
+4. Restart FUCO
+5. Verifica log: `INFO - Backend Redis attivato`
+
+**Note:** La cache Memory viene persa, Redis parte vuota.
+
+### Da Redis a Memory
+
+1. Modifica `config.py`:
+   ```python
+   CACHE_TYPE = 'memory'
+   ```
+2. Restart FUCO
+3. (Opzionale) Disinstalla Redis se non usato
+
+**Note:** Dati Redis rimangono intatti ma inutilizzati.
+
+## FAQ
+
+**Q: Posso usare Redis di un altro progetto?**  
+A: Sì, usa un database diverso (`REDIS_DB = 5`) per evitare conflitti.
+
+**Q: Come pulisco SOLO la cache di FUCO senza toccare altri dati Redis?**  
+A: `redis-cli --scan --pattern "fuco:*" | xargs redis-cli DEL`
+
+**Q: La cache funziona anche per gli analyzer jobs non completati?**  
+A: No, solo job con status finale (`Success`, `Failure`, `Deleted`) vengono cachati.
+
+**Q: Come faccio backup della cache Redis?**  
+A: `redis-cli SAVE` oppure copia file `/var/lib/redis/dump.rdb`
+
+**Q: Posso usare Redis Cloud/AWS ElastiCache?**  
+A: Sì, configura `REDIS_URL` con l'endpoint remoto.
+
+**Q: Memory Cache usa troppa RAM, come limito?**  
+A: Non c'è limite hard. Riduci `CACHE_TTL_MINUTES` o passa a Redis con `maxmemory`.
 
 ---
 
-**Note**: FUCO is a community project and is not officially affiliated with TheHive Project.
+## Next Steps
 
-⭐ If you find FUCO useful, please consider starring the repository!
+- **Performance**: Vedi [Performance Optimization](#)
+- **Monitoring**: Vedi [Monitoring Guide](#)
+- **Deployment**: Vedi [Production Deployment](#)

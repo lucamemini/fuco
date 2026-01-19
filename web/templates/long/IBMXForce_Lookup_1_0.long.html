@@ -4,7 +4,7 @@
     <div class="card-header">
     <ul class="nav nav-tabs card-header-tabs">
       <li class="nav-item">
-        <a class="nav-link active" class="nav-link active" id="home-tab_{{ artifact.id }}" data-bs-toggle="tab" data-bs-target="#home_{{ artifact.id }}" role="tab" aria-controls="home_{{ artifact.id }}" aria-selected="true">Result</a>
+        <a class="nav-link active" id="home-tab_{{ artifact.id }}" data-bs-toggle="tab" data-bs-target="#home_{{ artifact.id }}" role="tab" aria-controls="home_{{ artifact.id }}" aria-selected="true">Result</a>
       </li>
       <li class="nav-item">
         <a class="nav-link" id="json-tab_{{ artifact.id }}" data-bs-toggle="tab" data-bs-target="#json_{{ artifact.id }}" role="tab" aria-controls="json_{{ artifact.id }}" aria-selected="false">Json</a>
@@ -17,13 +17,14 @@
         </svg>
         </a>
       </li>
+    </ul>
     </div>
     <div class="card-body">
     <div class="tab-content" id="myTabContent">
      <div class="tab-pane fade show active" id="home_{{ artifact.id }}" role="tabpanel" aria-labelledby="home-tab_{{ artifact.id }}">
                
 <!-- Success case -->
-<div >
+<div>
 	<div class="panel panel-info">
 		<div class="panel-heading">
 			<strong>{{name}} report</strong>
@@ -36,68 +37,59 @@
 				<dt>Score</dt>
 				<dd><span class="label label-primary">{{content.score_value}}</span></dd>
 			</dl>
-			{% if content.families|length |length == 0 %}
-			<dl class="dl-horizontal" >
+			{% if content.families|length > 0 %}
+			<dl class="dl-horizontal">
 				<dt>Families</dt>
 				{% for family in content.families %}
-				<dd >{{family}}</dd>
+				<dd>{{family}}</dd>
 				{% endfor %}
 			</dl>
 			{% endif %}
-			{% if content.cats|length |length == 0 %}			
-			<dl class="dl-horizontal" >
+			{% if content.cats|length > 0 %}			
+			<dl class="dl-horizontal">
 				<dt>Categories</dt>
-				{% for family in content.cats %}
-				<dd >{{cat}}</dd>
+				{% for cat in content.cats %}
+				<dd>{{cat}}</dd>
 				{% endfor %}
 			</dl>
 			{% endif %}
 		</div>
 	</div>
 
-	{% if content.subjects_info|length |length == 0 %}
-	<div class="panel panel-info"  ng-init="content.subjects_info_limit = 5">
+	{% if content.subjects_info|length > 0 %}
+	<div class="panel panel-info">
 		<div class="panel-heading">
 			<strong>Subjects Info</strong>
-			<span class="pull-right" >
-				<a  href="" ng-click="content.subjects_info_limit = content.subjects_info|length">View All ({{ content.subjects_info|length}})</a>
-				<a   href="" ng-click="content.subjects_info_limit = 5">View All ({{content.subjects_info|length}})</a>
-			</span>
 		</div>
 		<div class="panel-body">
 			<table class="table table-hover">
-				<tr>show all
+				<tr>
 					<th>Subject</th>
 					<th>Count</th>
 					<th>Sender IPs</th>
 					<th>Date</th>
 				</tr>
-				<tr >
-					{% for obj in content.subjects_info %}				
+				{% for obj in content.subjects_info %}				
+				<tr>
 					<td>{{obj[0]}}</td>
 					<td>{{obj[1]}}</td>
 					<td>
 						{% for ip in obj[2] %}				
-						<span >{{ip}}<br/></span>
+						<span>{{ip}}<br/></span>
 						{% endfor %}
 					</td>
 					<td>{{obj[3]}}</td>
-					{% endfor %}
 				</tr>
+				{% endfor %}
 			</table>
 		</div>
 	</div>
 	{% endif %}
 	
-	{% if content.subjects_info|length |length == 0 %}
-	<div class="panel panel-info"  ng-init="content.emails_info_limit = 5">
+	{% if content.emails_info|length > 0 %}
+	<div class="panel panel-info">
 		<div class="panel-heading">
 			<strong>Emails Info</strong>
-			
-			<span class="pull-right" >
-				<a   href="" ng-click="emails_info_limit = content.emails_info|length">View All ({{content.emails_info|length}})</a>
-				<a   href="" ng-click="emails_info_limit = 5">View All ({{content.emails_info|length}})</a>
-			</span>
 		</div>
 		<div class="panel-body">
 			<table class="table table-hover">
@@ -107,27 +99,23 @@
 					<th>Sender domain</th>
 					<th>Date</th>
 				</tr>
-				{% for obj in content.subjects_info %}				
-				<tr >
+				{% for obj in content.emails_info %}				
+				<tr>
 					<td>{{obj[0]}}</td>
 					<td>{{obj[1]}}</td>
 					<td>{{obj[2]}}</td>
 					<td>{{obj[3]}}</td>
 				</tr>
-					{% endfor %}
+				{% endfor %}
 			</table>
 		</div>
 	</div>
 	{% endif %}
 	
-	{% if content.subjects_info|length |length == 0 %}	
-	<div class="panel panel-info"  ng-init="content.dns_limit = 5">
+	{% if content.dns|length > 0 %}	
+	<div class="panel panel-info">
 		<div class="panel-heading">
 			<strong>DNS Info</strong>
-			<span class="pull-right" >
-				<a  href="" ng-click="content.dns_limit = content.dns|length">View All ({{content.dns|length}})</a>
-				<a  href="" ng-click="content.dns_limit = 5">View All ({{content.dns|length}})</a>
-			</span>
 		</div>
 		<div class="panel-body">
 			<table class="table table-hover">
@@ -136,8 +124,8 @@
 					<th>Last</th>
 					<th>Value</th>
 				</tr>
-				{% for obj in content.subjects_info %}				
-				<tr >
+				{% for obj in content.dns %}				
+				<tr>
 					<td>{{obj[0]}}</td>
 					<td>{{obj[1]}}</td>
 					<td>{{obj[2]}}</td>
@@ -148,14 +136,10 @@
 	</div>
 	{% endif %}
 	
-	{% if content.subjects_info|length |length == 0 %}
-	<div class="panel panel-info"  ng-init="content.malware_limit = 5">
+	{% if content.malware|length > 0 %}
+	<div class="panel panel-info">
 		<div class="panel-heading">
 			<strong>Malware Info</strong>
-			<span class="pull-right" >
-				<a  href="" ng-click="content.malware_limit = content.malware|length">View All ({{content.malware|length}})</a>
-				<a  href="" ng-click="content.malware_limit = 5">View All ({{content.malware|length}})</a>
-			</span>
 		</div>
 		<div class="panel-body">
 			<table class="table table-hover">
@@ -169,7 +153,7 @@
 					<th>Families</th>
 				</tr>
 				{% for obj in content.malware %}
-				<tr >
+				<tr>
 					<td>{{obj.type}}</td>
 					<td>{{obj.count}}</td>
 					<td>{{obj.firstseen}} - {{obj.lastseen}}</td>
@@ -178,7 +162,7 @@
 					<td>{{obj.origin}}</td>
 					<td>
 						{% for fam in obj.family %}
-						<span >{{fam}}<br/></span>
+						<span>{{fam}}<br/></span>
 						{% endfor %}
 					</td>
 				</tr>
@@ -188,14 +172,10 @@
 	</div>
 	{% endif %}
 	
-	{% if content.subjects_info|length |length == 0 %}
-	<div class="panel panel-info"  ng-init="content.history_limit = 5">
+	{% if content.history|length > 0 %}
+	<div class="panel panel-info">
 		<div class="panel-heading">
 			<strong>History Info</strong>
-			<span class="pull-right" >
-				<a  href="" ng-click="content.history_limit = content.history|length">View All ({{content.history|length}})</a>
-				<a  href="" ng-click="content.history_limit = 5">View All ({{content.history|length}})</a>
-			</span>
 		</div>
 		<div class="panel-body">
 			<table class="table table-hover">
@@ -209,25 +189,32 @@
 					<th>Deleted</th>
 				</tr>
 				{% for obj in content.history %}
-				<tr >
-					<td><h4>
-					<span class="label {% if obj.score < 4 %} label-success {% elif obj.score < 7 %} label-warning {% else %} label-danger {% endif %}">{{obj.score}}</span>
-					<h4>
+				<tr>
+					<td>
+						<h4>
+							<span class="label {% if obj.score < 4 %} label-success {% elif obj.score < 7 %} label-warning {% else %} label-danger {% endif %}">{{obj.score}}</span>
+						</h4>
 					</td>
 					<td>{{obj.day}}</td>
 					<td>{{obj.country}}</td>
 					<td>{{obj.ip}}</td>
 					<td>{{obj.ans}}</td>
-					<td><span >{{cat.name}}: {{cat.score}}<br/></span></td>
+					<td>
+						{% if obj.cats %}
+							{% for cat in obj.cats %}
+							<span>{{cat.name}}: {{cat.score}}<br/></span>
+							{% endfor %}
+						{% endif %}
+					</td>
 					<td>{{obj.deleted}}</td>
 				</tr>
 				{% endfor %}
 			</table>
 		</div>
 	</div>
+	{% endif %}
 
 </div>
-{% endif %}
 
      </div>
      <div class="tab-pane fade" id="json_{{ artifact.id }}" role="tabpanel" aria-labelledby="json-tab_{{ artifact.id }}">
@@ -243,13 +230,12 @@
 {% else %}
 <!-- General error -->
 <div class="card border-danger">
-        <div class="card-header alert alert-danger">
-                <strong>Error</strong>
-        </div>
-        <div class="card-body">
-                <strong>{{(artifact.data)}}</strong><br>
-                {{ artifact.report.errorMessage}}
-        </div>
+    <div class="card-header alert alert-danger">
+        <strong>Error</strong>
+    </div>
+    <div class="card-body">
+        <strong>{{(artifact.data)}}</strong><br>
+        {{ artifact.report.errorMessage}}
     </div>
 </div>
 {% endif %}

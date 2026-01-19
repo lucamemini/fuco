@@ -1,0 +1,993 @@
+# FUCO - Piano di Miglioramento Completo
+
+## 🎯 Executive Summary
+
+FUCO è ben strutturato ma ha margini significativi di miglioramento in:
+- **Performance**: Cache in-memory volatile, nessun connection pooling
+- **Sicurezza**: Mancano rate limiting, CSRF, input validation approfondita
+- **Scalabilità**: Polling sincrono blocca worker, manca queue system
+- **Resilienza**: Nessun circuit breaker per Cortex failures
+
+---
+
+## 🚀 PERFORMANCE (Impatto: ALTO)
+
+### 1. **Cache Persistente con Redis** ⭐⭐⭐
+**Problema attuale**: Cache in-memory (`_report_cache`) si perde al restart.
+
+**Implementazione**:
+```python
+# requirements.txt
+redis==5.0.1
+flask-caching==2.1.0
+
+# config.py
+REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
+CACHE_TYPE = 'redis'
+
+# utils.py
+from flask_caching import Cache
+from redis import Redis
+import pickle
+
+redis_client = Redis.from_url(config.REDIS_URL, decode_responses=False)
+
+def get_cached_report(job_id):
+    """Cache con Redis - persiste tra restart"""
+    cache_key = f"report:{job_id}"
+    
+    # 1. Check cache
+    cached = redis_client.get(cache_key)
+    if cached:
+        report = pickle.loads(cached)
+        logger.debug(f"Report {job_id} da Redis cache")
+        return report
+    
+    # 2. Fetch from Cortex
+    report = cortex_api_call(cortex_api.jobs.get_report, job_id)
+    
+    # 3. Cache solo status finali
+    if hasattr(report, 'status') and report.status in ("Success", "Failure"):
+        ttl = config.CACHE_TTL_MINUTES * 60
+        redis_client.setex(cache_key, ttl, pickle.dumps(report))
+        logger.info(f"Report {job_id} cached in Redis (TTL: {ttl}s)")
+    
+    return report
+
+def get_cache_stats():
+    """Stats con Redis"""
+    keys = redis_client.keys("report:*")
+    stats = {
+        'total_reports': len(keys),
+        'memory_usage': redis_client.info('memory')['used_memory_human'],
+        'by_status': {}
+    }
+    
+    # Sample 100 reports per performance
+    for key in keys[:100]:
+        try:
+            report = pickle.loads(redis_client.get(key))
+            status = getattr(report, 'status', 'Unknown')
+            stats['by_status'][status] = stats['by_status'].get(status, 0) + 1
+        except:
+            pass
+    
+    return stats
+```
+
+**Benefici**:
+- ✅ Persistenza tra restart
+- ✅ Clustering multi-istanza
+- ✅ TTL automatico
+- ✅ Monitoring integrato
+
+---
+
+### 2. **Task Queue con Celery** ⭐⭐⭐
+**Problema attuale**: Polling sincrono blocca i worker Flask.
+
+**Implementazione**:
+```python
+# requirements.txt
+celery==5.3.4
+celery[redis]==5.3.4
+
+# celery_app.py
+from celery import Celery
+
+celery_app = Celery(
+    'fuco',
+    broker=config.REDIS_URL,
+    backend=config.REDIS_URL
+)
+
+celery_app.conf.update(
+    task_serializer='pickle',
+    accept_content=['pickle', 'json'],
+    result_serializer='pickle',
+    task_track_started=True,
+    task_time_limit=600,  # 10 min timeout
+    worker_prefetch_multiplier=4,
+)
+
+@celery_app.task(bind=True, max_retries=3)
+def poll_job_async(self, job_id, max_attempts=15):
+    """Background polling task"""
+    try:
+        for attempt in range(max_attempts):
+            time.sleep(3 + attempt * 0.5)
+            report = cortex_api_call(cortex_api.jobs.get_report, job_id)
+            
+            if report.status in ("Success", "Failure"):
+                # Cache automaticamente
+                cache_key = f"report:{job_id}"
+                redis_client.setex(
+                    cache_key, 
+                    config.CACHE_TTL_MINUTES * 60,
+                    pickle.dumps(report)
+                )
+                return {'status': 'completed', 'report_status': report.status}
+        
+        return {'status': 'timeout', 'attempts': max_attempts}
+        
+    except Exception as e:
+        logger.error(f"Polling error for {job_id}: {e}")
+        raise self.retry(exc=e, countdown=5)
+
+# routes.py - Uso asincrono
+@routes_bp.route('/api/submit_job', methods=['POST'])
+def api_submit_job():
+    # Sottometti job a Cortex
+    job_result = utils.run_analysis(analyzer, datatype, data, tlp, pap)
+    job_id = job_result['id']
+    
+    # Avvia polling in background
+    task = poll_job_async.delay(job_id)
+    
+    return jsonify({
+        'status': 'queued',
+        'job_id': job_id,
+        'task_id': task.id,
+        'poll_url': f'/api/task_status/{task.id}'
+    })
+
+@routes_bp.route('/api/task_status/<task_id>')
+def task_status(task_id):
+    """Check Celery task status"""
+    task = celery_app.AsyncResult(task_id)
+    
+    if task.state == 'PENDING':
+        return jsonify({'state': 'pending'})
+    elif task.state == 'SUCCESS':
+        return jsonify({'state': 'success', 'result': task.result})
+    elif task.state == 'FAILURE':
+        return jsonify({'state': 'failed', 'error': str(task.info)})
+    else:
+        return jsonify({'state': task.state, 'info': str(task.info)})
+```
+
+**Avvio**:
+```bash
+# Terminal 1: Flask
+gunicorn -w 4 fuco:app
+
+# Terminal 2: Celery workers
+celery -A celery_app worker --loglevel=info --concurrency=10
+
+# Terminal 3: Celery monitoring
+celery -A celery_app flower
+```
+
+**Benefici**:
+- ✅ Non blocca worker Flask
+- ✅ Retry automatici
+- ✅ Monitoring con Flower
+- ✅ Scalabilità orizzontale
+
+---
+
+### 3. **Connection Pooling per Cortex API** ⭐⭐
+**Problema attuale**: Ogni richiesta crea nuove connessioni HTTP.
+
+```python
+# utils.py
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
+import requests
+
+class CortexAPIWrapper:
+    """Wrapper con connection pooling"""
+    
+    def __init__(self, host, api_key):
+        self.host = host
+        self.api_key = api_key
+        self.session = self._create_session()
+        self.api = Api(host, api_key)
+        # Inietta session nella API
+        self.api._session = self.session
+    
+    def _create_session(self):
+        session = requests.Session()
+        
+        # Retry strategy
+        retry = Retry(
+            total=3,
+            backoff_factor=0.5,
+            status_forcelist=[500, 502, 503, 504],
+            allowed_methods=["GET", "POST", "PUT", "DELETE"]
+        )
+        
+        # Adapter con pooling
+        adapter = HTTPAdapter(
+            pool_connections=20,
+            pool_maxsize=50,
+            max_retries=retry,
+            pool_block=False
+        )
+        
+        session.mount('http://', adapter)
+        session.mount('https://', adapter)
+        
+        # Headers comuni
+        session.headers.update({
+            'Authorization': f'Bearer {self.api_key}',
+            'Content-Type': 'application/json'
+        })
+        
+        return session
+    
+    def close(self):
+        """Cleanup"""
+        self.session.close()
+
+# Inizializzazione globale
+cortex_wrapper = CortexAPIWrapper(cfg.cortex["host"], cfg.cortex["apikey"])
+cortex_api = cortex_wrapper.api
+
+# Cleanup on shutdown
+import atexit
+atexit.register(cortex_wrapper.close)
+```
+
+---
+
+### 4. **Batch Processing per IP Multipli** ⭐⭐
+**Problema attuale**: Loop sequenziale per IP multipli.
+
+```python
+# routes.py
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
+@routes_bp.route('/api/short', methods=['POST'])
+def api_short():
+    # ... parsing input ...
+    
+    if len(input_items) > 1:
+        # Batch processing parallelo
+        final_results = batch_analyze(input_items, analyzer_list)
+    else:
+        # Single item
+        final_results = sequential_analyze(input_items, analyzer_list)
+    
+    return jsonify(final_results)
+
+def batch_analyze(input_items, analyzer_list, max_workers=10):
+    """Analisi parallela per performance"""
+    results = []
+    
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        # Submit all jobs
+        future_to_job = {}
+        for data, dtype in input_items:
+            for analyzer in analyzer_list:
+                future = executor.submit(
+                    utils.run_analysis, 
+                    analyzer, dtype, data
+                )
+                future_to_job[future] = (data, analyzer)
+        
+        # Collect job IDs
+        job_results = []
+        for future in as_completed(future_to_job):
+            data, analyzer = future_to_job[future]
+            try:
+                job = future.result(timeout=10)
+                job_results.append((data, analyzer, job))
+            except Exception as e:
+                logger.error(f"Job submission failed: {e}")
+        
+        # Parallel polling
+        poll_futures = {}
+        for data, analyzer, job in job_results:
+            future = executor.submit(
+                utils.poll_job, 
+                job['id'],
+                config.API_SHORT_MAX_ATTEMPTS,
+                config.API_SHORT_INITIAL_DELAY
+            )
+            poll_futures[future] = (data, analyzer, job)
+        
+        # Collect results
+        for future in as_completed(poll_futures):
+            data, analyzer, job = poll_futures[future]
+            try:
+                report = future.result(timeout=120)
+                results.append(format_result(data, analyzer, report))
+            except Exception as e:
+                logger.error(f"Polling failed: {e}")
+    
+    return results
+```
+
+---
+
+### 5. **Database per Recent Searches** ⭐
+**Problema attuale**: Query Cortex ogni volta per recent searches.
+
+```python
+# models.py
+import sqlite3
+from datetime import datetime
+import json
+
+class SearchHistoryDB:
+    def __init__(self, db_path='fuco_history.db'):
+        self.db_path = db_path
+        self._init_db()
+    
+    def _init_db(self):
+        conn = sqlite3.connect(self.db_path)
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS searches (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                observable TEXT NOT NULL,
+                datatype TEXT NOT NULL,
+                analyzers TEXT NOT NULL,
+                job_ids TEXT NOT NULL,
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+                status TEXT DEFAULT 'pending',
+                user_ip TEXT
+            )
+        ''')
+        conn.execute('''
+            CREATE INDEX IF NOT EXISTS idx_observable 
+            ON searches(observable, datatype)
+        ''')
+        conn.execute('''
+            CREATE INDEX IF NOT EXISTS idx_timestamp 
+            ON searches(timestamp DESC)
+        ''')
+        conn.commit()
+        conn.close()
+    
+    def save_search(self, observable, datatype, analyzers, job_ids, user_ip=None):
+        conn = sqlite3.connect(self.db_path)
+        conn.execute('''
+            INSERT INTO searches 
+            (observable, datatype, analyzers, job_ids, user_ip)
+            VALUES (?, ?, ?, ?, ?)
+        ''', (
+            observable,
+            datatype,
+            json.dumps(analyzers),
+            json.dumps(job_ids),
+            user_ip
+        ))
+        conn.commit()
+        conn.close()
+    
+    def get_recent(self, limit=50):
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            SELECT DISTINCT observable, datatype, timestamp
+            FROM searches
+            WHERE status = 'completed'
+            ORDER BY timestamp DESC
+            LIMIT ?
+        ''', (limit,))
+        
+        results = {}
+        for row in cursor.fetchall():
+            observable, datatype, timestamp = row
+            if datatype not in results:
+                results[datatype] = {}
+            if observable not in results[datatype]:
+                results[datatype][observable] = timestamp
+        
+        conn.close()
+        return results
+
+# utils.py
+search_db = SearchHistoryDB()
+
+def get_recent_searches():
+    """Usa DB locale invece di query Cortex"""
+    try:
+        return search_db.get_recent(limit=config.JOB_RECENT_LIMIT)
+    except Exception as e:
+        logger.error(f"DB error: {e}")
+        # Fallback a Cortex
+        return get_recent_searches_cortex()
+```
+
+---
+
+## 🔒 SICUREZZA (Impatto: CRITICO)
+
+### 1. **Rate Limiting** ⭐⭐⭐
+**Problema attuale**: Nessuna protezione contro abuse.
+
+```python
+# requirements.txt
+Flask-Limiter==3.5.0
+
+# fuco.py
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+
+limiter = Limiter(
+    app=app,
+    key_func=get_remote_address,
+    storage_uri=config.REDIS_URL,
+    default_limits=["1000 per day", "100 per hour"],
+    strategy="fixed-window-elastic-expiry"
+)
+
+# routes.py
+@routes_bp.route('/api/short', methods=['POST'])
+@limiter.limit("20 per minute")
+def api_short():
+    ...
+
+@routes_bp.route('/api/submit_job', methods=['POST'])
+@limiter.limit("60 per minute")
+def api_submit_job():
+    ...
+
+@routes_bp.route('/api/analysis', methods=['POST'])
+@limiter.limit("10 per minute")
+def api_analysis():
+    ...
+
+# Custom rate limit per IP
+@routes_bp.route('/api/cache/clear', methods=['POST'])
+@ip_whitelist_required()
+@limiter.limit("5 per hour")
+def clear_cache():
+    ...
+```
+
+---
+
+### 2. **Input Validation & Sanitization** ⭐⭐⭐
+**Problema attuale**: Validation minima, possibili injection.
+
+```python
+# requirements.txt
+bleach==6.1.0
+validators==0.22.0
+
+# utils.py
+import bleach
+import validators
+from html import escape
+
+class InputValidator:
+    """Validazione e sanitizzazione input"""
+    
+    @staticmethod
+    def sanitize_observable(data: str, max_length=500) -> str:
+        """Sanitizza observable"""
+        if not data:
+            raise ValueError("Observable cannot be empty")
+        
+        # Remove dangerous chars
+        data = bleach.clean(data, tags=[], strip=True)
+        
+        # Trim
+        data = data.strip()[:max_length]
+        
+        # Remove null bytes
+        data = data.replace('\x00', '')
+        
+        # Remove multiple spaces
+        data = ' '.join(data.split())
+        
+        return data
+    
+    @staticmethod
+    def validate_ip(ip: str) -> bool:
+        """Valida IP con validators library"""
+        try:
+            return validators.ipv4(ip) or validators.ipv6(ip)
+        except:
+            return False
+    
+    @staticmethod
+    def validate_domain(domain: str) -> bool:
+        """Valida domain"""
+        try:
+            return validators.domain(domain)
+        except:
+            return False
+    
+    @staticmethod
+    def validate_url(url: str) -> bool:
+        """Valida URL"""
+        try:
+            return validators.url(url)
+        except:
+            return False
+    
+    @staticmethod
+    def validate_hash(hash_str: str, hash_type: str) -> bool:
+        """Valida hash (MD5, SHA256, etc.)"""
+        patterns = {
+            'md5': r'^[a-fA-F0-9]{32}$',
+            'sha1': r'^[a-fA-F0-9]{40}$',
+            'sha256': r'^[a-fA-F0-9]{64}$'
+        }
+        
+        pattern = patterns.get(hash_type.lower())
+        if not pattern:
+            return False
+        
+        return bool(re.match(pattern, hash_str))
+
+# Usa nei routes
+@routes_bp.route('/api/short', methods=['POST'])
+def api_short():
+    request_data = request.get_json()
+    
+    # Sanitize
+    raw_data = InputValidator.sanitize_observable(
+        request_data.get('Data', '')
+    )
+    
+    # Validate based on type
+    datatype = request_data.get('DataType', '').lower()
+    
+    if datatype == 'ip' and not InputValidator.validate_ip(raw_data):
+        return error_response("Invalid IP address", 400)
+    
+    if datatype == 'domain' and not InputValidator.validate_domain(raw_data):
+        return error_response("Invalid domain", 400)
+    
+    # ... continue ...
+```
+
+---
+
+### 3. **API Key Authentication** ⭐⭐
+**Problema attuale**: Nessuna auth per API REST.
+
+```python
+# config.py
+API_KEYS_ENABLED = os.getenv('FUCO_API_KEYS_ENABLED', 'true').lower() == 'true'
+
+# models.py
+class APIKeyManager:
+    """Gestione API keys"""
+    
+    def __init__(self):
+        self.db_path = 'fuco_apikeys.db'
+        self._init_db()
+    
+    def _init_db(self):
+        conn = sqlite3.connect(self.db_path)
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS api_keys (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                key TEXT UNIQUE NOT NULL,
+                name TEXT NOT NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                last_used DATETIME,
+                is_active BOOLEAN DEFAULT 1,
+                rate_limit INTEGER DEFAULT 100,
+                allowed_ips TEXT
+            )
+        ''')
+        conn.commit()
+        conn.close()
+    
+    def validate_key(self, api_key: str, client_ip: str = None) -> bool:
+        """Valida API key"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            SELECT is_active, allowed_ips 
+            FROM api_keys 
+            WHERE key = ?
+        ''', (api_key,))
+        
+        row = cursor.fetchone()
+        
+        if not row:
+            conn.close()
+            return False
+        
+        is_active, allowed_ips_json = row
+        
+        if not is_active:
+            conn.close()
+            return False
+        
+        # Check IP whitelist
+        if allowed_ips_json and client_ip:
+            allowed_ips = json.loads(allowed_ips_json)
+            if client_ip not in allowed_ips:
+                conn.close()
+                return False
+        
+        # Update last_used
+        cursor.execute('''
+            UPDATE api_keys 
+            SET last_used = CURRENT_TIMESTAMP 
+            WHERE key = ?
+        ''', (api_key,))
+        
+        conn.commit()
+        conn.close()
+        return True
+    
+    def create_key(self, name: str, allowed_ips: list = None) -> str:
+        """Crea nuova API key"""
+        import secrets
+        api_key = f"fuco_{secrets.token_urlsafe(32)}"
+        
+        conn = sqlite3.connect(self.db_path)
+        conn.execute('''
+            INSERT INTO api_keys (key, name, allowed_ips)
+            VALUES (?, ?, ?)
+        ''', (api_key, name, json.dumps(allowed_ips) if allowed_ips else None))
+        conn.commit()
+        conn.close()
+        
+        return api_key
+
+# routes.py
+api_key_manager = APIKeyManager()
+
+def api_key_required(f):
+    """Decorator per API authentication"""
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if not config.API_KEYS_ENABLED:
+            return f(*args, **kwargs)
+        
+        api_key = request.headers.get('X-API-Key')
+        
+        if not api_key:
+            return jsonify({'error': 'API key required'}), 401
+        
+        client_ip = get_client_ip()
+        
+        if not api_key_manager.validate_key(api_key, client_ip):
+            return jsonify({'error': 'Invalid or inactive API key'}), 403
+        
+        return f(*args, **kwargs)
+    
+    return decorated
+
+# Applica ai routes
+@routes_bp.route('/api/short', methods=['POST'])
+@api_key_required
+@limiter.limit("20 per minute")
+def api_short():
+    ...
+```
+
+---
+
+### 4. **CSRF Protection** ⭐⭐
+```python
+# fuco.py
+from flask_wtf.csrf import CSRFProtect
+
+csrf = CSRFProtect(app)
+
+# Esenta solo API REST (protette da API key)
+@routes_bp.route('/api/short', methods=['POST'])
+@csrf.exempt
+@api_key_required
+def api_short():
+    ...
+
+# Form HTML richiedono CSRF token
+# templates/index.html
+<form method="POST" action="/analysis">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+    <!-- ... -->
+</form>
+```
+
+---
+
+### 5. **Security Headers** ⭐⭐
+```python
+# fuco.py
+from flask_talisman import Talisman
+
+# Force HTTPS in production
+if not app.debug:
+    Talisman(app, 
+        force_https=True,
+        strict_transport_security=True,
+        strict_transport_security_max_age=31536000,
+        content_security_policy={
+            'default-src': "'self'",
+            'script-src': ["'self'", "'unsafe-inline'", 'cdnjs.cloudflare.com'],
+            'style-src': ["'self'", "'unsafe-inline'", 'cdn.jsdelivr.net'],
+            'img-src': ["'self'", 'data:'],
+            'font-src': ["'self'", 'fonts.gstatic.com'],
+        },
+        content_security_policy_nonce_in=['script-src']
+    )
+
+@app.after_request
+def set_security_headers(response):
+    """Headers aggiuntivi"""
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'DENY'
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+    response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+    response.headers['Permissions-Policy'] = 'geolocation=(), microphone=(), camera=()'
+    
+    # Remove server header
+    response.headers.pop('Server', None)
+    
+    return response
+```
+
+---
+
+### 6. **Secrets Management** ⭐⭐⭐
+**Problema attuale**: API key in plaintext.
+
+```python
+# .env (non committare!)
+CORTEX_HOST=https://cortex.example.com
+CORTEX_API_KEY=your-secret-key-here
+REDIS_URL=redis://localhost:6379/0
+FUCO_SECRET_KEY=generate-random-secret
+FUCO_ENCRYPTION_KEY=generate-fernet-key
+
+# config.py
+from dotenv import load_dotenv
+load_dotenv()
+
+# fucoconfig.py diventa:
+import os
+
+cortex = {
+    "host": os.getenv("CORTEX_HOST"),
+    "apikey": os.getenv("CORTEX_API_KEY")
+}
+
+# Validazione
+if not cortex["host"] or not cortex["apikey"]:
+    raise ValueError("CORTEX_HOST and CORTEX_API_KEY must be set in .env")
+
+# .gitignore
+.env
+fucoconfig.py
+*.db
+__pycache__/
+```
+
+---
+
+## 🛡️ RESILIENZA
+
+### 1. **Circuit Breaker per Cortex** ⭐⭐
+```python
+# requirements.txt
+pybreaker==1.0.1
+
+# utils.py
+from pybreaker import CircuitBreaker
+
+cortex_breaker = CircuitBreaker(
+    fail_max=5,
+    timeout_duration=60,
+    exclude=[ValueError]
+)
+
+@cortex_breaker
+def cortex_api_call(func, *args, **kwargs):
+    """Wrapper con circuit breaker"""
+    try:
+        return func(*args, **kwargs)
+    except Exception as e:
+        logger.error(f"Cortex API error: {e}")
+        raise
+
+# Quando circuit aperto
+from pybreaker import CircuitBreakerError
+
+try:
+    result = cortex_api_call(cortex_api.jobs.get_report, job_id)
+except CircuitBreakerError:
+    logger.warning("Cortex circuit open, using cached data only")
+    return get_from_cache_only(job_id)
+```
+
+---
+
+### 2. **Health Check Endpoint** ⭐
+```python
+# routes.py
+@routes_bp.route('/health', methods=['GET'])
+def health_check():
+    """Health check per load balancer"""
+    health = {
+        'status': 'healthy',
+        'timestamp': datetime.now().isoformat(),
+        'checks': {}
+    }
+    
+    # Check Redis
+    try:
+        redis_client.ping()
+        health['checks']['redis'] = 'ok'
+    except:
+        health['checks']['redis'] = 'down'
+        health['status'] = 'degraded'
+    
+    # Check Cortex
+    try:
+        cortex_api.analyzers.find_all({}, range='0-1')
+        health['checks']['cortex'] = 'ok'
+    except:
+        health['checks']['cortex'] = 'down'
+        health['status'] = 'degraded'
+    
+    status_code = 200 if health['status'] == 'healthy' else 503
+    return jsonify(health), status_code
+```
+
+---
+
+## 📊 MONITORING
+
+### 1. **Metrics con Prometheus** ⭐⭐
+```python
+# requirements.txt
+prometheus-flask-exporter==0.22.4
+
+# fuco.py
+from prometheus_flask_exporter import PrometheusMetrics
+
+metrics = PrometheusMetrics(app)
+
+# Custom metrics
+from prometheus_client import Counter, Histogram
+
+cortex_requests = Counter(
+    'fuco_cortex_requests_total',
+    'Total Cortex API requests',
+    ['analyzer', 'status']
+)
+
+job_duration = Histogram(
+    'fuco_job_duration_seconds',
+    'Job completion time',
+    ['analyzer']
+)
+
+# utils.py
+def run_analysis(analyzer, datatype, data, tlp=None, pap=None):
+    start = time.time()
+    try:
+        job = cortex_api_call(...)
+        cortex_requests.labels(analyzer=analyzer, status='success').inc()
+        return job.json()
+    except Exception as e:
+        cortex_requests.labels(analyzer=analyzer, status='error').inc()
+        raise
+    finally:
+        job_duration.labels(analyzer=analyzer).observe(time.time() - start)
+```
+
+---
+
+## 🎨 CODE QUALITY
+
+### 1. **Type Hints** ⭐
+```python
+# utils.py
+from typing import Dict, List, Optional, Tuple
+
+def parse_multiple_ips(raw_data: str) -> List[str]:
+    """Type hints per migliore IDE support"""
+    ...
+
+def poll_job(
+    job_id: str, 
+    max_attempts: Optional[int] = None,
+    initial_delay: Optional[int] = None
+) -> Optional[object]:
+    ...
+
+def get_cached_report(job_id: str) -> object:
+    ...
+```
+
+### 2. **Logging Strutturato** ⭐
+```python
+# requirements.txt
+python-json-logger==2.0.7
+
+# config.py
+import logging
+from pythonjsonlogger import jsonlogger
+
+logHandler = logging.StreamHandler()
+formatter = jsonlogger.JsonFormatter(
+    '%(asctime)s %(name)s %(levelname)s %(message)s'
+)
+logHandler.setFormatter(formatter)
+
+logger = logging.getLogger()
+logger.addHandler(logHandler)
+logger.setLevel(logging.INFO)
+
+# Usage
+logger.info("Job submitted", extra={
+    'job_id': job_id,
+    'analyzer': analyzer,
+    'datatype': datatype,
+    'tlp': tlp,
+    'pap': pap,
+    'user_ip': request.remote_addr
+})
+```
+
+---
+
+## 🚀 DEPLOYMENT
+
+### Docker Compose Production-Ready
+```yaml
+# docker-compose.yml
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+    networks:
+      - fuco_net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  fuco:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - CORTEX_HOST=${CORTEX_HOST}
+      - CORTEX_API_KEY=${CORTEX_API_KEY}
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER=redis://redis:6379/1
+    depends_on:
+      - redis
+    networks:
+      - fuco_net
+    volumes:
+      - ./logs:/app/logs
+    deploy:
+      replicas: 3
+      restart_policy:
+        condition: on-failure
+
+  celery_worker:
+    build: .
+    command: celery -A celery_app worker --loglevel=info --concurrency=10
