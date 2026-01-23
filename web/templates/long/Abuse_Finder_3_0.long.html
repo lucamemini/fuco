@@ -1,45 +1,96 @@
 {% if artifact.status == "Success" %}
-{% set content = artifact.report.full or {} %}
-{% set abuse = content.get('abuse_finder', {}) %}
+{% set content = artifact.report.full if artifact.report and artifact.report.full else {} %}
 
-<div class="card border-success">
-  <div class="card-header">
-    Abuse Finder – {{ artifact.data }}
+<div class="card border-success mb-3">
+  <div class="card-header bg-success text-white">
+    <strong>Abuse Finder</strong> - {{ artifact.data }}
   </div>
 
   <div class="card-body">
-    {% if abuse.get('names') %}
-    <dl class="dl-horizontal">
-      <dt>Names:</dt>
-      <dd>
-        {% for name in abuse.names %}
-          <div>{{ name }}</div>
-        {% endfor %}
-      </dd>
-    </dl>
-    {% endif %}
+    {% if content %}
+      <!-- Abuse Finder Results -->
+      {% set abuse = content.get('abuse_finder', content) %}
+      
+      <!-- Names Section -->
+      {% if abuse.get('names') and abuse.names|length > 0 %}
+      <div class="mb-3">
+        <h6 class="text-primary">Contact Names:</h6>
+        <ul class="list-unstyled">
+          {% for name in abuse.names %}
+          <li class="ms-3">
+            <i class="bi bi-person-fill"></i> {{ name }}
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
 
-    {% if abuse.get('abuse') %}
-    <dl class="dl-horizontal">
-      <dt>Abuse addresses:</dt>
-      <dd>
-        {% for addr in abuse.abuse %}
-          <div>{{ addr }}</div>
-        {% endfor %}
-      </dd>
-    </dl>
+      <!-- Abuse Email Addresses Section -->
+      {% if abuse.get('abuse') and abuse.abuse|length > 0 %}
+      <div class="mb-3">
+        <h6 class="text-primary">Abuse Email Addresses:</h6>
+        <ul class="list-unstyled">
+          {% for addr in abuse.abuse %}
+          <li class="ms-3">
+            <i class="bi bi-envelope-fill"></i> 
+            <a href="mailto:{{ addr }}" class="text-decoration-none">{{ addr }}</a>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+
+      <!-- If no specific data found, show available keys -->
+      {% if not abuse.get('names') and not abuse.get('abuse') %}
+      <div class="alert alert-info">
+        <strong>No abuse contact information found</strong>
+        {% if abuse %}
+        <hr>
+        <p class="mb-0">Available data keys: {{ abuse.keys() | list | join(', ') }}</p>
+        {% endif %}
+      </div>
+      {% endif %}
+
+    {% else %}
+      <div class="alert alert-warning">
+        <strong>No data available</strong>
+        <p class="mb-0">The report did not return any content.</p>
+      </div>
     {% endif %}
   </div>
 </div>
 
-<div class="mt-3">
-  <h6>Raw JSON</h6>
-  <pre><code>{{ artifact.report | tojson(indent=2) }}</code></pre>
+<!-- Raw JSON Section (Collapsible) -->
+<div class="card">
+  <div class="card-header">
+    <a class="text-decoration-none" data-bs-toggle="collapse" href="#rawJson{{ artifact.id }}" role="button" aria-expanded="false">
+      <i class="bi bi-code-square"></i> Raw JSON <small class="text-muted">(click to expand)</small>
+    </a>
+  </div>
+  <div class="collapse" id="rawJson{{ artifact.id }}">
+    <div class="card-body">
+      <pre class="bg-light p-3 rounded"><code>{{ artifact.report | tojson(indent=2) }}</code></pre>
+    </div>
+  </div>
 </div>
 
 {% else %}
-<div class="alert alert-danger">
-  <strong>{{ artifact.data }}</strong><br>
-  {{ artifact.report.errorMessage }}
+<!-- Error Case -->
+<div class="card border-danger">
+  <div class="card-header bg-danger text-white">
+    <strong>Error</strong>
+  </div>
+  <div class="card-body">
+    <p><strong>Observable:</strong> {{ artifact.data }}</p>
+    <p><strong>Status:</strong> <span class="badge bg-danger">{{ artifact.status }}</span></p>
+    {% if artifact.report and artifact.report.errorMessage %}
+    <p><strong>Error Message:</strong></p>
+    <div class="alert alert-danger">
+      {{ artifact.report.errorMessage }}
+    </div>
+    {% else %}
+    <p class="text-muted">No error message available</p>
+    {% endif %}
+  </div>
 </div>
 {% endif %}
