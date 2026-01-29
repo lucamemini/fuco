@@ -1,5 +1,6 @@
 Flask
 Flask-RESTful
+Flask-Session
 Jinja2
 cortex4py
 flask_apscheduler

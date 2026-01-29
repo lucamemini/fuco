@@ -7,10 +7,10 @@
     <link href="https://fonts.googleapis.com/css?family=Poppins" rel="stylesheet" />
     <link href="css/main.css" rel="stylesheet" />
 
-	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/css/bootstrap.min.css" integrity="sha384-HSMxcRTRxnN+Bdg0JdbxYKrThecOKuH5zCYotlSAcp1+c8xmyTe9GYg1l9a69psu" crossorigin="anonymous">
-	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/css/bootstrap-theme.min.css" integrity="sha384-6pzBo3FDv/PJ8r2KRkGHifhEocL+1X2rVCTTkUfGk7/0pbek5mMa1upzvWbrUbOZ" crossorigin="anonymous">
+<link href="/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/css/all.min.css">
 	<script src="https://code.jquery.com/jquery-3.4.1.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
-	<script src="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/js/bootstrap.min.js" integrity="sha384-aJ21OjlMXNL5UyIl/XNwTMqvzeRMZH2w8c5cRVpzpU8Y5bApTppSuUkhZXN0VxHd" crossorigin="anonymous"></script>
+	<script src="/js/responder_actions.js"></script>
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/css/all.min.css" integrity="sha512-MV7K8+y+gLIBoVD59lQIYicR65iaqukzvf/nwasF0nqhPay5w/9lJmVM2hMDcnK1OnMGCdVK+iQrJ7lzPJQd1w==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 	<link href="https://cdn.jsdelivr.net/npm/pretty-checkbox@3.0/dist/pretty-checkbox.min.css" rel="stylesheet" />  
 
@@ -161,6 +161,44 @@
   border-color: #202124 transparent transparent transparent;
 }
    </style>
+  <style>
+/* Auth Badge Styles */
+#authBadge {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+  background: white;
+  padding: 10px 15px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  display: none;
+}
+
+#authBadge.logged-in {
+  display: block;
+}
+
+.login-btn {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: #4285f4;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 6px;
+}
+
+.bulk-responder-link {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: #ea4335;
+  color: white;
+  padding: 12px 20px;
+  border-radius: 50px;
+}
+</style>
    <script>
 	function getAnalyzer(selectObject,tipo) {
 
@@ -301,27 +339,79 @@
         }
         
         // TLP/PAP Selector
-        function selectTLP(level) {
+        function selectTLP(level, element) {
             document.querySelectorAll('.tlp-pap-badge[data-type="tlp"]').forEach(el => {
                 el.classList.remove('active');
             });
-            event.target.classList.add('active');
+            element.classList.add('active');
             document.getElementById('tlp-input').value = level;
         }
         
-        function selectPAP(level) {
+        function selectPAP(level, element) {
             document.querySelectorAll('.tlp-pap-badge[data-type="pap"]').forEach(el => {
                 el.classList.remove('active');
             });
-            event.target.classList.add('active');
+            element.classList.add('active');
             document.getElementById('pap-input').value = level;
         }
-   </script>
 
+
+
+   </script>
+<script src="/js/bootstrap.bundle.min.js"></script>
+<script src="/js/auth.js"></script>
   </head>
   <body>
+<header>
+  <nav class="navbar navbar-expand-md navbar-light fixed-top bg-fuco">
+    <div class="container-fluid">
 
-   <div class="s003">
+      <a class="navbar-brand" href="/"><strong>FUCO</strong></a>
+
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="navbarCollapse">
+
+        <ul class="navbar-nav me-auto mb-2 mb-md-0">
+        </ul>
+
+        <ul class="navbar-nav mb-2 mb-md-0">
+          <li class="nav-item" id="bulkNav">
+            <a class="nav-link disabled" href="/bulk-responder">
+              <i class="fas fa-layer-group"></i> Bulk Actions
+            </a>
+          </li>
+
+          <li class="nav-item" id="loginNav">
+            <a class="nav-link" href="#" onclick="handleLogin()">
+              <i class="fas fa-sign-in-alt"></i> Login
+            </a>
+          </li>
+
+          <li class="nav-item dropdown d-none" id="userNav">
+            <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+              <span class="user-initial" id="userInitial">?</span>
+              <span id="usernameDisplay"></span>
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li>
+                <a class="dropdown-item" href="#" onclick="handleLogout()">
+                  <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+              </li>
+            </ul>
+          </li>
+
+        </ul>
+      </div>
+    </div>
+  </nav>
+</header>
+
+
+<div class="s003">
 
       <form action="/analysis" name="form" method="POST">
         <div class="inner-form">
@@ -375,10 +465,10 @@
               </span>
             </span>
             <input type="hidden" name="tlp" id="tlp-input" value="2">
-            <span class="tlp-pap-badge tlp-white" data-type="tlp" onclick="selectTLP(0)">White</span>
-            <span class="tlp-pap-badge tlp-green active" data-type="tlp" onclick="selectTLP(1)">Green</span>
-            <span class="tlp-pap-badge tlp-amber" data-type="tlp" onclick="selectTLP(2)">Amber</span>
-            <span class="tlp-pap-badge tlp-red" data-type="tlp" onclick="selectTLP(3)">Red</span>
+            <span class="tlp-pap-badge tlp-white" data-type="tlp" onclick="selectTLP(0, this)">White</span>
+            <span class="tlp-pap-badge tlp-green active" data-type="tlp" onclick="selectTLP(1, this)">Green</span>
+            <span class="tlp-pap-badge tlp-amber" data-type="tlp" onclick="selectTLP(2, this)">Amber</span>
+            <span class="tlp-pap-badge tlp-red" data-type="tlp" onclick="selectTLP(3, this)">Red</span>
           </div>
           
           <div class="tlp-pap-group">
@@ -390,10 +480,10 @@
               </span>
             </span>
             <input type="hidden" name="pap" id="pap-input" value="2">
-            <span class="tlp-pap-badge pap-white" data-type="pap" onclick="selectPAP(0)">White</span>
-            <span class="tlp-pap-badge pap-green active" data-type="pap" onclick="selectPAP(1)">Green</span>
-            <span class="tlp-pap-badge pap-amber" data-type="pap" onclick="selectPAP(2)">Amber</span>
-            <span class="tlp-pap-badge pap-red" data-type="pap" onclick="selectPAP(3)">Red</span>
+            <span class="tlp-pap-badge pap-white" data-type="pap" onclick="selectPAP(0, this)">White</span>
+            <span class="tlp-pap-badge pap-green active" data-type="pap" onclick="selectPAP(1, this)">Green</span>
+            <span class="tlp-pap-badge pap-amber" data-type="pap" onclick="selectPAP(2, this)">Amber</span>
+            <span class="tlp-pap-badge pap-red" data-type="pap" onclick="selectPAP(3, this)">Red</span>
           </div>
           
           <!-- Select All Analyzers - SULLA STESSA RIGA -->

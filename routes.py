@@ -814,3 +814,8 @@ def clear_cache():
     except Exception as e:
         logger.error(f"Errore nella pulizia cache: {str(e)}")
         return error_response(str(e), 500)
+
+# @app.route('/bulk-responder')
+@routes_bp.route('/bulk-responder', methods=['GET'])
+def bulk_responder_page():
+    return render_template('bulk_responder.html')

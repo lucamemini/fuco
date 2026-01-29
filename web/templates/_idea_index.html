@@ -1,0 +1,764 @@
+<html>
+  <head>
+    <title>FUCO: Ioc Search Engine</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <link href="https://fonts.googleapis.com/css?family=Poppins" rel="stylesheet" />
+    <link href="css/main.css" rel="stylesheet" />
+
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/css/bootstrap.min.css">
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/css/bootstrap-theme.min.css">
+	<script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/js/bootstrap.min.js"></script>
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/css/all.min.css" />
+	<link href="https://cdn.jsdelivr.net/npm/pretty-checkbox@3.0/dist/pretty-checkbox.min.css" rel="stylesheet" />  
+
+   <style>
+.loader {
+  border: 8px solid #f3f3f3;
+  border-radius: 50%;
+  border-top: 8px solid #3498db;
+  width: 40px;
+  height: 40px;
+  animation: spin 2s linear infinite;
+  margin-right:10px;
+  float: left;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.valign {
+  display: table-cell; 
+  vertical-align: middle;
+  height: 40px; 
+}
+
+.copy-btn {
+  transition: all 0.2s ease;
+}
+
+.copy-btn:hover {
+  background-color: #f0f0f0 !important;
+  border-color: #999 !important;
+}
+
+.copy-btn.copied {
+  background-color: #28a745 !important;
+  color: white !important;
+  border-color: #28a745 !important;
+}
+
+/* ============ NUOVO: Top Header Bar ============ */
+.top-header-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 30px;
+}
+
+.top-header-bar .logo {
+  color: white;
+  font-size: 24px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.top-header-bar .logo img {
+  width: 40px;
+  height: 40px;
+  filter: brightness(0) invert(1);
+}
+
+.top-header-bar .header-actions {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.header-btn {
+  background: rgba(255,255,255,0.2);
+  color: white;
+  border: 1px solid rgba(255,255,255,0.3);
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.header-btn:hover {
+  background: rgba(255,255,255,0.3);
+  border-color: rgba(255,255,255,0.5);
+  color: white;
+  text-decoration: none;
+  transform: translateY(-2px);
+}
+
+.header-btn.primary {
+  background: #4CAF50;
+  border-color: #45a049;
+}
+
+.header-btn.primary:hover {
+  background: #45a049;
+}
+
+.header-btn.danger {
+  background: #f44336;
+  border-color: #da190b;
+}
+
+.header-btn.danger:hover {
+  background: #da190b;
+}
+
+#authBadge {
+  background: rgba(255,255,255,0.95);
+  padding: 6px 12px;
+  border-radius: 20px;
+  display: none;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+#authBadge.logged-in {
+  display: flex;
+}
+
+#authBadge .user-icon {
+  width: 28px;
+  height: 28px;
+  background: #667eea;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+#authBadge .user-name {
+  font-weight: 600;
+  color: #333;
+  font-size: 14px;
+}
+
+#authBadge .logout-btn {
+  background: transparent;
+  border: none;
+  color: #f44336;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.2s;
+  font-size: 13px;
+}
+
+#authBadge .logout-btn:hover {
+  background: #ffebee;
+}
+
+/* Adjust body padding for fixed header */
+body {
+  padding-top: 60px;
+}
+
+/* TLP/PAP Badge Selector */
+.tlp-pap-selector {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 8px 0;
+  font-size: 12px;
+  color: #5f6368;
+  margin-top: 8px;
+}
+
+.tlp-pap-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tlp-pap-label {
+  font-weight: 500;
+  cursor: help;
+}
+
+.tlp-pap-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 2px solid transparent;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.tlp-pap-badge:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.tlp-pap-badge.active {
+  border-color: #1a73e8;
+  box-shadow: 0 2px 6px rgba(26, 115, 232, 0.3);
+}
+
+/* TLP Colors */
+.tlp-white { background: #fff; color: #000; border: 1px solid #dadce0; }
+.tlp-green { background: #34a853; color: #fff; }
+.tlp-amber { background: #fbbc04; color: #000; }
+.tlp-red { background: #ea4335; color: #fff; }
+
+/* PAP Colors */
+.pap-white { background: #fff; color: #000; border: 1px solid #dadce0; }
+.pap-green { background: #34a853; color: #fff; }
+.pap-amber { background: #fbbc04; color: #000; }
+.pap-red { background: #ea4335; color: #fff; }
+
+.tlp-pap-info {
+  position: relative;
+  display: inline-block;
+  cursor: help;
+  margin-left: 4px;
+  opacity: 0.6;
+}
+
+.tlp-pap-info:hover {
+  opacity: 1;
+}
+
+.tlp-pap-tooltip {
+  visibility: hidden;
+  position: absolute;
+  background-color: #202124;
+  color: #fff;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  z-index: 1000;
+  bottom: 125%;
+  left: 50%;
+  transform: translateX(-50%);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.tlp-pap-info:hover .tlp-pap-tooltip {
+  visibility: visible;
+  opacity: 1;
+}
+
+.tlp-pap-tooltip::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: #202124 transparent transparent transparent;
+}
+
+/* ============ NUOVO: Action Buttons Row ============ */
+.action-buttons-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+  justify-content: center;
+}
+
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.action-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+}
+
+.action-btn:active {
+  transform: translateY(0);
+}
+
+.action-btn.analyze {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.action-btn.search {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  color: white;
+}
+
+.action-btn.block {
+  background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+  color: #333;
+}
+
+.action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.action-btn i {
+  font-size: 18px;
+}
+
+/* Mode indicator */
+.mode-indicator {
+  text-align: center;
+  margin-top: 10px;
+  font-size: 13px;
+  color: #666;
+  font-weight: 500;
+}
+
+.mode-indicator .mode-text {
+  display: inline-block;
+  padding: 4px 12px;
+  background: #f0f0f0;
+  border-radius: 12px;
+  margin-top: 5px;
+}
+
+ul {
+    list-style-type: none;
+}
+   </style>
+
+   <script>
+   // ============ NUOVO: Dynamic Mode Management ============
+   
+   let currentMode = 'search'; // 'search' or 'analyze'
+   
+   function updateMode() {
+       const typeField = document.getElementById('typefield');
+       const selectedType = typeField.value;
+       
+       // Buttons
+       const analyzeBtn = document.getElementById('analyzeBtn');
+       const searchBtn = document.getElementById('searchBtn');
+       const blockBtn = document.getElementById('blockBtn');
+       const modeText = document.getElementById('modeText');
+       
+       if (selectedType === '_disabled' || !selectedType) {
+           // SEARCH MODE
+           currentMode = 'search';
+           searchBtn.style.display = 'inline-flex';
+           analyzeBtn.style.display = 'none';
+           blockBtn.disabled = true;
+           modeText.textContent = 'Search Mode: Find existing analysis results';
+       } else {
+           // ANALYZE MODE
+           currentMode = 'analyze';
+           searchBtn.style.display = 'none';
+           analyzeBtn.style.display = 'inline-flex';
+           blockBtn.disabled = false;
+           modeText.textContent = `Analyze Mode: Run analyzers on ${selectedType}`;
+       }
+   }
+   
+   function handleSearch() {
+       const query = document.getElementById('tosearch').value.trim();
+       if (!query) {
+           alert('Please enter something to search');
+           return;
+       }
+       
+       // Redirect to search page (nuova route da implementare)
+       window.location.href = `/search?q=${encodeURIComponent(query)}`;
+   }
+   
+   function handleAnalyze() {
+       // Submit form normale
+       document.forms['form'].action = '/analysis';
+       document.forms['form'].submit();
+   }
+   
+   function handleBlock() {
+       const observable = document.getElementById('tosearch').value.trim();
+       const dataType = document.getElementById('typefield').value;
+       
+       if (!observable) {
+           alert('Please enter an observable to block');
+           return;
+       }
+       
+       if (dataType === '_disabled') {
+           alert('Please select a data type');
+           return;
+       }
+       
+       // Check auth first
+       checkAuthForBlock(observable, dataType);
+   }
+   
+   async function checkAuthForBlock(observable, dataType) {
+       try {
+           const response = await fetch('/api/auth/status');
+           const data = await response.json();
+           
+           if (!data.authenticated) {
+               alert('Please login first to execute responder actions');
+               return;
+           }
+           
+           // Open responder modal
+           if (window.responderModal) {
+               window.responderModal.show(observable, dataType);
+           } else {
+               alert('Responder system not initialized. Please refresh the page.');
+           }
+       } catch (error) {
+           console.error('Error checking auth:', error);
+           alert('Error checking authentication status');
+       }
+   }
+
+   // ============ Existing Functions ============
+   
+   function getAnalyzer(selectObject, tipo) {
+       if (tipo == "object") {
+           var value = selectObject.value;
+       }
+       if (tipo == "value") {
+           var value = selectObject;
+       }
+       
+       // Update mode when type changes
+       updateMode();
+       
+       const Http = new XMLHttpRequest();
+       const url='/getAnalyzer?type='+value;
+       Http.open("GET", url);
+       Http.send();
+
+       Http.onreadystatechange = (e) => {
+           if (Http.readyState === 4 && Http.status === 200) {
+               document.getElementById('analyzer_list').innerHTML = "";
+               document.getElementById('analyzer_list').innerHTML = Http.responseText;
+               
+               const analyzerContainer = document.getElementById('analyzer-selector-container');
+               const checkboxes = document.querySelectorAll('#analyzer_list input[type="checkbox"]');
+               
+               if (checkboxes.length > 0) {
+                   analyzerContainer.style.display = 'flex';
+                   document.getElementById('analyzer-count').textContent = checkboxes.length;
+                   checkboxes.forEach(cb => cb.checked = true);
+                   document.getElementById('select-all-checkbox').checked = true;
+               } else {
+                   document.getElementById('analyzer-count').textContent = "0"
+                   document.getElementById('select-all-checkbox').checked = false;
+               }
+           }
+       }
+   }
+   
+   function CheckAll(source) {
+       var aa= document.getElementsByTagName("input");
+       for (var i =0; i < aa.length; i++){
+           if (aa[i].type == 'checkbox' && aa[i].name === 'analyzer')
+               aa[i].checked = source.checked;
+       }
+   }
+
+   function selectTLP(level) {
+       document.getElementById('tlp-input').value = level;
+       document.querySelectorAll('[data-type="tlp"]').forEach(badge => {
+           badge.classList.remove('active');
+       });
+       event.target.classList.add('active');
+   }
+
+   function selectPAP(level) {
+       document.getElementById('pap-input').value = level;
+       document.querySelectorAll('[data-type="pap"]').forEach(badge => {
+           badge.classList.remove('active');
+       });
+       event.target.classList.add('active');
+   }
+   
+   // ============ Auth Management ============
+   
+   async function checkAuthStatus() {
+       try {
+           const response = await fetch('/api/auth/status');
+           const data = await response.json();
+           
+           if (data.authenticated) {
+               showLoggedIn(data.username);
+           } else {
+               showLoggedOut();
+           }
+       } catch (error) {
+           console.error('Error checking auth:', error);
+           showLoggedOut();
+       }
+   }
+   
+   function showLoggedIn(username) {
+       document.getElementById('loginBtn').style.display = 'none';
+       
+       const badge = document.getElementById('authBadge');
+       badge.classList.add('logged-in');
+       document.getElementById('usernameDisplay').textContent = username;
+       
+       const initial = username.charAt(0).toUpperCase();
+       document.getElementById('userInitial').textContent = initial;
+   }
+   
+   function showLoggedOut() {
+       document.getElementById('loginBtn').style.display = 'inline-flex';
+       document.getElementById('authBadge').classList.remove('logged-in');
+   }
+   
+   async function handleLogin() {
+       const username = prompt('Cortex Username:');
+       if (!username) return;
+       
+       const password = prompt('Cortex Password:');
+       if (!password) return;
+       
+       try {
+           const response = await fetch('/api/auth/login', {
+               method: 'POST',
+               headers: { 'Content-Type': 'application/json' },
+               body: JSON.stringify({ username, password })
+           });
+           
+           const data = await response.json();
+           
+           if (data.success) {
+               showLoggedIn(data.username);
+               alert('Login successful!');
+           } else {
+               alert('Login failed: ' + data.error);
+           }
+       } catch (error) {
+           alert('Login error: ' + error.message);
+       }
+   }
+   
+   async function handleLogout() {
+       if (!confirm('Logout?')) return;
+       
+       try {
+           await fetch('/api/auth/logout', { method: 'POST' });
+           showLoggedOut();
+           location.reload();
+       } catch (error) {
+           alert('Logout error: ' + error.message);
+       }
+   }
+   
+   // Initialize
+   document.addEventListener('DOMContentLoaded', function() {
+       checkAuthStatus();
+       updateMode(); // Set initial mode
+   });
+   
+   </script>
+
+  </head>
+  <body>
+
+   <!-- ============ NUOVO: Top Header Bar ============ -->
+   <div class="top-header-bar">
+       <div class="logo">
+           <img src="/images/abeja.png" alt="FUCO">
+           <span>FUCO</span>
+       </div>
+       
+       <div class="header-actions">
+           <!-- Login Button -->
+           <button id="loginBtn" class="header-btn primary" onclick="handleLogin()">
+               <i class="fas fa-sign-in-alt"></i> Login
+           </button>
+           
+           <!-- Auth Badge -->
+           <div id="authBadge">
+               <div class="user-icon">
+                   <span id="userInitial">?</span>
+               </div>
+               <span class="user-name" id="usernameDisplay"></span>
+               <button class="logout-btn" onclick="handleLogout()">
+                   <i class="fas fa-sign-out-alt"></i> Logout
+               </button>
+           </div>
+           
+           <!-- Bulk Responder Link -->
+           <a href="/bulk-responder" class="header-btn danger">
+               <i class="fas fa-layer-group"></i> Bulk Actions
+           </a>
+       </div>
+   </div>
+
+   <!-- ============ Main Content ============ -->
+   <div class="s003">
+      <form name="form" method="POST" onsubmit="return false;">
+        <div class="inner-form">
+          <div class="input-field first-wrap">
+            <div class="input-select">
+              <select id="typefield" data-trigger="" name="DataType" class="input-field first-wrap" onchange="getAnalyzer(this,'object')">
+                <option label="_DataType" value="_disabled" selected>_DataType</option>
+                <option label="domain" value="domain">domain</option>
+                <option label="url" value="url">url</option>
+                <option label="fqdn" value="fqdn">fqdn</option>
+                <option label="ip" value="ip">ip</option>
+                <option label="hash" value="hash">hash</option>
+                <option label="certificate_hash" value="certificate_hash">certificate_hash</option>
+                <option label="file" value="file">file</option>
+                <option label="mail" value="mail">mail</option>
+                <option label="other" value="other">other</option>
+                <option label="filename" value="filename">filename</option>
+                <option label="uri_path" value="uri_path">uri_path</option>
+                <option label="user-agent" value="user-agent">user-agent</option>
+                <option label="mail_subject" value="mail_subject">mail_subject</option>
+                <option label="registry" value="registry">registry</option>
+                <option label="regexp" value="regexp">regexp</option>
+              </select>
+            </div>
+          </div>
+          <div id="domainfield" class="input-field second-wrap">
+	    {% if q %}
+            <input id="tosearch" name="tosearch" type="text" value="{{ q }}" />
+	    {% else %}	    
+            <input id="tosearch" name="tosearch" type="text" placeholder="Enter Observable or Keyword..." />
+	    {% endif %}	    
+          </div>
+        </div>
+        
+        <!-- TLP/PAP Selector + Analyzer Controls -->
+        <div class="tlp-pap-selector">
+          <div class="tlp-pap-group">
+            <span class="tlp-pap-label">
+              TLP
+              <span class="tlp-pap-info">
+                <i class="fas fa-info-circle"></i>
+                <span class="tlp-pap-tooltip">Traffic Light Protocol</span>
+              </span>
+            </span>
+            <input type="hidden" name="tlp" id="tlp-input" value="1">
+            <span class="tlp-pap-badge tlp-white" data-type="tlp" onclick="selectTLP(0)">White</span>
+            <span class="tlp-pap-badge tlp-green active" data-type="tlp" onclick="selectTLP(1)">Green</span>
+            <span class="tlp-pap-badge tlp-amber" data-type="tlp" onclick="selectTLP(2)">Amber</span>
+            <span class="tlp-pap-badge tlp-red" data-type="tlp" onclick="selectTLP(3)">Red</span>
+          </div>
+          
+          <div class="tlp-pap-group">
+            <span class="tlp-pap-label">
+              PAP
+              <span class="tlp-pap-info">
+                <i class="fas fa-info-circle"></i>
+                <span class="tlp-pap-tooltip">Permissible Actions Protocol</span>
+              </span>
+            </span>
+            <input type="hidden" name="pap" id="pap-input" value="1">
+            <span class="tlp-pap-badge pap-white" data-type="pap" onclick="selectPAP(0)">White</span>
+            <span class="tlp-pap-badge pap-green active" data-type="pap" onclick="selectPAP(1)">Green</span>
+            <span class="tlp-pap-badge pap-amber" data-type="pap" onclick="selectPAP(2)">Amber</span>
+            <span class="tlp-pap-badge pap-red" data-type="pap" onclick="selectPAP(3)">Red</span>
+          </div>
+          
+          <!-- Select All Analyzers -->
+	        <div class="tlp-pap-group" id="analyzer-selector-container" style="display: flex;">
+            <span class="tlp-pap-label">Analyzers</span>
+            <div class="pretty p-switch p-fill">
+              <input type="checkbox" id="select-all-checkbox" onclick="CheckAll(this)" checked="">
+              <div class="state">
+                <label id="select-all-label">All (<span id="analyzer-count">0</span>)</label>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+	<div class="form-check form-check-inline" id="analyzer_list" style="margin-top: 10px">
+	</div>
+	
+	<!-- ============ NUOVO: Action Buttons ============ -->
+	<div class="action-buttons-row">
+	    <!-- Search Button (shown when no type selected) -->
+	    <button type="button" id="searchBtn" class="action-btn search" onclick="handleSearch()" style="display: none;">
+	        <i class="fas fa-search"></i>
+	        <span>Search Existing</span>
+	    </button>
+	    
+	    <!-- Analyze Button (shown when type selected) -->
+	    <button type="button" id="analyzeBtn" class="action-btn analyze" onclick="handleAnalyze()">
+	        <i class="fas fa-microscope"></i>
+	        <span>Analyze</span>
+	    </button>
+	    
+	    <!-- Block Button (enabled when type selected) -->
+	    <button type="button" id="blockBtn" class="action-btn block" onclick="handleBlock()" disabled>
+	        <i class="fas fa-shield-alt"></i>
+	        <span>Block</span>
+	    </button>
+	</div>
+	
+	<!-- Mode Indicator -->
+	<div class="mode-indicator">
+	    <div class="mode-text" id="modeText">
+	        Search Mode: Find existing analysis results
+	    </div>
+	</div>
+	
+      </form>
+      
+      <!-- Recent Searches (mantieni esistente) -->
+      {% if recent %}
+      <!-- ... (codice esistente rimane identico) ... -->
+      {% endif %}
+
+    </div>
+
+    <script src="js/extention/choices.js"></script>
+    <script>
+      const choices = new Choices('[data-trigger]', {
+        searchEnabled: false,
+        itemSelectText: '',
+      });
+    </script>
+    
+    <!-- Load Responder JS -->
+    <script src="/js/responder_actions.js"></script>
+    
+  </body>
+</html>

@@ -35,6 +35,17 @@ JOB_SEARCH_RANGE = '0-50'
 JOB_RECENT_LIMIT = 10
 LAST_ANALYSIS_RANGE = '0-150'
 
+# ============ SECRET KEY PER SESSIONI ============
+
+# IMPORTANTE: In production, genera una chiave sicura:
+# import secrets; print(secrets.token_hex(32))
+# E mettila qui sotto
+
+SECRET_KEY = None  # Verrà generata automaticamente se None (solo dev!)
+
+# Per production, decomenta e inserisci chiave generata:
+# SECRET_KEY = 'la_tua_chiave_segreta_qui_64_caratteri_hex'
+
 # ============ CACHE CONFIGURATION ============
 
 # Tipo di cache: "memory" o "redis"

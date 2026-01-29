@@ -11,6 +11,12 @@ import config
 from routes import routes_bp
 from cache_manager import CacheManager
 
+from responder_manager import ResponderManager
+from routes_responder import register_responder_routes
+
+from auth_manager import init_auth_manager
+from routes_auth import register_auth_routes
+
 # Configurazione logging
 logging.basicConfig(
     level=config.LOG_LEVEL,
@@ -112,8 +118,59 @@ app = Flask(__name__,
             static_folder='web/static',
             template_folder=config.TEMPLATE_FOLDER)
 
-# Registrazione del blueprint delle route
+# ============ SESSIONI FLASK (NUOVO!) ============
+
+import secrets
+from flask_session import Session
+
+# Genera SECRET_KEY se non presente
+if not hasattr(config, 'SECRET_KEY'):
+    SECRET_KEY = secrets.token_hex(32)
+    logger.warning("SECRET_KEY non in config.py, generata automaticamente (NON per production!)")
+else:
+    SECRET_KEY = config.SECRET_KEY
+
+# Configurazione sessioni
+app.config['SECRET_KEY'] = SECRET_KEY
+app.config['SESSION_TYPE'] = 'redis' if validated_config['cache_type'] == 'redis' else 'filesystem'
+app.config['SESSION_PERMANENT'] = False
+app.config['PERMANENT_SESSION_LIFETIME'] = 1800  # 30 minuti
+app.config['SESSION_COOKIE_SECURE'] = False  # Cambia True se usi HTTPS
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+
+# Se Redis, usa stesso client
+if app.config['SESSION_TYPE'] == 'redis':
+    import redis
+    # Costruisci client Redis per sessioni
+    if validated_config['redis_url']:
+        redis_client = redis.from_url(validated_config['redis_url'], decode_responses=False)
+        app.config['SESSION_REDIS'] = redis_client
+        logger.info("Sessioni Flask configurate su Redis")
+    else:
+        app.config['SESSION_TYPE'] = 'filesystem'
+        logger.warning("Redis non disponibile, sessioni su filesystem")
+
+# Inizializza Flask-Session
+Session(app)
+
+# ============ Registrazione Routes Base ============
+
 app.register_blueprint(routes_bp)
+
+# ============ Responder Manager ============
+try:
+    import cortexconfig as cortex_cfg
+    responder_manager = ResponderManager(
+        cortex_host=cortex_cfg.cortex['host'],
+        cortex_api_key=cortex_cfg.cortex.get('apikey')
+    )
+    app.responder_manager = responder_manager
+    register_responder_routes(app)
+    logger.info("Responder Manager inizializzato")
+except Exception as e:
+    logger.error(f"Errore Responder Manager: {e}")
+    app.responder_manager = None
 
 # ============ Inizializzazione Cache Manager ============
 
@@ -122,6 +179,48 @@ cache_manager = CacheManager(redis_url=validated_config['redis_url'])
 
 # Rendi disponibile globalmente
 app.cache_manager = cache_manager
+
+# ============ Responder Manager ============
+
+try:
+    import cortexconfig as cortex_cfg
+    
+    responder_manager = ResponderManager(
+        cortex_host=cortex_cfg.cortex['host'],
+        cortex_api_key=cortex_cfg.cortex.get('apikey')
+    )
+    app.responder_manager = responder_manager
+    
+    # Registra route responder
+    register_responder_routes(app)
+    
+    logger.info("Responder Manager inizializzato")
+    
+except Exception as e:
+    logger.error(f"Errore Responder Manager: {e}")
+    app.responder_manager = None
+
+# ============ Auth Manager (DOPO app!) ============
+
+try:
+    import cortexconfig as cortex_cfg
+    
+    # Inizializza AuthManager
+    auth_manager = init_auth_manager(
+        app, 
+        cortex_host=cortex_cfg.cortex['host'],
+        session_timeout=1800  # 30 minuti
+    )
+    
+    # Registra route autenticazione
+    register_auth_routes(app)
+    
+    logger.info("Auth Manager inizializzato")
+    
+except Exception as e:
+    logger.error(f"Errore Auth Manager: {e}")
+    app.auth_manager = None
+
 
 # ============ Cleanup Periodico (solo Memory Cache) ============
 

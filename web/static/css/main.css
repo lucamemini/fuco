@@ -1077,3 +1077,142 @@ legend {
 .badge.bg-secondary {
   background-color: #6c757d !important;
 }
+
+/* FUCO Navbar */
+.bg-fuco {
+  background: #ffd700;
+  border-radius: 0;
+  box-shadow: 0px 4px 12px rgba(0,0,0,0.15);
+}
+
+.navbar-inverse .navbar-brand,
+.navbar-inverse .navbar-nav > li > a {
+  color: #000 !important;
+  font-weight: 600;
+}
+
+.navbar-inverse .navbar-nav > .disabled > a {
+  color: #777 !important;
+  cursor: not-allowed;
+}
+
+.user-initial {
+  background: #000;
+  color: #ffd700;
+  border-radius: 50%;
+  padding: 4px 9px;
+  font-weight: bold;
+  margin-right: 6px;
+}
+
+body {
+  padding-top: 56px; /* altezza standard navbar bootstrap 5 */
+}
+/* Login Modal Styles */
+.login-modal-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 10000;
+  align-items: center;
+  justify-content: center;
+}
+
+.login-modal-overlay.show {
+  display: flex;
+}
+
+.login-modal {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  padding: 30px;
+  width: 90%;
+  max-width: 400px;
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.login-modal h2 {
+  margin-top: 0;
+  margin-bottom: 20px;
+  color: #333;
+  font-size: 24px;
+}
+
+.login-modal .form-group {
+  margin-bottom: 16px;
+}
+
+.login-modal label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 600;
+  color: #555;
+  font-size: 14px;
+}
+
+.login-modal input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+  box-sizing: border-box;
+  transition: border-color 0.2s;
+}
+
+.login-modal input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.login-modal-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.login-modal-buttons button {
+  flex: 1;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 14px;
+}
+
+.login-modal-buttons .btn-submit {
+  background: #667eea;
+  color: white;
+}
+
+.login-modal-buttons .btn-submit:hover {
+  background: #5568d3;
+}
+
+.login-modal-buttons .btn-cancel {
+  background: #f0f0f0;
+  color: #333;
+}
+
+.login-modal-buttons .btn-cancel:hover {
+  background: #e0e0e0;
+}
