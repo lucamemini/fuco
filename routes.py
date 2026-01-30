@@ -685,6 +685,9 @@ def all_reports():
             # Filtro manuale per observable e datatype
             jobs = []
             for job in all_jobs:
+                # Escludi datatype TheHive (azioni responder)
+                if hasattr(job, 'dataType') and str(job.dataType).lower().startswith('thehive:'):
+                    continue
                 matches_datatype = (datatype == default_datatype) or (
                     hasattr(job, 'dataType') and job.dataType == datatype
                 )
