@@ -166,6 +166,7 @@ def get_recent_searches():
             # Escludi datatype TheHive (azioni responder)
             if hasattr(job, 'dataType') and str(job.dataType).lower().startswith('thehive:'):
                 continue
+            
             if dt not in recent:
                 recent[dt] = {}
             data = job.data

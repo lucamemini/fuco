@@ -688,6 +688,7 @@ def all_reports():
                 # Escludi datatype TheHive (azioni responder)
                 if hasattr(job, 'dataType') and str(job.dataType).lower().startswith('thehive:'):
                     continue
+                
                 matches_datatype = (datatype == default_datatype) or (
                     hasattr(job, 'dataType') and job.dataType == datatype
                 )
