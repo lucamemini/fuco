@@ -158,20 +158,6 @@ Session(app)
 
 app.register_blueprint(routes_bp)
 
-# ============ Responder Manager ============
-try:
-    import cortexconfig as cortex_cfg
-    responder_manager = ResponderManager(
-        cortex_host=cortex_cfg.cortex['host'],
-        cortex_api_key=cortex_cfg.cortex.get('apikey')
-    )
-    app.responder_manager = responder_manager
-    register_responder_routes(app)
-    logger.info("Responder Manager inizializzato")
-except Exception as e:
-    logger.error(f"Errore Responder Manager: {e}")
-    app.responder_manager = None
-
 # ============ Inizializzazione Cache Manager ============
 
 # Inizializza cache manager con configurazione validata

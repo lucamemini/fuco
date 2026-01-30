@@ -261,7 +261,8 @@ class ResponderManager:
     
     def get_responder_job_status(self, job_id: str,
                                  username: str = None,
-                                 password: str = None) -> Dict[str, Any]:
+                                 password: str = None,
+                                 api_key: str = None) -> Dict[str, Any]:
         """
         Recupera lo stato di un job responder.
         
@@ -274,8 +275,10 @@ class ResponderManager:
             Dict con status e report del job
         """
         try:
-            # Usa API autenticata se fornite credenziali
-            if username and password:
+            # Usa API autenticata
+            if api_key:
+                api = self.get_authenticated_api(api_key=api_key)
+            elif username and password:
                 api = self.get_authenticated_api(username, password)
             elif self.api:
                 api = self.api
@@ -321,6 +324,7 @@ class ResponderManager:
     def poll_responder_job(self, job_id: str,
                           username: str = None,
                           password: str = None,
+                          api_key: str = None,
                           max_attempts: int = 30,
                           delay: int = 2) -> Dict[str, Any]:
         """
@@ -338,7 +342,7 @@ class ResponderManager:
         """
         for attempt in range(max_attempts):
             try:
-                status = self.get_responder_job_status(job_id, username, password)
+                status = self.get_responder_job_status(job_id, username, password, api_key)
                 
                 if status['status'] in ('Success', 'Failure'):
                     logger.info(f"Job {job_id} completato: {status['status']}")
@@ -408,7 +412,8 @@ class ResponderManager:
     
     def get_responders_for_observable(self, data_type: str,
                                      username: str = None,
-                                     password: str = None) -> List[Dict]:
+                                     password: str = None,
+                                     api_key: str = None) -> List[Dict]:
         """
         Recupera i responder compatibili con un tipo di osservabile.
         
@@ -421,7 +426,7 @@ class ResponderManager:
             Lista di responder compatibili
         """
         try:
-            all_responders = self.list_responders(username=username, password=password)
+            all_responders = self.list_responders(username=username, password=password, api_key=api_key)
             
             # Filtra per dataType
             compatible = []

@@ -6,9 +6,11 @@
 Route Flask per gestione Responder con autenticazione Basic Auth
 """
 import logging
-from typing import List
+from typing import List, Optional
 from flask import request, jsonify, current_app
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field
+
+import config_responder as responder_cfg
 
 logger = logging.getLogger(__name__)
 
@@ -20,10 +22,8 @@ class ResponderExecuteRequest(BaseModel):
     observable: str = Field(..., min_length=1, max_length=500)
     dataType: str = Field(..., min_length=1)
     responderId: str = Field(..., min_length=1)
-    username: str = Field(..., min_length=1)
-    password: str = Field(..., min_length=1)
-    tlp: int = Field(default=2, ge=0, le=3)
-    pap: int = Field(default=2, ge=0, le=3)
+    tlp: int = Field(default=responder_cfg.RESPONDER_DEFAULT_TLP, ge=0, le=3)
+    pap: int = Field(default=responder_cfg.RESPONDER_DEFAULT_PAP, ge=0, le=3)
     message: str = Field(default=None, max_length=500)
 
 
@@ -35,12 +35,12 @@ class ObservableItem(BaseModel):
 
 class ResponderBulkRequest(BaseModel):
     """Modello per esecuzione bulk responder"""
-    observables: List[ObservableItem] = Field(..., min_items=1, max_items=100)
-    responderIds: List[str] = Field(..., min_items=1, max_items=10)
-    username: str = Field(..., min_length=1)
-    password: str = Field(..., min_length=1)
-    tlp: int = Field(default=2, ge=0, le=3)
-    pap: int = Field(default=2, ge=0, le=3)
+    observables: List[ObservableItem] = Field(..., min_items=1, max_items=responder_cfg.MAX_BULK_OBSERVABLES)
+    responderIds: List[str] = Field(..., min_items=1, max_items=responder_cfg.MAX_BULK_RESPONDERS)
+    username: Optional[str] = Field(default=None)
+    password: Optional[str] = Field(default=None)
+    tlp: int = Field(default=responder_cfg.RESPONDER_DEFAULT_TLP, ge=0, le=3)
+    pap: int = Field(default=responder_cfg.RESPONDER_DEFAULT_PAP, ge=0, le=3)
 
 
 class JobStatusRequest(BaseModel):
@@ -81,12 +81,23 @@ def register_responder_routes(app):
             data_type = request.args.get('dataType')
             username = request.args.get('username')
             password = request.args.get('password')
-            
+            responder_manager = current_app.responder_manager
+            if responder_manager is None:
+                return error_response("Responder manager non disponibile", 503)
+
+            api_key = None
+            auth_manager = getattr(current_app, 'auth_manager', None)
+            if auth_manager and auth_manager.is_authenticated():
+                api_key = auth_manager.get_api_key()
+            elif not (username and password):
+                return error_response("Authentication required", 401)
+
             responder_manager = current_app.responder_manager
             responders = responder_manager.list_responders(
                 data_type=data_type,
                 username=username,
-                password=password
+                password=password,
+                api_key=api_key
             )
             
             return jsonify({
@@ -137,27 +148,19 @@ def register_responder_routes(app):
             if not data:
                 return error_response("Body JSON mancante", 400)
             
-            # Parsing request (username/password non più richiesti)
-            observable = data.get('observable')
-            data_type = data.get('dataType')
-            responder_id = data.get('responderId')
-            tlp = data.get('tlp', 2)
-            pap = data.get('pap', 2)
-            message = data.get('message')
-            
-            if not all([observable, data_type, responder_id]):
-                return error_response("Parametri mancanti: observable, dataType, responderId", 400)
+            # Validazione input
+            req = ResponderExecuteRequest(**data)
             
             # Esegui responder con API Key
             responder_manager = current_app.responder_manager
             action = responder_manager.run_responder(
-                observable=observable,
-                data_type=data_type,
-                responder_id=responder_id,
+                observable=req.observable,
+                data_type=req.dataType,
+                responder_id=req.responderId,
                 api_key=api_key,  # Usa API Key dalla sessione
-                tlp=tlp,
-                pap=pap,
-                message=message
+                tlp=req.tlp,
+                pap=req.pap,
+                message=req.message
             )
             
             # Refresh sessione
@@ -207,17 +210,28 @@ def register_responder_routes(app):
                 return error_response("Body JSON mancante", 400)
             
             req = ResponderBulkRequest(**data)
+
+            responder_manager = current_app.responder_manager
+            if responder_manager is None:
+                return error_response("Responder manager non disponibile", 503)
+
+            api_key = None
+            auth_manager = getattr(current_app, 'auth_manager', None)
+            if auth_manager and auth_manager.is_authenticated():
+                api_key = auth_manager.get_api_key()
+            elif not (req.username and req.password):
+                return error_response("Authentication required", 401)
             
             # Converti observables in dict
             observables = [obs.dict() for obs in req.observables]
             
             # Esegui bulk
-            responder_manager = current_app.responder_manager
             actions = responder_manager.run_responder_bulk(
                 observables=observables,
                 responder_ids=req.responderIds,
                 username=req.username,
                 password=req.password,
+                api_key=api_key,
                 tlp=req.tlp,
                 pap=req.pap
             )
@@ -259,12 +273,23 @@ def register_responder_routes(app):
         try:
             username = request.args.get('username')
             password = request.args.get('password')
-            
+            responder_manager = current_app.responder_manager
+            if responder_manager is None:
+                return error_response("Responder manager non disponibile", 503)
+
+            api_key = None
+            auth_manager = getattr(current_app, 'auth_manager', None)
+            if auth_manager and auth_manager.is_authenticated():
+                api_key = auth_manager.get_api_key()
+            elif not (username and password):
+                return error_response("Authentication required", 401)
+
             responder_manager = current_app.responder_manager
             status = responder_manager.get_responder_job_status(
                 job_id=job_id,
                 username=username,
-                password=password
+                password=password,
+                api_key=api_key
             )
             
             return jsonify({
@@ -292,14 +317,25 @@ def register_responder_routes(app):
         try:
             username = request.args.get('username')
             password = request.args.get('password')
-            max_attempts = int(request.args.get('maxAttempts', 30))
-            delay = int(request.args.get('delay', 2))
-            
+            max_attempts = int(request.args.get('maxAttempts', responder_cfg.RESPONDER_MAX_POLL_ATTEMPTS))
+            delay = int(request.args.get('delay', responder_cfg.RESPONDER_POLL_DELAY))
+
             responder_manager = current_app.responder_manager
+            if responder_manager is None:
+                return error_response("Responder manager non disponibile", 503)
+
+            api_key = None
+            auth_manager = getattr(current_app, 'auth_manager', None)
+            if auth_manager and auth_manager.is_authenticated():
+                api_key = auth_manager.get_api_key()
+            elif not (username and password):
+                return error_response("Authentication required", 401)
+
             result = responder_manager.poll_responder_job(
                 job_id=job_id,
                 username=username,
                 password=password,
+                api_key=api_key,
                 max_attempts=max_attempts,
                 delay=delay
             )
@@ -396,12 +432,22 @@ def register_responder_routes(app):
             
             username = request.args.get('username')
             password = request.args.get('password')
-            
             responder_manager = current_app.responder_manager
+            if responder_manager is None:
+                return error_response("Responder manager non disponibile", 503)
+
+            api_key = None
+            auth_manager = getattr(current_app, 'auth_manager', None)
+            if auth_manager and auth_manager.is_authenticated():
+                api_key = auth_manager.get_api_key()
+            elif not (username and password):
+                return error_response("Authentication required", 401)
+
             responders = responder_manager.get_responders_for_observable(
                 data_type=data_type,
                 username=username,
-                password=password
+                password=password,
+                api_key=api_key
             )
             
             return jsonify({
