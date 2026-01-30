@@ -14,6 +14,8 @@ from datetime import datetime
 from cortex4py.api import Api
 from requests.auth import HTTPBasicAuth
 
+import config_responder as responder_cfg
+
 logger = logging.getLogger(__name__)
 
 
@@ -200,6 +202,15 @@ class ResponderManager:
                         payload_data_type,
                         responder_id
                     )
+
+            # Normalizza message
+            if message is not None:
+                message = message.strip()
+                if message == '':
+                    message = None
+
+            if payload_data_type == 'thehive:case_artifact' and not message:
+                message = responder_cfg.RESPONDER_DEFAULT_MESSAGE
 
             # Prepara payload
             payload = {

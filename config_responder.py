@@ -54,6 +54,9 @@ RESPONDER_PRESETS = {
 RESPONDER_DEFAULT_TLP = 2  # AMBER
 RESPONDER_DEFAULT_PAP = 2  # AMBER
 
+# Messaggio di default per responder (usato se message è vuoto)
+RESPONDER_DEFAULT_MESSAGE = "FUCO responder action"
+
 # ============ BULK OPERATIONS ============
 
 # Limite massimo osservabili per operazione bulk
