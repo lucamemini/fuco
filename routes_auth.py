@@ -23,6 +23,10 @@ def register_auth_routes(app):
     
     Chiamare da fuco.py dopo l'inizializzazione di auth_manager.
     """
+    if app.config.get('AUTH_ROUTES_REGISTERED'):
+        logger.info("Route di autenticazione già registrate, skip")
+        return
+    app.config['AUTH_ROUTES_REGISTERED'] = True
     
     @app.route('/api/auth/login', methods=['POST'])
     def auth_login():

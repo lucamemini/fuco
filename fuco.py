@@ -178,7 +178,9 @@ try:
     app.responder_manager = responder_manager
     
     # Registra route responder
-    register_responder_routes(app)
+    if not app.config.get('RESPONDER_ROUTES_REGISTERED'):
+        register_responder_routes(app)
+        app.config['RESPONDER_ROUTES_REGISTERED'] = True
     
     logger.info("Responder Manager inizializzato")
     
@@ -199,7 +201,9 @@ try:
     )
     
     # Registra route autenticazione
-    register_auth_routes(app)
+    if not app.config.get('AUTH_ROUTES_REGISTERED'):
+        register_auth_routes(app)
+        app.config['AUTH_ROUTES_REGISTERED'] = True
     
     logger.info("Auth Manager inizializzato")
     

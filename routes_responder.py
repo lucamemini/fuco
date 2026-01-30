@@ -66,6 +66,10 @@ def register_responder_routes(app):
     
     Chiamare da fuco.py dopo l'inizializzazione dell'app.
     """
+    if app.config.get('RESPONDER_ROUTES_REGISTERED'):
+        logger.info("Route responder già registrate, skip")
+        return
+    app.config['RESPONDER_ROUTES_REGISTERED'] = True
     
     @app.route('/api/responder/list', methods=['GET'])
     def list_responders():
