@@ -96,7 +96,6 @@ def register_responder_routes(app):
             elif not (username and password):
                 return error_response("Authentication required", 401)
 
-            responder_manager = current_app.responder_manager
             responders = responder_manager.list_responders(
                 data_type=data_type,
                 username=username,
@@ -288,7 +287,6 @@ def register_responder_routes(app):
             elif not (username and password):
                 return error_response("Authentication required", 401)
 
-            responder_manager = current_app.responder_manager
             status = responder_manager.get_responder_job_status(
                 job_id=job_id,
                 username=username,
