@@ -12,7 +12,7 @@ FUCO è ben strutturato ma ha margini significativi di miglioramento in:
 
 ## 🚀 PERFORMANCE (Impatto: ALTO)
 
-### 1. **Cache Persistente con Redis** ⭐⭐⭐
+### 1. **Cache Persistente con Redis** ⭐⭐⭐ (DONE)
 **Problema attuale**: Cache in-memory (`_report_cache`) si perde al restart.
 
 **Implementazione**:
@@ -560,7 +560,7 @@ def api_short():
 
 ---
 
-### 3. **API Key Authentication** ⭐⭐
+### 3. **API Key Authentication** ⭐⭐ (DONE)
 **Problema attuale**: Nessuna auth per API REST.
 
 ```python

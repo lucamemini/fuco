@@ -258,7 +258,8 @@ class ResponderManager:
                           password: str = None,
                           api_key: str = None,
                           tlp: int = 2,
-                          pap: int = 2) -> List[ResponderAction]:
+                          pap: int = 2,
+                          message: str = None) -> List[ResponderAction]:
         """
         Esegue responder multipli su osservabili multipli.
         
@@ -289,7 +290,8 @@ class ResponderManager:
                         password=password,
                         api_key=api_key,
                         tlp=tlp,
-                        pap=pap
+                        pap=pap,
+                        message=message
                     )
                     actions.append(action)
                     

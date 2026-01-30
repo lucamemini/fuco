@@ -42,6 +42,7 @@ class ResponderBulkRequest(BaseModel):
     password: Optional[str] = Field(default=None)
     tlp: int = Field(default=responder_cfg.RESPONDER_DEFAULT_TLP, ge=0, le=3)
     pap: int = Field(default=responder_cfg.RESPONDER_DEFAULT_PAP, ge=0, le=3)
+    message: Optional[str] = Field(default=None, max_length=500)
 
 
 class JobStatusRequest(BaseModel):
@@ -240,7 +241,8 @@ def register_responder_routes(app):
                 password=req.password,
                 api_key=api_key,
                 tlp=req.tlp,
-                pap=req.pap
+                pap=req.pap,
+                message=req.message
             )
             
             # Notifica per ogni azione

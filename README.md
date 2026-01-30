@@ -55,10 +55,17 @@ The application streamlines the workflow of security operations teams by providi
 - Historical analysis view for any observable
 - PDF export capability (Linux/macOS only)
 
+### 🛡️ Responder Actions
+- Execute Cortex responders directly from reports
+- Session-based authentication (login once, API key stored server-side)
+- Bulk responder actions on multiple observables
+- Support for TheHive case artifact payload mapping
+
 ### 🔌 RESTful API
 - `/api/short` - Fast taxonomy-only results
 - `/api/analysis` - Complete analysis reports
 - `/api/getAnalyzer` - Retrieve available analyzers
+- `/api/responder/*` - Responder listing, execution, bulk, and status
 - Support for programmatic integrations
 
 ## 📦 Prerequisites
@@ -188,6 +195,43 @@ Edit `config.py` to customize FUCO behavior:
 | `API_SHORT_MAX_ATTEMPTS` | 15 | Polling attempts for short API |
 | `API_SHORT_INITIAL_DELAY` | 5 | Initial delay between polls (seconds) |
 | `JOB_RECENT_LIMIT` | 10 | Number of recent searches to display |
+
+### Responder & Authentication
+
+FUCO supports responder actions with session-based authentication. Users login once via the UI; the API key is stored in the server-side session.
+
+**Routes:**
+- `/api/auth/login`, `/api/auth/logout`, `/api/auth/status`
+- `/api/responder/list`, `/api/responder/execute`, `/api/responder/bulk`
+
+**Responder settings:**
+See [config_responder.py](config_responder.py) for defaults such as TLP/PAP and bulk limits.
+
+### Notifications (Email)
+
+FUCO can send an email notification whenever a responder action is requested.
+
+**Configuration (config.py):**
+```python
+NOTIFY_ENABLED = True
+NOTIFY_METHOD = 'auto'  # auto|sendmail|smtp
+NOTIFY_SENDMAIL_PATH = '/usr/sbin/sendmail'
+
+NOTIFY_SMTP_HOST = 'mail.example.com'
+NOTIFY_SMTP_PORT = 587
+NOTIFY_AUTH_USER = 'user@example.com'
+NOTIFY_AUTH_PASS = 'secret'
+NOTIFY_USE_TLS = True
+NOTIFY_USE_SSL = False
+NOTIFY_ALLOW_SELF_SIGNED = False
+
+NOTIFY_FROM = 'fuco@example.com'
+NOTIFY_TO = 'soc@example.com;secops@example.com'
+```
+
+**Notes:**
+- On Linux, `auto` tries local sendmail first, otherwise falls back to SMTP.
+- `NOTIFY_ALLOW_SELF_SIGNED=True` disables TLS certificate validation.
 
 **TLP/PAP Levels Reference:**
 ```python

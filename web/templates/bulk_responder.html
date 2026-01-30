@@ -135,82 +135,95 @@
             </div>
         </div>
 
-        <!-- Section 1: Single Observable -->
-        <div class="card section-card">
-            <div class="card-header bg-primary text-white">
-                <h5><i class="fas fa-plus-circle"></i> Add Single Observable</h5>
+        <div class="row">
+            <div class="col-lg-8">
+                <!-- Section 1: Single Observable -->
+                <div class="card section-card">
+                    <div class="card-header bg-primary text-white">
+                        <h5><i class="fas fa-plus-circle"></i> Add Single Observable</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="singleObservableForm">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <input type="text" class="form-control" id="singleObservable" 
+                                               placeholder="e.g., 1.2.3.4, evil.com, hash..." required>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <select class="form-control" id="singleDataType" required>
+                                            <option value="">Select type...</option>
+                                            <option value="domain">domain</option>
+                                            <option value="url">url</option>
+                                            <option value="fqdn">fqdn</option>
+                                            <option value="ip">ip</option>
+                                            <option value="hash">hash</option>
+                                            <option value="certificate_hash">certificate_hash</option>
+                                            <option value="file">file</option>
+                                            <option value="mail">mail</option>
+                                            <option value="other">other</option>
+                                            <option value="filename">filename</option>
+                                            <option value="uri_path">uri_path</option>
+                                            <option value="user-agent">user-agent</option>
+                                            <option value="mail_subject">mail_subject</option>
+                                            <option value="registry">registry</option>
+                                            <option value="regexp">regexp</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <label>&nbsp;</label>
+                                    <button type="submit" class="btn btn-primary btn-block text-nowrap">
+                                        <i class="fas fa-plus"></i> Add
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Section 2: Bulk Upload -->
+                <div class="card section-card">
+                    <div class="card-header bg-success text-white">
+                        <h5><i class="fas fa-file-upload"></i> Bulk Upload (CSV/TXT)</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="upload-area" id="uploadArea">
+                            <i class="fas fa-cloud-upload-alt fa-3x text-primary mb-3"></i>
+                            <h5>Drop CSV/TXT file here or click to browse</h5>
+                            <p class="text-muted">
+                                Format: observable,type<br>
+                                Example: 1.2.3.4,ip<br>
+                                evil.com,domain
+                            </p>
+                            <input type="file" id="fileInput" accept=".csv,.txt" style="display: none;">
+                            <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">
+                                <i class="fas fa-folder-open"></i> Choose File
+                            </button>
+                        </div>
+                        <div id="fileInfo" class="mt-3"></div>
+                    </div>
+                </div>
             </div>
-            <div class="card-body">
-                <form id="singleObservableForm">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label>Observable:</label>
-                                <input type="text" class="form-control" id="singleObservable" 
-                                       placeholder="e.g., 1.2.3.4, evil.com, hash..." required>
-                            </div>
+
+            <!-- Section 3: Observable List -->
+            <div class="col-lg-4">
+                <div class="card section-card">
+                    <div class="card-header bg-info text-white">
+                        <h5><i class="fas fa-list"></i> Observable Queue (<span id="queueCount">0</span>)</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="observableQueue" class="border rounded p-3" style="max-height: 520px; overflow-y: auto;">
+                            <p class="text-muted text-center">No observables added yet</p>
                         </div>
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label>Type:</label>
-                                <select class="form-control" id="singleDataType" required>
-                                    <option value="">Select type...</option>
-                                    <option value="ip">IP Address</option>
-                                    <option value="domain">Domain</option>
-                                    <option value="url">URL</option>
-                                    <option value="hash">Hash</option>
-                                    <option value="mail">Email</option>
-                                    <option value="other">Other</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <label>&nbsp;</label>
-                            <button type="submit" class="btn btn-primary btn-block">
-                                <i class="fas fa-plus"></i> Add
+                        <div class="mt-3">
+                            <button class="btn btn-danger btn-sm" id="clearQueueBtn">
+                                <i class="fas fa-trash"></i> Clear All
                             </button>
                         </div>
                     </div>
-                </form>
-            </div>
-        </div>
-
-        <!-- Section 2: Bulk Upload -->
-        <div class="card section-card">
-            <div class="card-header bg-success text-white">
-                <h5><i class="fas fa-file-upload"></i> Bulk Upload (CSV/TXT)</h5>
-            </div>
-            <div class="card-body">
-                <div class="upload-area" id="uploadArea">
-                    <i class="fas fa-cloud-upload-alt fa-3x text-primary mb-3"></i>
-                    <h5>Drop CSV/TXT file here or click to browse</h5>
-                    <p class="text-muted">
-                        Format: observable,type<br>
-                        Example: 1.2.3.4,ip<br>
-                        evil.com,domain
-                    </p>
-                    <input type="file" id="fileInput" accept=".csv,.txt" style="display: none;">
-                    <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">
-                        <i class="fas fa-folder-open"></i> Choose File
-                    </button>
-                </div>
-                <div id="fileInfo" class="mt-3"></div>
-            </div>
-        </div>
-
-        <!-- Section 3: Observable List -->
-        <div class="card section-card">
-            <div class="card-header bg-info text-white">
-                <h5><i class="fas fa-list"></i> Observable Queue (<span id="queueCount">0</span>)</h5>
-            </div>
-            <div class="card-body">
-                <div id="observableQueue" class="border rounded p-3" style="max-height: 300px; overflow-y: auto;">
-                    <p class="text-muted text-center">No observables added yet</p>
-                </div>
-                <div class="mt-3">
-                    <button class="btn btn-danger btn-sm" id="clearQueueBtn">
-                        <i class="fas fa-trash"></i> Clear All
-                    </button>
                 </div>
             </div>
         </div>
@@ -229,22 +242,6 @@
                             <option disabled>Loading responders...</option>
                         </select>
                         <small class="form-text text-muted">Hold Ctrl/Cmd to select multiple</small>
-                    </div>
-
-                    <!-- Authentication -->
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label>Cortex Username:</label>
-                                <input type="text" class="form-control" id="bulkUsername" required>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label>Cortex Password:</label>
-                                <input type="password" class="form-control" id="bulkPassword" required>
-                            </div>
-                        </div>
                     </div>
 
                     <!-- TLP/PAP -->
@@ -267,6 +264,13 @@
                                 <option value="3">RED (3)</option>
                             </select>
                         </div>
+                    </div>
+
+                    <!-- Notes -->
+                    <div class="form-group mt-3">
+                        <label>Notes:</label>
+                        <textarea class="form-control" id="bulkMessage" rows="2"
+                                  placeholder="Add notes or reason for this action"></textarea>
                     </div>
 
                     <!-- Execute Button -->
@@ -497,18 +501,16 @@
                 return;
             }
             
-            const username = document.getElementById('bulkUsername').value;
-            const password = document.getElementById('bulkPassword').value;
             const tlp = parseInt(document.getElementById('bulkTLP').value);
             const pap = parseInt(document.getElementById('bulkPAP').value);
+            const message = document.getElementById('bulkMessage').value;
             
             const payload = {
                 observables: observableQueue,
                 responderIds: selectedResponders,
-                username: username,
-                password: password,
                 tlp: tlp,
-                pap: pap
+                pap: pap,
+                message: message
             };
             
             try {
