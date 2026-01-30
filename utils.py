@@ -166,6 +166,10 @@ def get_recent_searches():
             if dt not in recent:
                 recent[dt] = {}
             data = job.data
+            if isinstance(data, dict):
+                data = json.dumps(data, sort_keys=True)
+            elif not isinstance(data, str):
+                data = str(data)
             if data not in recent[dt]:
                 if len(recent[dt]) < config.JOB_RECENT_LIMIT:
                     recent[dt][data] = []
