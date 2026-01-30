@@ -89,6 +89,32 @@ EMAIL_REGEX = r'^[^@]+@[^@]+\.[^@]+$'
 LOG_LEVEL = logging.INFO
 LOG_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 
+# ============ NOTIFY CONFIGURATION ============
+
+# Abilita/disabilita notifiche email
+NOTIFY_ENABLED = False
+
+# Metodo: 'auto' (sendmail su Linux se disponibile, altrimenti SMTP), 'sendmail', 'smtp'
+NOTIFY_METHOD = 'auto'
+
+# Sendmail path (solo Linux)
+NOTIFY_SENDMAIL_PATH = '/usr/sbin/sendmail'
+
+# SMTP configuration
+NOTIFY_SMTP_HOST = ''
+NOTIFY_SMTP_PORT = 25
+NOTIFY_AUTH_USER = ''
+NOTIFY_AUTH_PASS = ''
+NOTIFY_USE_TLS = False
+NOTIFY_USE_SSL = False
+NOTIFY_SMTP_TIMEOUT = 10
+NOTIFY_ALLOW_SELF_SIGNED = False
+
+# Mail addresses
+NOTIFY_FROM = ''
+# Uno o più destinatari separati da punto e virgola
+NOTIFY_TO = ''
+
 # ============ IP Whitelist per API Cache ============
 
 # Lista IP autorizzati ad accedere alle API di gestione cache

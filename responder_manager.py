@@ -26,6 +26,8 @@ class ResponderAction:
     responder_name: str
     status: str
     created_at: datetime
+    payload_data_type: str
+    payload_data: Any
     completed_at: Optional[datetime] = None
     report: Optional[Dict] = None
     error: Optional[str] = None
@@ -219,9 +221,11 @@ class ResponderManager:
                 job_id=job.id,
                 observable=observable,
                 data_type=data_type,
-                responder_name=job.responderId if hasattr(job, 'responderId') else responder_id,
+                responder_name=self._get_responder_name(responder_id, api) or (job.responderId if hasattr(job, 'responderId') else responder_id),
                 status=job.status,
-                created_at=datetime.now()
+                created_at=datetime.now(),
+                payload_data_type=payload_data_type,
+                payload_data=payload_data
             )
             
             # Aggiungi allo storico
@@ -499,3 +503,11 @@ class ResponderManager:
         except Exception as e:
             logger.warning(f"Impossibile recuperare dataTypeList per responder {responder_id}: {str(e)}")
             return []
+
+    def _get_responder_name(self, responder_id: str, api: Api) -> Optional[str]:
+        cached = self._responder_cache.get(responder_id)
+        if cached is not None:
+            return cached.get('name')
+        _ = self._get_responder_supported_types(responder_id, api)
+        cached = self._responder_cache.get(responder_id)
+        return cached.get('name') if cached else None

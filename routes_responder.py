@@ -11,6 +11,7 @@ from flask import request, jsonify, current_app
 from pydantic import BaseModel, Field
 
 import config_responder as responder_cfg
+from notify_manager import notify_responder_action
 
 logger = logging.getLogger(__name__)
 
@@ -168,8 +169,11 @@ def register_responder_routes(app):
             
             # Refresh sessione
             auth_manager.refresh_session()
+
+            # Notifica
+            notify_responder_action(action, username)
             
-            logger.info(f"Responder executed by {username}: {responder_id} on {observable}")
+            logger.info(f"Responder executed by {username}: {req.responderId} on {req.observable}")
             
             return jsonify({
                 'success': True,
@@ -239,6 +243,17 @@ def register_responder_routes(app):
                 pap=req.pap
             )
             
+            # Notifica per ogni azione
+            executed_by = None
+            auth_manager = getattr(current_app, 'auth_manager', None)
+            if auth_manager and auth_manager.is_authenticated():
+                executed_by = auth_manager.get_username()
+            else:
+                executed_by = req.username or 'unknown'
+
+            for action in actions:
+                notify_responder_action(action, executed_by)
+
             # Prepara response
             results = []
             for action in actions:
