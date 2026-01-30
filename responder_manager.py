@@ -209,7 +209,7 @@ class ResponderManager:
                 if message == '':
                     message = None
 
-            if payload_data_type == 'thehive:case_artifact' and not message:
+            if not message:
                 message = responder_cfg.RESPONDER_DEFAULT_MESSAGE
 
             # Prepara payload
@@ -219,9 +219,11 @@ class ResponderManager:
                 'tlp': tlp,
                 'pap': pap
             }
-            
-            if message:
-                payload['message'] = message
+
+            # Inserisci message sia top-level che nel case_artifact
+            payload['message'] = message
+            if payload_data_type == 'thehive:case_artifact' and isinstance(payload_data, dict):
+                payload_data['message'] = message
             
             # Esegui responder
             logger.info(f"Esecuzione responder {responder_id} su {data_type}:{observable}")
