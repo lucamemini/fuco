@@ -48,6 +48,7 @@ class ResponderManager:
         self.cortex_host = cortex_host
         self.api = Api(cortex_host, cortex_api_key) if cortex_api_key else None
         self._action_history: List[ResponderAction] = []
+        self._responder_cache: Dict[str, Dict[str, Any]] = {}
         
         logger.info(f"ResponderManager inizializzato per {cortex_host}")
     
@@ -117,7 +118,7 @@ class ResponderManager:
             # Converti in dict per serializzazione
             result = []
             for resp in responders:
-                result.append({
+                resp_data = {
                     'id': resp.id,
                     'name': resp.name,
                     'version': getattr(resp, 'version', 'N/A'),
@@ -125,7 +126,9 @@ class ResponderManager:
                     'description': getattr(resp, 'description', ''),
                     'maxTlp': getattr(resp, 'maxTlp', 2),
                     'maxPap': getattr(resp, 'maxPap', 2)
-                })
+                }
+                result.append(resp_data)
+                self._responder_cache[resp.id] = resp_data
             
             logger.info(f"Recuperati {len(result)} responder" + 
                        (f" per tipo {data_type}" if data_type else ""))
@@ -178,10 +181,28 @@ class ResponderManager:
             else:
                 raise ValueError("Deve fornire api_key OPPURE username+password")
             
+            # Determina datatype effettivo del payload
+            payload_data_type = data_type
+            payload_data = observable
+            supported_types = self._get_responder_supported_types(responder_id, api)
+            if supported_types and data_type not in supported_types:
+                if 'thehive:case_artifact' in supported_types and not data_type.startswith('thehive:'):
+                    payload_data_type = 'thehive:case_artifact'
+                    payload_data = {
+                        'dataType': data_type,
+                        'data': observable
+                    }
+                    logger.info(
+                        "Mapping datatype '%s' -> '%s' for responder %s",
+                        data_type,
+                        payload_data_type,
+                        responder_id
+                    )
+
             # Prepara payload
             payload = {
-                'data': observable,
-                'dataType': data_type,
+                'data': payload_data,
+                'dataType': payload_data_type,
                 'tlp': tlp,
                 'pap': pap
             }
@@ -441,6 +462,10 @@ class ResponderManager:
                 data_types = resp.get('dataTypeList', [])
                 if data_type in data_types or not data_types:  # Empty list = supports all
                     compatible.append(resp)
+                elif 'thehive:case_artifact' in data_types and not data_type.startswith('thehive:'):
+                    resp_with_hint = dict(resp)
+                    resp_with_hint['payloadDataType'] = 'thehive:case_artifact'
+                    compatible.append(resp_with_hint)
             
             logger.info(f"Trovati {len(compatible)} responder per tipo {data_type}")
             return compatible
@@ -448,3 +473,29 @@ class ResponderManager:
         except Exception as e:
             logger.error(f"Errore recupero responder per {data_type}: {str(e)}")
             raise
+
+    def _get_responder_supported_types(self, responder_id: str, api: Api) -> List[str]:
+        """Recupera i dataType supportati da un responder, usando cache se possibile."""
+        cached = self._responder_cache.get(responder_id)
+        if cached is not None:
+            return cached.get('dataTypeList', [])
+
+        try:
+            responders = api.responders.find_all({}, range='all')
+            for resp in responders:
+                resp_data = {
+                    'id': resp.id,
+                    'name': resp.name,
+                    'version': getattr(resp, 'version', 'N/A'),
+                    'dataTypeList': getattr(resp, 'dataTypeList', []),
+                    'description': getattr(resp, 'description', ''),
+                    'maxTlp': getattr(resp, 'maxTlp', 2),
+                    'maxPap': getattr(resp, 'maxPap', 2)
+                }
+                self._responder_cache[resp.id] = resp_data
+
+            cached = self._responder_cache.get(responder_id)
+            return cached.get('dataTypeList', []) if cached else []
+        except Exception as e:
+            logger.warning(f"Impossibile recuperare dataTypeList per responder {responder_id}: {str(e)}")
+            return []
