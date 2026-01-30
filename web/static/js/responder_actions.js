@@ -293,7 +293,8 @@ function addResponderButtons(observable, dataType, containerId) {
     }
 
     const buttonsHTML = `
-        <button class="action-btn-header btn-block responder-action-btn"
+        <button class="action-btn-header btn-block responder-action-btn requires-auth"
+                data-requires-auth="true"
                 data-observable="${observable}"
                 data-datatype="${dataType}">
             <i class="fas fa-shield-alt"></i> Block
@@ -302,9 +303,19 @@ function addResponderButtons(observable, dataType, containerId) {
 
     container.innerHTML = buttonsHTML;
 
+    if (typeof window.updateAuthDependentUI === 'function') {
+        window.updateAuthDependentUI(!!(window.authState && window.authState.authenticated));
+    }
+
     container.querySelector('.responder-action-btn').addEventListener('click', function() {
         const obs = this.getAttribute('data-observable');
         const dt = this.getAttribute('data-datatype');
+        if (window.authState && !window.authState.authenticated) {
+            if (typeof window.handleLogin === 'function') {
+                window.handleLogin();
+            }
+            return;
+        }
         window.responderModal.show(obs, dt);
     });
 }

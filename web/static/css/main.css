@@ -963,11 +963,16 @@ legend {
 }
 
 .s003 form .inner-form .input-field.third-wrap {
-  width: 74px;
+  width: auto;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 0;
+  flex: 0 0 auto;
 }
 
 .s003 form .inner-form .input-field.third-wrap .btn-search {
-  height: 100%;
+  /*height: 100%;*/
   width: 100%;
   white-space: nowrap;
   color: #fff;
@@ -976,14 +981,18 @@ legend {
 /*  background: #63c76a; */
   background: #ffd700;
   transition: all .2s ease-out, color .2s ease-out;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .s003 form .inner-form .input-field.third-wrap .btn-search svg {
   width: 16px;
+  height: 16px;
 }
 
 .s003 form .inner-form .input-field.third-wrap .btn-search:hover {
-  background: #50c058;
+  background: #e6c200;
 }
 
 .s003 form .inner-form .input-field.third-wrap .btn-search:focus {

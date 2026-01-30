@@ -251,13 +251,13 @@ def analysis():
     I job vengono sottomessi via AJAX dal browser con TLP/PAP custom.
     """
     try:
-        data = request.form.get('tosearch')
+        data = request.form.get('observable')
         if not data:
-            return error_response("Parametro 'tosearch' mancante", 400)
+            return error_response("Parametro 'observable' mancante", 400)
         
-        datatype = request.form.get('DataType')
+        datatype = request.form.get('datatype')
         if not datatype:
-            return error_response("Parametro 'DataType' mancante", 400)
+            return error_response("Parametro 'datatype' mancante", 400)
         
         analyzer_list = request.form.getlist('analyzer')
         if not analyzer_list:
@@ -648,20 +648,26 @@ def get_short():
         logger.error(f"Errore in get_short(): {str(e)}")
         return error_response(str(e), 500)
 
-@routes_bp.route('/allReports', methods=['GET'])
+@routes_bp.route('/allReports', methods=['GET','POST'])
 def all_reports():
     """
     Visualizza tutti i report già esistenti per un osservabile specifico.
     Recupera dalla cache di Cortex SENZA risubmittare le analisi.
     """
     try:
-        observable = request.args.get('observable')
-        datatype = request.args.get('datatype')
+        default_datatype = "_default"
+        datatype = default_datatype
+        if request.method == 'GET':
+            observable = request.args.get('observable')
+            datatype = request.args.get('datatype') or default_datatype
+
+        elif request.method == 'POST':
+            data = request.form
+            observable = data.get('observable')
+            datatype = data.get('datatype') or default_datatype
         
         if not observable:
-            return error_response("Parametro 'observable' mancante", 400)
-        if not datatype:
-            return error_response("Parametro 'datatype' mancante", 400)
+            return error_response(f"Parametro 'observable' mancante  {observable}", 400)
         
         logger.info(f"Ricerca report esistenti per: {observable} (tipo: {datatype})")
         
@@ -679,8 +685,12 @@ def all_reports():
             # Filtro manuale per observable e datatype
             jobs = []
             for job in all_jobs:
-                if (hasattr(job, 'data') and job.data == observable and 
-                    hasattr(job, 'dataType') and job.dataType == datatype and
+                matches_datatype = (datatype == default_datatype) or (
+                    hasattr(job, 'dataType') and job.dataType == datatype
+                )
+
+                if (hasattr(job, 'data') and job.data == observable and
+                    matches_datatype and
                     hasattr(job, 'status') and job.status == 'Success'):
                     jobs.append(job)
             

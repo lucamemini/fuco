@@ -54,6 +54,12 @@ document.addEventListener('DOMContentLoaded', function() {
     checkAuthStatus();
 });
 
+// Global auth state
+window.authState = {
+    authenticated: false,
+    username: null
+};
+
 // Auth Management Functions
 async function checkAuthStatus() {
     try {
@@ -62,14 +68,51 @@ async function checkAuthStatus() {
         
         if (data.authenticated) {
             showLoggedIn(data.username);
+            updateAuthState(true, data.username);
         } else {
             showLoggedOut();
+            updateAuthState(false, null);
         }
     } catch (error) {
         console.error('Error checking auth:', error);
         showLoggedOut();
+        updateAuthState(false, null);
     }
 }
+
+function updateAuthState(authenticated, username) {
+    window.authState.authenticated = authenticated;
+    window.authState.username = username;
+    updateAuthDependentUI(authenticated);
+}
+
+function updateAuthDependentUI(authenticated) {
+    const authRequiredElements = document.querySelectorAll('[data-requires-auth="true"], .requires-auth');
+    authRequiredElements.forEach((el) => {
+        if (el.tagName === 'BUTTON' || el.tagName === 'A') {
+            if (authenticated) {
+                el.classList.remove('disabled');
+                el.removeAttribute('aria-disabled');
+                el.removeAttribute('disabled');
+                el.title = el.getAttribute('data-auth-title') || el.title || '';
+            } else {
+                el.classList.add('disabled');
+                el.setAttribute('aria-disabled', 'true');
+                if (el.tagName === 'BUTTON') {
+                    el.setAttribute('disabled', 'disabled');
+                }
+                el.title = 'Login required';
+            }
+        }
+    });
+
+    if (typeof window.updateSubmitButtonState === 'function') {
+        window.updateSubmitButtonState();
+    }
+}
+
+// Expose for dynamic UI updates
+window.updateAuthDependentUI = updateAuthDependentUI;
 
 function showLoggedIn(username) {
     const loginNav = document.getElementById('loginNav');
@@ -148,7 +191,8 @@ async function submitLogin() {
         if (data.success) {
             closeLoginModal();
             showLoggedIn(data.username);
-            alert('Login successful!');
+            updateAuthState(true, data.username);
+            //alert('Login successful!');
         } else {
             alert('Login failed: ' + data.error);
         }
@@ -163,6 +207,7 @@ async function handleLogout() {
     try {
         await fetch('/api/auth/logout', { method: 'POST' });
         showLoggedOut();
+        updateAuthState(false, null);
         location.reload();
     } catch (error) {
         alert('Logout error: ' + error.message);

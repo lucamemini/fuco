@@ -58,6 +58,30 @@
   border-color: #28a745 !important;
 }
 
+/* Recent Searches buttons */
+.recent-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.recent-action-btn {
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px;
+  font-size: 12px;
+  line-height: 1;
+  margin: 0;
+}
+
+.recent-action-btn--icon {
+  width: 32px;
+  padding: 0;
+  justify-content: center;
+}
+
 /* TLP/PAP Badge Selector - Stile Google minimalista */
 .tlp-pap-selector {
   display: flex;
@@ -82,9 +106,9 @@
 
 .tlp-pap-badge {
   display: inline-block;
-  padding: 4px 10px;
+  padding: 4px 8px;
   border-radius: 12px;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -159,6 +183,77 @@
   border-width: 5px;
   border-style: solid;
   border-color: #202124 transparent transparent transparent;
+}
+
+/* Analyzer collapse */
+#analyzer_list.analyzer-collapsed {
+  display: none;
+}
+
+.analyzer-toggle {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  margin-left: 6px;
+  color: #5f6368;
+  font-size: 12px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.analyzer-toggle:hover {
+  color: #202124;
+}
+
+/* Search and Block Buttons Styling */
+.btn-search,
+.btn-block {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 0;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  height: 100%;
+  margin: 0;
+  vertical-align: middle;
+}
+
+.btn-search {
+  background: #ffd700;
+  color: white;
+}
+
+.btn-search:hover {
+  background: #e6c200;
+}
+
+.btn-block {
+  background: #dc3545;
+  color: white;
+}
+
+.btn-block:hover:not(:disabled) {
+  background: #bb2d3b;
+}
+
+.btn-block:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #dc3545;
+}
+
+.btn-search svg,
+.btn-block i {
+  width: 16px;
+  height: 16px;
+  display: block;
 }
    </style>
   <style>
@@ -235,11 +330,16 @@
         	          
         	          // Assicura che il checkbox "All" sia checked
         	          document.getElementById('select-all-checkbox').checked = true;
+                    // Collassa lista di default (tutti selezionati)
+                    setAnalyzerCollapsed(true);
+                    updateAnalyzerToggleState();
         	      } else {
         	          // Nascondi se non ci sono analyzer
         	          //analyzerContainer.style.display = 'none';
                     document.getElementById('analyzer-count').textContent = "0"
                     document.getElementById('select-all-checkbox').checked = false;
+                    setAnalyzerCollapsed(true);
+                    updateAnalyzerToggleState();
         	      }
         	  }
         	}
@@ -250,6 +350,7 @@
            if (aa[i].type == 'checkbox' && aa[i].name === 'analyzer')
            	aa[i].checked = source.checked;
     	   }
+          updateSelectAllState();
         }
         
         // Monitora i click sugli analyzer per aggiornare il checkbox "All"
@@ -265,17 +366,61 @@
             if (allChecked) {
                 selectAllCheckbox.checked = true;
                 selectAllCheckbox.indeterminate = false;
+            setAnalyzerCollapsed(true);
             } else if (someChecked) {
                 selectAllCheckbox.checked = false;
                 selectAllCheckbox.indeterminate = true;
+            setAnalyzerCollapsed(false);
             } else {
                 selectAllCheckbox.checked = false;
                 selectAllCheckbox.indeterminate = false;
+            setAnalyzerCollapsed(false);
             }
+
+          updateAnalyzerToggleState();
+        }
+
+        function setAnalyzerCollapsed(collapsed) {
+          const analyzerList = document.getElementById('analyzer_list');
+          const toggle = document.getElementById('analyzerToggle');
+          if (!analyzerList || !toggle) return;
+
+          if (collapsed) {
+            analyzerList.classList.add('analyzer-collapsed');
+            toggle.setAttribute('aria-expanded', 'false');
+          } else {
+            analyzerList.classList.remove('analyzer-collapsed');
+            toggle.setAttribute('aria-expanded', 'true');
+          }
+        }
+
+        function updateAnalyzerToggleState() {
+          const toggleText = document.getElementById('analyzerToggleText');
+          const toggleIcon = document.getElementById('analyzerToggleIcon');
+          const analyzerList = document.getElementById('analyzer_list');
+          if (!toggleText || !toggleIcon || !analyzerList) return;
+
+          const isCollapsed = analyzerList.classList.contains('analyzer-collapsed');
+          toggleText.textContent = isCollapsed ? 'Show' : 'Hide';
+          toggleIcon.textContent = isCollapsed ? '▸' : '▾';
         }
         
         // Aggiungi listener agli analyzer quando vengono caricati
         document.addEventListener('DOMContentLoaded', function() {
+            // Inizializza lo stato dei bottoni
+            updateSubmitButtonState();
+
+          const analyzerToggle = document.getElementById('analyzerToggle');
+          if (analyzerToggle) {
+            analyzerToggle.addEventListener('click', function() {
+              const analyzerList = document.getElementById('analyzer_list');
+              if (!analyzerList) return;
+              const isCollapsed = analyzerList.classList.contains('analyzer-collapsed');
+              setAnalyzerCollapsed(!isCollapsed);
+              updateAnalyzerToggleState();
+            });
+          }
+            
             // Usa MutationObserver per rilevare quando gli analyzer vengono aggiunti
             const observer = new MutationObserver(function(mutations) {
                 mutations.forEach(function(mutation) {
@@ -337,6 +482,78 @@
                 }, 1500);
             }
         }
+        
+        // Dynamic Submit/Block Button Logic
+        function updateSubmitButtonState() {
+          const typeField = document.getElementById('typefield');
+          const blockBtn = document.getElementById('blockBtn');
+          const submitLabel = document.getElementById('submitLabel');
+          const observable = document.getElementById('observable');
+          const form = document.getElementById('form');
+          const selectedType = typeField.value;
+          const isAuthenticated = window.authState && window.authState.authenticated;
+            
+          if (selectedType === '_disabled' || !selectedType) {
+            // SEARCH MODE
+            submitLabel.textContent = 'Search';
+            observable.placeholder = 'Search Mode: Keyword?';
+            form.action = "/allReports";
+          } else {
+            // ANALYZE MODE
+            submitLabel.textContent = 'Analyze';
+            observable.placeholder = 'Analyze Mode: Keyword?'; 
+            form.action = "/analysis";
+          }
+
+          if (blockBtn) {
+            blockBtn.disabled = !isAuthenticated || selectedType === '_disabled' || !selectedType;
+          }
+        }
+        
+        function handleBlock() {
+            const observable = document.getElementById('observable').value.trim();
+            const dataType = document.getElementById('typefield').value;
+          const isAuthenticated = window.authState && window.authState.authenticated;
+
+          if (!isAuthenticated) {
+            if (typeof window.handleLogin === 'function') {
+              window.handleLogin();
+            }
+            return;
+          }
+            
+            if (!observable) {
+                alert('Please enter an observable to block');
+                return;
+            }
+            
+            if (dataType === '_disabled') {
+                alert('Please select a data type');
+                return;
+            }
+            
+            // Show responder modal if available
+            if (typeof window.responderModal !== 'undefined') {
+                window.responderModal.show(observable, dataType);
+            } else {
+                alert('Responder system not available');
+            }
+        }
+
+          function quickBlock(observable, dataType) {
+            const isAuthenticated = window.authState && window.authState.authenticated;
+            if (!isAuthenticated) {
+              if (typeof window.handleLogin === 'function') {
+                window.handleLogin();
+              }
+              return;
+            }
+            if (typeof window.responderModal !== 'undefined') {
+              window.responderModal.show(observable, dataType);
+            } else {
+              alert('Responder system not available');
+            }
+          }
         
         // TLP/PAP Selector
         function selectTLP(level, element) {
@@ -413,12 +630,12 @@
 
 <div class="s003">
 
-      <form action="/analysis" name="form" method="POST">
+      <form action="/analysis" id="form" name="form" method="POST">
         <div class="inner-form">
 	 <img src="/images/abeja.png" style="transform: scaleX(-1);" width="80" height="60">
           <div class="input-field first-wrap">
             <div class="input-select">
-              <select id="typefield" data-trigger="" name="DataType" class="input-field first-wrap"  onchange="getAnalyzer(this,'object')">
+              <select id="typefield" data-trigger="" name="DataType" class="input-field first-wrap"  onchange="getAnalyzer(this,'object'); updateSubmitButtonState()">
                 <option label="_DataType" value="_disabled" selected>_DataType</option>
                 <option label="domain" value="domain">domain</option>
                 <option label="url" value="url">url</option>
@@ -440,16 +657,21 @@
           </div>
           <div id="domainfield" class="input-field second-wrap">
 	    {% if q %}
-            <input id="tosearch" name="tosearch" type="text" value="{{ q }}" />
+            <input id="observable" name="observable" type="text" value="{{ q }}" />
 	    {% else %}	    
-            <input id="tosearch" name="tosearch" type="text" placeholder="Enter Keywords?" />
+            <input id="observable" name="observable" type="text" placeholder="Enter Keywords?" />
 	    {% endif %}	    
           </div>
           <div class="input-field third-wrap">
-            <button class="btn-search" type="submit">
+            <button id="submitBtn" class="btn-search" type="submit">
               <svg class="svg-inline--fa fa-search fa-w-16" aria-hidden="true" data-prefix="fas" data-icon="search" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
                 <path fill="currentColor" d="M505 442.7L405.3 343c-4.5-4.5-10.6-7-17-7H372c27.6-35.3 44-79.7 44-128C416 93.1 322.9 0 208 0S0 93.1 0 208s93.1 208 208 208c48.3 0 92.7-16.4 128-44v16.3c0 6.4 2.5 12.5 7 17l99.7 99.7c9.4 9.4 24.6 9.4 33.9 0l28.3-28.3c9.4-9.4 9.4-24.6.1-34zM208 336c-70.7 0-128-57.2-128-128 0-70.7 57.2-128 128-128 70.7 0 128 57.2 128 128 0 70.7-57.2 128-128 128z"></path>
               </svg>
+              <span id="submitLabel">Search</span>
+            </button>
+            <button id="blockBtn" class="btn-block requires-auth" data-requires-auth="true" type="button" onclick="handleBlock()" disabled>
+              <i class="fas fa-shield-alt"></i>
+              <span>Block</span>
             </button>
           </div>
         </div>
@@ -497,6 +719,10 @@
                 <label id="select-all-label">All (<span id="analyzer-count">1</span>)</label>
               </div>
             </div>
+            <button type="button" id="analyzerToggle" class="analyzer-toggle" aria-expanded="false">
+              <span id="analyzerToggleText">Show</span>
+              <span id="analyzerToggleIcon">▸</span>
+            </button>
           </div>
           <!-- Fine Select All Analyzers -->
 
@@ -529,20 +755,28 @@
            style="text-decoration: none; color: inherit; flex: 1;">
           <strong style="display: block; padding: 8px 4px; font-size: 1.05em; color: #333;">{{ data }}</strong>
         </a>
-        <button class="btn btn-sm btn-outline-secondary copy-btn" 
-                onclick="copyToClipboard('{{ data }}', this)"
-                title="Copia negli appunti"
-                style="padding: 4px 8px; border: 1px solid #ccc; background: white; cursor: pointer;">
-          <i class="fas fa-copy"></i>
-        </button>
+        <div class="recent-actions">
+          <button type="button" class="btn btn-sm btn-outline-info load-badges-btn recent-action-btn"
+                  data-observable="{{ data|replace('.', '_')|replace('/', '_') }}"
+                  data-jobids='{{ jobids | tojson | safe }}'>
+            <i class="fas fa-eye"></i> Show badges ({{ jobids|length }} analyses)
+          </button>
+
+          <button class="btn btn-sm btn-outline-secondary copy-btn recent-action-btn recent-action-btn--icon"
+                  onclick="copyToClipboard('{{ data }}', this)"
+                  title="Copia negli appunti">
+            <i class="fas fa-copy"></i>
+          </button>
+            <button class="btn btn-sm btn-outline-danger recent-action-btn recent-action-btn--icon requires-auth"
+              data-requires-auth="true"
+              onclick="quickBlock('{{ data }}', '{{ dtype }}')"
+              title="Block">
+            <i class="fas fa-shield-alt"></i>
+          </button>
+        </div>
       </div>
       
       <div class="mt-1">
-        <button type="button" class="btn btn-sm btn-outline-info load-badges-btn"
-                data-observable="{{ data|replace('.', '_')|replace('/', '_') }}"
-                data-jobids='{{ jobids | tojson | safe }}'>
-          <i class="fas fa-eye"></i> Show badges ({{ jobids|length }} analyses)
-        </button>
         <div id="taxonomies-{{ data|replace('.', '_')|replace('/', '_') }}" style="margin-top: 8px;"></div>
       </div>
     </li>
