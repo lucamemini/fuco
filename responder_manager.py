@@ -129,6 +129,13 @@ class ResponderManager:
             
             logger.info(f"Recuperati {len(result)} responder" + 
                        (f" per tipo {data_type}" if data_type else ""))
+            for resp in result:
+                logger.info(
+                    "Responder: %s (%s) | dataTypeList=%s",
+                    resp.get('name'),
+                    resp.get('id'),
+                    resp.get('dataTypeList')
+                )
             return result
             
         except Exception as e:
