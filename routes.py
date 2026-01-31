@@ -237,6 +237,7 @@ def get_analyzer():
     """Restituisce gli analyzer per un tipo di dato."""
     try:
         analyzer_type = str(request.args.get('type', 'domain'))
+        analyzer_type = utils.InputValidator.validate_datatype(analyzer_type)
         result = utils.get_analyzer_by_type(analyzer_type)
         return render_template('analyzer.html', data=result)
     except Exception as e:
@@ -254,10 +255,13 @@ def analysis():
         data = request.form.get('observable')
         if not data:
             return error_response("Parametro 'observable' mancante", 400)
-        
+        data = utils.InputValidator.sanitize_observable(data)
+
         datatype = request.form.get('datatype')
         if not datatype:
             return error_response("Parametro 'datatype' mancante", 400)
+        datatype = utils.InputValidator.validate_datatype(datatype)
+        utils.InputValidator.validate_observable_by_type(datatype, data)
         
         analyzer_list = request.form.getlist('analyzer')
         if not analyzer_list:
@@ -327,6 +331,9 @@ def api_submit_job():
         # Validazione
         if not all([analyzer, datatype, data]):
             return error_response("Parametri mancanti (analyzer, datatype, data)", 400)
+        data = utils.InputValidator.sanitize_observable(data)
+        datatype = utils.InputValidator.validate_datatype(datatype)
+        utils.InputValidator.validate_observable_by_type(datatype, data)
         
         if not (0 <= tlp <= 3):
             tlp = config.DEFAULT_TLP
@@ -415,7 +422,7 @@ def api_short():
         except ValueError as e:
             return error_response(f"Dati non validi: {str(e)}", 400)
         
-        raw_data = short_req.Data
+        raw_data = utils.InputValidator.sanitize_observable(short_req.Data)
         datatype = short_req.DataType
         analyzer_list = short_req.analyzer_list
         
@@ -435,12 +442,14 @@ def api_short():
                 input_items = [(raw_data, detected_type)]
         else:
             # DataType esplicitamente specificato
+            datatype = utils.InputValidator.validate_datatype(datatype)
             if datatype.lower() == "ip" and ',' in raw_data:
                 ips = utils.parse_multiple_ips(raw_data)
                 if not ips:
                     return error_response("Nessun IP pubblico valido trovato", 400)
                 input_items = [(ip, "ip") for ip in ips]
             else:
+                utils.InputValidator.validate_observable_by_type(datatype.lower(), raw_data)
                 input_items = [(raw_data, datatype.lower())]
         
         # Esecuzione delle analisi
@@ -501,7 +510,7 @@ def api_analysis():
         except ValueError as e:
             return error_response(f"Dati non validi: {str(e)}", 400)
         
-        data = analysis_req.Data
+        data = utils.InputValidator.sanitize_observable(analysis_req.Data)
         datatype = analysis_req.DataType
         analyzer_list = analysis_req.analyzer_list
         
@@ -510,6 +519,9 @@ def api_analysis():
             datatype = utils.detect_data_type(data)
             if not datatype:
                 return error_response("Impossibile determinare automaticamente il tipo di dato", 400)
+        else:
+            datatype = utils.InputValidator.validate_datatype(datatype)
+            utils.InputValidator.validate_observable_by_type(datatype, data)
         
         # Esecuzione delle analisi
         job_results = []
@@ -668,6 +680,9 @@ def all_reports():
         
         if not observable:
             return error_response(f"Parametro 'observable' mancante  {observable}", 400)
+        observable = utils.InputValidator.sanitize_observable(observable)
+        if datatype and datatype != default_datatype:
+            datatype = utils.InputValidator.validate_datatype(datatype)
         
         logger.info(f"Ricerca report esistenti per: {observable} (tipo: {datatype})")
         

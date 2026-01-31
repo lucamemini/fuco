@@ -27,6 +27,79 @@ logger = logging.getLogger(__name__)
 # API Cortex
 cortex_api = Api(cfg.cortex["host"], cfg.cortex["apikey"])
 
+
+class InputValidator:
+    """Validazione e sanitizzazione input."""
+
+    EXTRA_TYPES = {
+        'certificate_hash',
+        'filename',
+        'uri_path',
+        'user-agent',
+        'mail_subject',
+        'registry',
+        'regexp',
+        'file',
+        'fqdn'
+    }
+
+    @staticmethod
+    def allowed_types():
+        return set(config.ANALYZER_TYPES) | InputValidator.EXTRA_TYPES
+
+    @staticmethod
+    def sanitize_observable(data: str, max_length: int = 500) -> str:
+        if data is None:
+            raise ValueError("Observable mancante")
+        if not isinstance(data, str):
+            data = str(data)
+        data = data.replace('\x00', '')
+        data = ' '.join(data.split())
+        data = data.strip()
+        if not data:
+            raise ValueError("Observable vuoto")
+        return data[:max_length]
+
+    @staticmethod
+    def validate_datatype(datatype: str, allow_thehive: bool = False) -> str:
+        if datatype is None:
+            raise ValueError("Datatype mancante")
+        if not isinstance(datatype, str):
+            datatype = str(datatype)
+        dtype = datatype.strip().lower()
+        if allow_thehive and dtype.startswith('thehive:'):
+            return dtype
+        if dtype not in InputValidator.allowed_types():
+            raise ValueError(f"Datatype non valido: {dtype}")
+        return dtype
+
+    @staticmethod
+    def validate_observable_by_type(datatype: str, data: str) -> None:
+        if datatype == 'ip':
+            try:
+                ipaddress.ip_address(data)
+                return
+            except Exception:
+                raise ValueError("IP non valido")
+        if datatype in ('domain', 'fqdn'):
+            if not re.match(config.DOMAIN_REGEX, data):
+                raise ValueError("Domain non valido")
+            return
+        if datatype == 'url':
+            if not re.match(config.URL_REGEX, data):
+                raise ValueError("URL non valido")
+            return
+        if datatype in ('hash', 'certificate_hash'):
+            if not (re.match(config.MD5_REGEX, data) or re.match(config.SHA256_REGEX, data)):
+                raise ValueError("Hash non valido")
+            return
+        if datatype == 'mail':
+            if not re.match(config.EMAIL_REGEX, data):
+                raise ValueError("Email non valida")
+            return
+        # Per gli altri tipi accetta stringhe non vuote
+        return
+
 def get_cached_report(job_id):
     """
     Recupera report dalla cache o da Cortex.

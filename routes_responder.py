@@ -12,6 +12,7 @@ from pydantic import BaseModel, Field
 
 import config_responder as responder_cfg
 from notify_manager import notify_responder_action
+import utils
 
 logger = logging.getLogger(__name__)
 
@@ -155,6 +156,8 @@ def register_responder_routes(app):
             
             # Validazione input
             req = ResponderExecuteRequest(**data)
+            req.observable = utils.InputValidator.sanitize_observable(req.observable)
+            req.dataType = utils.InputValidator.validate_datatype(req.dataType, allow_thehive=True)
             
             # Esegui responder con API Key
             responder_manager = current_app.responder_manager
@@ -218,6 +221,9 @@ def register_responder_routes(app):
                 return error_response("Body JSON mancante", 400)
             
             req = ResponderBulkRequest(**data)
+            for obs in req.observables:
+                obs.data = utils.InputValidator.sanitize_observable(obs.data)
+                obs.dataType = utils.InputValidator.validate_datatype(obs.dataType, allow_thehive=True)
 
             responder_manager = current_app.responder_manager
             if responder_manager is None:
