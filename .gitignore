@@ -1,6 +1,9 @@
 # Cortex configuration (contiene API key)
 cortexconfig.py
 
+flask_session/*
+flask_session
+
 # Cache database (se usi SQLite per history)
 *.db
 
@@ -12,5 +15,4 @@ __pycache__/
 .Python
 venv/
 env/
-flask_session/*
-flask_session
+
