@@ -63,10 +63,10 @@
                 </thead>
                 <tbody>
                   
-                  {# URL Classifications (normale) #}
+                  {# URL Classifications (standard) #}
                   {% if content.urlClassifications is defined %}
                     {% if content.urlClassifications is string %}
-                      {# Se è una stringa singola #}
+                      {# If it's a single string #}
                       <tr>
                         <td><code>{{ content.url if content.url is defined else artifact.data }}</code></td>
                         <td>
@@ -74,7 +74,7 @@
                         </td>
                       </tr>
                     {% elif content.urlClassifications is iterable %}
-                      {# Se è una lista #}
+                      {# If it's a list #}
                       {% for classification in content.urlClassifications %}
                       <tr>
                         <td><code>{{ content.url if content.url is defined else artifact.data }}</code></td>
@@ -89,7 +89,7 @@
                   {# URL Classifications with Security Alert #}
                   {% if content.urlClassificationsWithSecurityAlert is defined %}
                     {% if content.urlClassificationsWithSecurityAlert is string %}
-                      {# Se è una stringa singola #}
+                      {# If it's a single string #}
                       <tr>
                         <td><code>{{ content.url if content.url is defined else artifact.data }}</code></td>
                         <td>
@@ -100,7 +100,7 @@
                         </td>
                       </tr>
                     {% elif content.urlClassificationsWithSecurityAlert is iterable %}
-                      {# Se è una lista #}
+                      {# If it's a list #}
                       {% for classification in content.urlClassificationsWithSecurityAlert %}
                       <tr>
                         <td><code>{{ content.url if content.url is defined else artifact.data }}</code></td>

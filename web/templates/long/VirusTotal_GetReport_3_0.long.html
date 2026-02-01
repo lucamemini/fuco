@@ -344,14 +344,14 @@
 <!-- ================= ERROR CASE ================= -->
 <div class="card border-danger">
   
-  <!-- HEADER WITH TABS (anche in caso di errore) -->
+  <!-- HEADER WITH TABS (also in case of error) -->
   <div class="card-header">
     <ul class="nav nav-tabs card-header-tabs">
       <li class="nav-item">
         <a class="nav-link active" id="error-tab_{{ artifact.id }}" data-bs-toggle="tab" data-bs-target="#error_{{ artifact.id }}" role="tab" aria-controls="error_{{ artifact.id }}" aria-selected="true">Error</a>
       </li>
       <li class="nav-item">
-        <a class="nav-link" id="json-error-tab_{{ artifact.id }}" data-bs-toggle="tab" data-bs-target="#json-error_{{ artifact.id }}" role="tab" aria-controls="json-error_{{ artifact.id }}" aria-selected="false">Json</a>
+        <a class="nav-link" id="json-error-tab_{{ artifact.id }}" data-bs-toggle="tab" data-bs-target="#json-error_{{ artifact.id }}" role="tab" aria-controls="json-error_{{ artifact.id }}" aria-selected="false">JSON</a>
       </li>
     </ul>
   </div>
@@ -392,7 +392,7 @@
         </div>
       </div>
 
-      <!-- TAB: JSON (anche in caso di errore) -->
+      <!-- TAB: JSON (also in case of error) -->
       <div class="tab-pane fade" id="json-error_{{ artifact.id }}" role="tabpanel" aria-labelledby="json-error-tab_{{ artifact.id }}">
         <pre><code>{{ artifact | string }}</code></pre>
       </div>

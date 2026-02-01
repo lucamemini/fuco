@@ -315,7 +315,7 @@
         	      document.getElementById('analyzer_list').innerHTML = "";
         	      document.getElementById('analyzer_list').innerHTML = Http.responseText;
         	      
-        	      // Mostra il selettore "All" e seleziona tutti gli analyzer di default
+        // Show the "All" selector and select all default analyzers
         	      const analyzerContainer = document.getElementById('analyzer-selector-container');
         	      const checkboxes = document.querySelectorAll('#analyzer_list input[type="checkbox"]');
         	      
@@ -326,12 +326,12 @@
         	          // Aggiorna il contatore
         	          document.getElementById('analyzer-count').textContent = checkboxes.length;
         	          
-        	          // Seleziona tutti gli analyzer di default
+                    // Select all default analyzers
         	          checkboxes.forEach(cb => cb.checked = true);
         	          
         	          // Assicura che il checkbox "All" sia checked
         	          document.getElementById('select-all-checkbox').checked = true;
-                    // Collassa lista di default (tutti selezionati)
+                    // Collapse default list (all selected)
                     setAnalyzerCollapsed(true);
                     updateAnalyzerToggleState();
         	      } else {
@@ -406,9 +406,9 @@
           toggleIcon.textContent = isCollapsed ? '▸' : '▾';
         }
         
-        // Aggiungi listener agli analyzer quando vengono caricati
+        // Add listeners to analyzers when they are loaded
         document.addEventListener('DOMContentLoaded', function() {
-            // Inizializza lo stato dei bottoni
+            // Initialize button state
             updateSubmitButtonState();
 
           const analyzerToggle = document.getElementById('analyzerToggle');
@@ -422,7 +422,7 @@
             });
           }
             
-            // Usa MutationObserver per rilevare quando gli analyzer vengono aggiunti
+            // Use MutationObserver to detect when analyzers are added
             const observer = new MutationObserver(function(mutations) {
                 mutations.forEach(function(mutation) {
                     if (mutation.addedNodes.length) {
@@ -678,7 +678,7 @@
           </div>
         </div>
         
-        <!-- TLP/PAP Selector + Analyzer Controls - TUTTO SULLA STESSA RIGA -->
+        <!-- TLP/PAP Selector + Analyzer Controls - ALL ON ONE LINE -->
         <div class="tlp-pap-selector">
           <div class="tlp-pap-group">
             <span class="tlp-pap-label">
@@ -710,7 +710,7 @@
             <span class="tlp-pap-badge pap-red" data-type="pap" onclick="selectPAP(3, this)">Red</span>
           </div>
           
-          <!-- Select All Analyzers - SULLA STESSA RIGA -->
+          <!-- Select All Analyzers - ON ONE LINE -->
 	        <div class="tlp-pap-group" id="analyzer-selector-container" style="display: flex;">
             <span class="tlp-pap-label">
               Analyzers
@@ -726,7 +726,7 @@
               <span id="analyzerToggleIcon">▸</span>
             </button>
           </div>
-          <!-- Fine Select All Analyzers -->
+          <!-- End Select All Analyzers -->
 
         </div>
         

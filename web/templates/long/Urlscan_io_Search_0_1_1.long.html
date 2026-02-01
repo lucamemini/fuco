@@ -2,7 +2,7 @@
 {% set content = artifact.report %}
 {% set full_data = content.full if content.full is defined else {} %}
 
-{# Gestione compatibilità: prova diverse strutture dati #}
+{# Compatibility handling: try different data structures #}
 {% if full_data.indicator is defined and full_data.indicator.results is defined %}
   {% set results = full_data.indicator.results %}
 {% elif full_data.results is defined %}

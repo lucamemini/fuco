@@ -1,6 +1,6 @@
 /**
- * responder_actions.js - Client-side logic per azioni Responder
- * VERSIONE CON SESSIONI - Non richiede più username/password ad ogni azione
+ * responder_actions.js - Client-side logic for Responder actions
+ * SESSION-BASED VERSION - No username/password required per action
  */
 
 (function() {
@@ -114,7 +114,7 @@ class ResponderModal {
     }
 
     async show(observable, dataType, responders = null) {
-        // ============ NUOVO: Check autenticazione PRIMA ============
+        // ============ NEW: Check authentication first ============
         const authStatus = await this.checkAuth();
         if (!authStatus.authenticated) {
             alert('Please login first to execute responder actions.\n\nClick "Login to Cortex" button in the top-right corner.');
@@ -193,12 +193,12 @@ class ResponderModal {
             return;
         }
 
-        // Disabilita pulsante
+        // Disable button
         const executeBtn = document.getElementById('executeResponderBtn');
         executeBtn.disabled = true;
         executeBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Executing...';
 
-        // Esegui per ogni responder selezionato
+        // Execute for each selected responder
         const results = [];
         for (const option of selectedOptions) {
             const responderId = option.value;
@@ -223,7 +223,7 @@ class ResponderModal {
             } catch (error) {
                 console.error(`Error executing ${responderName}:`, error);
                 
-                // Se errore 401, mostra messaggio login
+                // If 401 error, show login message
                 if (error.message.includes('Authentication required')) {
                     this.showError('Session expired. Please login again.');
                     setTimeout(() => location.reload(), 2000);
@@ -235,11 +235,11 @@ class ResponderModal {
             }
         }
 
-        // Re-abilita pulsante
+        // Re-enable button
         executeBtn.disabled = false;
         executeBtn.innerHTML = '<i class="fas fa-bolt"></i> Execute Action';
 
-        // Mostra summary
+        // Show summary
         const successful = results.filter(r => r.success).length;
         const total = results.length;
 

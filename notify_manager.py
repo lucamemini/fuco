@@ -1,5 +1,5 @@
 # ============================================================================
-# notify_manager.py - Notifiche email per azioni responder
+# notify_manager.py - Email notifications for responder actions
 # ============================================================================
 
 import json
@@ -110,7 +110,7 @@ def send_notification(subject: str, body: str) -> None:
 
 
 def notify_responder_action(action, executed_by: str) -> None:
-    """Invia notifica per una singola azione responder."""
+    """Send notification for a single responder action."""
     try:
         payload = {
             'dataType': action.payload_data_type,

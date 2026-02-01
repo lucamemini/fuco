@@ -5,7 +5,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>FUCO - Nessun report trovato</title>
+    <title>FUCO - No reports found</title>
     <link href="/css/bootstrap.min.css" rel="stylesheet">
     <link href="/css/main.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/css/all.min.css">
@@ -89,10 +89,10 @@
         <i class="fas fa-search"></i>
       </div>
       
-      <h2>Nessun report trovato</h2>
+      <h2>No reports found</h2>
       
       <p class="lead mt-3">
-        Non sono stati trovati report esistenti per:
+        No existing reports were found for:
       </p>
       
       <div class="alert alert-warning d-inline-block" style="max-width: 600px;">
@@ -102,18 +102,18 @@
       </div>
       
       <p class="mt-4">
-        Questo osservabile non è mai stato analizzato o i report sono scaduti dalla cache di Cortex.
+        This observable has never been analyzed, or the reports have expired from the Cortex cache.
       </p>
       
       <div class="mt-5">
         <a href="/?q={{ observable }}&t={{ datatype }}" class="btn btn-primary btn-lg">
           <i class="fas fa-search"></i>
-          Avvia una nuova analisi
+          Start a new analysis
         </a>
         
         <a href="/" class="btn btn-secondary btn-lg ms-2">
           <i class="fas fa-home"></i>
-          Torna alla home
+          Back to home
         </a>
       </div>
     </div>

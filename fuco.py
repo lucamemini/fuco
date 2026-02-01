@@ -1,6 +1,6 @@
 """
 FUCO - Search Engine for Cortex
-Entry point dell'applicazione Flask
+Flask application entry point
 """
 import logging
 import sys
@@ -18,47 +18,47 @@ from auth_manager import init_auth_manager
 from routes_auth import register_auth_routes
 from security import csrf, limiter
 
-# Configurazione logging
+# Logging configuration
 logging.basicConfig(
     level=config.LOG_LEVEL,
     format=config.LOG_FORMAT
 )
 logger = logging.getLogger(__name__)
 
-# ============ Validazione e Setup Configurazione ============
+# ============ Configuration Validation & Setup ============
 
 def validate_and_setup_config():
     """
-    Valida la configurazione e costruisce parametri necessari.
-    Esegue controlli di coerenza e fallback se necessario.
+    Validate configuration and build required parameters.
+    Performs consistency checks and fallbacks if needed.
     
     Returns:
-        dict: Configurazione validata
+        dict: Validated configuration
     """
     validated = {
         'cache_type': config.CACHE_TYPE,
         'redis_url': None
     }
     
-    # Validazione CACHE_TYPE
+    # Validate CACHE_TYPE
     if config.CACHE_TYPE not in ['memory', 'redis']:
         logger.warning(
-            f"CACHE_TYPE '{config.CACHE_TYPE}' non valido. "
-            f"Valori ammessi: 'memory', 'redis'. "
-            f"Uso 'memory' come fallback."
+            f"Invalid CACHE_TYPE '{config.CACHE_TYPE}'. "
+            f"Allowed values: 'memory', 'redis'. "
+            f"Using 'memory' as fallback."
         )
         validated['cache_type'] = 'memory'
     
-    # Costruzione Redis URL se necessario
+    # Build Redis URL if needed
     if validated['cache_type'] == 'redis':
         
-        # Priorità: REDIS_URL > costruzione da REDIS_HOST/PORT
+        # Priority: REDIS_URL > build from REDIS_HOST/PORT
         if config.REDIS_URL:
             validated['redis_url'] = config.REDIS_URL
-            logger.info(f"Redis URL configurato: {_mask_password(config.REDIS_URL)}")
+            logger.info(f"Redis URL configured: {_mask_password(config.REDIS_URL)}")
         
         else:
-            # Costruisci URL da componenti
+            # Build URL from components
             if config.REDIS_PASSWORD:
                 validated['redis_url'] = (
                     f'redis://:{config.REDIS_PASSWORD}@'
@@ -70,36 +70,36 @@ def validate_and_setup_config():
                 )
             
             logger.info(
-                f"Redis URL costruito da config: "
+                f"Redis URL built from config: "
                 f"{_mask_password(validated['redis_url'])}"
             )
         
-        # Verifica parametri Redis
+        # Validate Redis parameters
         if not validated['redis_url']:
             logger.error(
-                "CACHE_TYPE='redis' ma configurazione Redis mancante. "
-                "Fallback a 'memory'."
+                "CACHE_TYPE='redis' but Redis config is missing. "
+                "Falling back to 'memory'."
             )
             validated['cache_type'] = 'memory'
             validated['redis_url'] = None
     
-    # Log configurazione finale
+    # Log final configuration
     if validated['cache_type'] == 'redis':
         logger.info(
-            f"Cache configurata: Redis ({_mask_password(validated['redis_url'])}), "
-            f"TTL: {config.CACHE_TTL_MINUTES} minuti"
+            f"Cache configured: Redis ({_mask_password(validated['redis_url'])}), "
+            f"TTL: {config.CACHE_TTL_MINUTES} minutes"
         )
     else:
         logger.info(
-            f"Cache configurata: Memory (in-process), "
-            f"TTL: {config.CACHE_TTL_MINUTES} minuti"
+            f"Cache configured: Memory (in-process), "
+            f"TTL: {config.CACHE_TTL_MINUTES} minutes"
         )
     
     return validated
 
 
 def _mask_password(url: str) -> str:
-    """Maschera password nell'URL per i log"""
+    """Mask password in URLs for logs."""
     if not url or ':@' not in url:
         return url
     
@@ -109,10 +109,10 @@ def _mask_password(url: str) -> str:
     return url
 
 
-# Validazione configurazione all'avvio
+# Validate configuration at startup
 validated_config = validate_and_setup_config()
 
-# ============ Inizializzazione Flask App ============
+# ============ Flask App Initialization ============
 
 app = Flask(__name__,
             static_url_path='',
@@ -123,53 +123,53 @@ app = Flask(__name__,
 csrf.init_app(app)
 limiter.init_app(app)
 
-# ============ SESSIONI FLASK (NUOVO!) ============
+# ============ FLASK SESSIONS (NEW!) ============
 
 import secrets
 from flask_session import Session
 
-# Genera SECRET_KEY se non presente o None
+# Generate SECRET_KEY if missing or None
 if not getattr(config, 'SECRET_KEY', None):
     SECRET_KEY = secrets.token_hex(32)
-    logger.warning("SECRET_KEY mancante o None, generata automaticamente (NON per production!)")
+    logger.warning("SECRET_KEY missing or None, generated automatically (NOT for production!)")
 else:
     SECRET_KEY = config.SECRET_KEY
 
-# Configurazione sessioni
+# Session configuration
 app.config['SECRET_KEY'] = SECRET_KEY
 app.config['WTF_CSRF_SECRET_KEY'] = SECRET_KEY
 app.config['SESSION_TYPE'] = 'redis' if validated_config['cache_type'] == 'redis' else 'filesystem'
 app.config['SESSION_PERMANENT'] = False
-app.config['PERMANENT_SESSION_LIFETIME'] = 1800  # 30 minuti
-app.config['SESSION_COOKIE_SECURE'] = False  # Cambia True se usi HTTPS
+app.config['PERMANENT_SESSION_LIFETIME'] = 1800  # 30 minutes
+app.config['SESSION_COOKIE_SECURE'] = False  # Set True if you use HTTPS
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 
-# Se Redis, usa stesso client
+# If Redis, use the same client
 if app.config['SESSION_TYPE'] == 'redis':
     import redis
-    # Costruisci client Redis per sessioni
+    # Build Redis client for sessions
     if validated_config['redis_url']:
         redis_client = redis.from_url(validated_config['redis_url'], decode_responses=False)
         app.config['SESSION_REDIS'] = redis_client
-        logger.info("Sessioni Flask configurate su Redis")
+        logger.info("Flask sessions configured on Redis")
     else:
         app.config['SESSION_TYPE'] = 'filesystem'
-        logger.warning("Redis non disponibile, sessioni su filesystem")
+        logger.warning("Redis unavailable, sessions on filesystem")
 
-# Inizializza Flask-Session
+# Initialize Flask-Session
 Session(app)
 
-# ============ Registrazione Routes Base ============
+# ============ Register Base Routes ============
 
 app.register_blueprint(routes_bp)
 
-# ============ Inizializzazione Cache Manager ============
+# ============ Cache Manager Initialization ============
 
-# Inizializza cache manager con configurazione validata
+# Initialize cache manager with validated config
 cache_manager = CacheManager(redis_url=validated_config['redis_url'])
 
-# Rendi disponibile globalmente
+# Expose globally
 app.cache_manager = cache_manager
 
 # ============ Responder Manager ============
@@ -183,42 +183,42 @@ try:
     )
     app.responder_manager = responder_manager
     
-    # Registra route responder
+    # Register responder routes
     if not app.config.get('RESPONDER_ROUTES_REGISTERED'):
         register_responder_routes(app)
         app.config['RESPONDER_ROUTES_REGISTERED'] = True
     
-    logger.info("Responder Manager inizializzato")
+    logger.info("Responder Manager initialized")
     
 except Exception as e:
-    logger.error(f"Errore Responder Manager: {e}")
+    logger.error(f"Responder Manager error: {e}")
     app.responder_manager = None
 
-# ============ Auth Manager (DOPO app!) ============
+# ============ Auth Manager (AFTER app!) ============
 
 try:
     import cortexconfig as cortex_cfg
     
-    # Inizializza AuthManager
+    # Initialize AuthManager
     auth_manager = init_auth_manager(
         app, 
         cortex_host=cortex_cfg.cortex['host'],
-        session_timeout=1800  # 30 minuti
+        session_timeout=1800  # 30 minutes
     )
     
-    # Registra route autenticazione
+    # Register authentication routes
     if not app.config.get('AUTH_ROUTES_REGISTERED'):
         register_auth_routes(app)
         app.config['AUTH_ROUTES_REGISTERED'] = True
     
-    logger.info("Auth Manager inizializzato")
+    logger.info("Auth Manager initialized")
     
 except Exception as e:
-    logger.error(f"Errore Auth Manager: {e}")
+    logger.error(f"Auth Manager error: {e}")
     app.auth_manager = None
 
 
-# ============ Cleanup Periodico (solo Memory Cache) ============
+# ============ Periodic Cleanup (Memory Cache only) ============
 
 if validated_config['cache_type'] == 'memory':
     from flask_apscheduler import APScheduler
@@ -229,11 +229,11 @@ if validated_config['cache_type'] == 'memory':
     
     @scheduler.task('interval', id='cleanup_cache', minutes=10)
     def cleanup_expired_cache():
-        """Pulisce entry scadute dalla memory cache ogni 10 minuti"""
+        """Clean expired entries from memory cache every 10 minutes"""
         with app.app_context():
             removed = cache_manager.cleanup_expired()
             if removed > 0:
-                logger.info(f"Cleanup automatico: {removed} entry rimosse")
+                logger.info(f"Automatic cleanup: {removed} entries removed")
 
 # ============ Template Filters ============
 
@@ -255,20 +255,20 @@ def urlencode_filter(s):
 # ============ Application Entry Point ============
 
 if __name__ == '__main__':
-    # Verifica connessione a Cortex prima di avviare
+    # Check Cortex connectivity before starting
     try:
         import cortexconfig as cortex_cfg
-        logger.info(f"Cortex configurato: {cortex_cfg.cortex['host']}")
+        logger.info(f"Cortex configured: {cortex_cfg.cortex['host']}")
     except ImportError:
         logger.error(
-            "File cortexconfig.py non trovato! "
-            "Copia cortexconfig.py.template in cortexconfig.py e configuralo."
+            "cortexconfig.py not found! "
+            "Copy cortexconfig.py.template to cortexconfig.py and configure it."
         )
         sys.exit(1)
     except Exception as e:
-        logger.error(f"Errore nel caricamento cortexconfig.py: {e}")
+        logger.error(f"Error loading cortexconfig.py: {e}")
         sys.exit(1)
     
-    # Avvia applicazione
-    logger.info("Avvio FUCO in modalità development...")
+    # Start application
+    logger.info("Starting FUCO in development mode...")
     app.run(debug=False)

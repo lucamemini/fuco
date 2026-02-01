@@ -1,9 +1,9 @@
 # ============================================================================
-# responder_manager.py - Manager per Cortex Responders
+# responder_manager.py - Manager for Cortex Responders
 # ============================================================================
 
 """
-Sistema di gestione responder con supporto autenticazione Basic Auth
+Responder management system with Basic Auth support.
 """
 import logging
 import time
@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class ResponderAction:
-    """Rappresenta un'azione responder eseguita"""
+    """Represents an executed responder action."""
     job_id: str
     observable: str
     data_type: str
@@ -37,73 +37,73 @@ class ResponderAction:
 
 class ResponderManager:
     """
-    Manager per l'esecuzione e il monitoraggio dei Responder Cortex.
-    Supporta autenticazione Basic Auth per azioni protette.
+    Manager for executing and monitoring Cortex Responders.
+    Supports Basic Auth for protected actions.
     """
     
     def __init__(self, cortex_host: str, cortex_api_key: str = None):
         """
-        Inizializza il manager responder.
+        Initialize the responder manager.
         
         Args:
-            cortex_host: URL del server Cortex
-            cortex_api_key: API Key (se non usa Basic Auth per responder)
+            cortex_host: Cortex server URL
+            cortex_api_key: API Key (if not using Basic Auth for responders)
         """
         self.cortex_host = cortex_host
         self.api = Api(cortex_host, cortex_api_key) if cortex_api_key else None
         self._action_history: List[ResponderAction] = []
         self._responder_cache: Dict[str, Dict[str, Any]] = {}
         
-        logger.info(f"ResponderManager inizializzato per {cortex_host}")
+        logger.info(f"ResponderManager initialized for {cortex_host}")
     
     def get_authenticated_api(self, username: str = None, password: str = None, api_key: str = None) -> Api:
         """
-        Crea un'istanza API Cortex con autenticazione.
+        Create an authenticated Cortex API instance.
         
-        Supporta due metodi:
-        1. API Key (preferito) - Se fornita, usa quella
-        2. Basic Auth (fallback) - Se no API Key, usa username/password
+        Supports two methods:
+        1. API Key (preferred) - If provided, use it
+        2. Basic Auth (fallback) - If no API Key, use username/password
         
         Args:
-            username: Username Cortex (opzionale se api_key fornita)
-            password: Password Cortex (opzionale se api_key fornita)
-            api_key: API Key Cortex (metodo preferito)
+            username: Cortex username (optional if api_key provided)
+            password: Cortex password (optional if api_key provided)
+            api_key: Cortex API Key (preferred)
         
         Returns:
-            Api: Istanza autenticata dell'API Cortex
+            Api: Authenticated Cortex API instance
         """
         if api_key:
-            # Metodo preferito: usa API Key
+            # Preferred method: API Key
             api = Api(self.cortex_host, api_key)
-            logger.debug("API Cortex autenticata con API Key")
+            logger.debug("Cortex API authenticated with API Key")
             return api
         
         elif username and password:
-            # Fallback: Basic Auth (solo per ottenere API Key)
+            # Fallback: Basic Auth (only to obtain API Key)
             api = Api(self.cortex_host)
             api.session.auth = HTTPBasicAuth(username, password)
-            logger.debug(f"API Cortex autenticata con Basic Auth per utente: {username}")
+            logger.debug(f"Cortex API authenticated with Basic Auth for user: {username}")
             return api
         
         else:
-            raise ValueError("Deve fornire api_key OPPURE username+password")
+            raise ValueError("Must provide api_key OR username+password")
     
     def list_responders(self, data_type: str = None, 
                        username: str = None, password: str = None, api_key: str = None) -> List[Dict]:
         """
-        Elenca i responder disponibili.
+        List available responders.
         
         Args:
-            data_type: Filtra per tipo di dato (ip, domain, etc.)
-            username: Username per Basic Auth (opzionale)
-            password: Password per Basic Auth (opzionale)
-            api_key: API Key (metodo preferito)
+            data_type: Filter by data type (ip, domain, etc.)
+            username: Username for Basic Auth (optional)
+            password: Password for Basic Auth (optional)
+            api_key: API Key (preferred)
         
         Returns:
-            Lista di responder disponibili
+            List of available responders
         """
         try:
-            # Usa API autenticata
+            # Use authenticated API
             if api_key:
                 api = self.get_authenticated_api(api_key=api_key)
             elif username and password:
@@ -111,15 +111,15 @@ class ResponderManager:
             elif self.api:
                 api = self.api
             else:
-                raise ValueError("Nessuna autenticazione fornita")
+                raise ValueError("No authentication provided")
             
-            # Recupera responder
+            # Retrieve responders
             if data_type:
                 responders = api.responders.get_by_type(data_type)
             else:
                 responders = api.responders.find_all({}, range='all')
             
-            # Converti in dict per serializzazione
+            # Convert to dict for serialization
             result = []
             for resp in responders:
                 resp_data = {
@@ -134,8 +134,8 @@ class ResponderManager:
                 result.append(resp_data)
                 self._responder_cache[resp.id] = resp_data
             
-            logger.info(f"Recuperati {len(result)} responder" + 
-                       (f" per tipo {data_type}" if data_type else ""))
+            logger.info(f"Retrieved {len(result)} responders" + 
+                       (f" for type {data_type}" if data_type else ""))
             for resp in result:
                 logger.info(
                     "Responder: %s (%s) | dataTypeList=%s",
@@ -146,7 +146,7 @@ class ResponderManager:
             return result
             
         except Exception as e:
-            logger.error(f"Errore nel recupero responder: {str(e)}")
+            logger.error(f"Error retrieving responders: {str(e)}")
             raise
     
     def run_responder(self, 
@@ -160,32 +160,32 @@ class ResponderManager:
                      pap: int = 2,
                      message: str = None) -> ResponderAction:
         """
-        Esegue un responder su un osservabile.
+        Execute a responder on an observable.
         
         Args:
-            observable: Dato da processare
-            data_type: Tipo di dato (ip, domain, etc.)
-            responder_id: ID del responder da eseguire
-            username: Username Cortex (per Basic Auth, opzionale se api_key)
-            password: Password Cortex (per Basic Auth, opzionale se api_key)
-            api_key: API Key Cortex (metodo preferito)
+            observable: Data to process
+            data_type: Data type (ip, domain, etc.)
+            responder_id: Responder ID to execute
+            username: Cortex username (Basic Auth, optional if api_key)
+            password: Cortex password (Basic Auth, optional if api_key)
+            api_key: Cortex API Key (preferred)
             tlp: Traffic Light Protocol (0-3)
             pap: Permissible Actions Protocol (0-3)
-            message: Messaggio/note opzionale
+            message: Optional message/notes
         
         Returns:
-            ResponderAction: Oggetto con info sull'azione eseguita
+            ResponderAction: Object with execution info
         """
         try:
-            # Crea API autenticata
+            # Create authenticated API
             if api_key:
                 api = self.get_authenticated_api(api_key=api_key)
             elif username and password:
                 api = self.get_authenticated_api(username=username, password=password)
             else:
-                raise ValueError("Deve fornire api_key OPPURE username+password")
+                raise ValueError("Must provide api_key OR username+password")
             
-            # Determina datatype effettivo del payload
+            # Determine effective payload datatype
             payload_data_type = data_type
             payload_data = observable
             supported_types = self._get_responder_supported_types(responder_id, api)
@@ -203,7 +203,7 @@ class ResponderManager:
                         responder_id
                     )
 
-            # Normalizza message
+            # Normalize message
             if message is not None:
                 message = message.strip()
                 if message == '':
@@ -212,7 +212,7 @@ class ResponderManager:
             if not message:
                 message = responder_cfg.RESPONDER_DEFAULT_MESSAGE
 
-            # Prepara payload
+            # Build payload
             payload = {
                 'data': payload_data,
                 'dataType': payload_data_type,
@@ -220,16 +220,16 @@ class ResponderManager:
                 'pap': pap
             }
 
-            # Inserisci message sia top-level che nel case_artifact
+            # Add message to both top-level and case_artifact
             payload['message'] = message
             if payload_data_type == 'thehive:case_artifact' and isinstance(payload_data, dict):
                 payload_data['message'] = message
             
-            # Esegui responder
-            logger.info(f"Esecuzione responder {responder_id} su {data_type}:{observable}")
+            # Execute responder
+            logger.info(f"Executing responder {responder_id} on {data_type}:{observable}")
             job = api.responders.run_by_id(responder_id, payload)
             
-            # Crea oggetto action
+            # Build action object
             action = ResponderAction(
                 job_id=job.id,
                 observable=observable,
@@ -241,14 +241,14 @@ class ResponderManager:
                 payload_data=payload_data
             )
             
-            # Aggiungi allo storico
+            # Add to history
             self._action_history.append(action)
             
-            logger.info(f"Responder job avviato: {job.id}")
+            logger.info(f"Responder job started: {job.id}")
             return action
             
         except Exception as e:
-            logger.error(f"Errore esecuzione responder: {str(e)}")
+            logger.error(f"Error executing responder: {str(e)}")
             raise
     
     def run_responder_bulk(self,
@@ -261,24 +261,24 @@ class ResponderManager:
                           pap: int = 2,
                           message: str = None) -> List[ResponderAction]:
         """
-        Esegue responder multipli su osservabili multipli.
+        Execute multiple responders on multiple observables.
         
         Args:
-            observables: Lista di dict {data, dataType}
-            responder_ids: Lista di responder ID da eseguire
-            username: Username Cortex (opzionale se api_key)
-            password: Password Cortex (opzionale se api_key)
-            api_key: API Key Cortex (metodo preferito)
+            observables: List of dicts {data, dataType}
+            responder_ids: List of responder IDs to execute
+            username: Cortex username (optional if api_key)
+            password: Cortex password (optional if api_key)
+            api_key: Cortex API Key (preferred)
             tlp: Traffic Light Protocol
             pap: Permissible Actions Protocol
         
         Returns:
-            Lista di ResponderAction eseguite
+            List of executed ResponderAction
         """
         actions = []
         
-        # Nota: l'API Cortex dei responder accetta un solo observable per richiesta.
-        # Il "bulk" qui è quindi un loop di chiamate singole (una per observable x responder).
+        # Note: Cortex responder API accepts one observable per request.
+        # "Bulk" here is a loop of single calls (one per observable x responder).
         logger.info(f"Bulk execution: {len(observables)} observables x {len(responder_ids)} responders")
         
         for obs in observables:
@@ -297,15 +297,15 @@ class ResponderManager:
                     )
                     actions.append(action)
                     
-                    # Piccolo delay per evitare overload
+                    # Small delay to avoid overload
                     time.sleep(0.5)
                     
                 except Exception as e:
-                    logger.error(f"Errore bulk execution per {obs['data']}: {str(e)}")
-                    # Continua con i successivi
+                    logger.error(f"Bulk execution error for {obs['data']}: {str(e)}")
+                    # Continue with the next ones
                     continue
         
-        logger.info(f"Bulk execution completata: {len(actions)}/{len(observables)*len(responder_ids)} successo")
+        logger.info(f"Bulk execution completed: {len(actions)}/{len(observables)*len(responder_ids)} success")
         return actions
     
     def get_responder_job_status(self, job_id: str,
@@ -313,18 +313,18 @@ class ResponderManager:
                                  password: str = None,
                                  api_key: str = None) -> Dict[str, Any]:
         """
-        Recupera lo stato di un job responder.
+        Retrieve the status of a responder job.
         
         Args:
-            job_id: ID del job
-            username: Username per Basic Auth
-            password: Password per Basic Auth
+            job_id: Job ID
+            username: Username for Basic Auth
+            password: Password for Basic Auth
         
         Returns:
-            Dict con status e report del job
+            Dict with job status and report
         """
         try:
-            # Usa API autenticata
+            # Use authenticated API
             if api_key:
                 api = self.get_authenticated_api(api_key=api_key)
             elif username and password:
@@ -332,9 +332,9 @@ class ResponderManager:
             elif self.api:
                 api = self.api
             else:
-                raise ValueError("Nessuna autenticazione fornita")
+                raise ValueError("No authentication provided")
             
-            # Recupera job
+            # Retrieve job
             job = api.jobs.get_by_id(job_id)
             
             result = {
@@ -347,13 +347,13 @@ class ResponderManager:
                 'endDate': getattr(job, 'endDate', None)
             }
             
-            # Se completato, aggiungi report
+            # If completed, add report
             if job.status in ('Success', 'Failure'):
                 try:
                     report = api.jobs.get_report(job_id)
                     result['report'] = report.report if hasattr(report, 'report') else {}
                     
-                    # Aggiorna action history
+                    # Update action history
                     for action in self._action_history:
                         if action.job_id == job_id:
                             action.status = job.status
@@ -362,12 +362,12 @@ class ResponderManager:
                             break
                             
                 except Exception as e:
-                    logger.warning(f"Impossibile recuperare report per job {job_id}: {str(e)}")
+                    logger.warning(f"Unable to retrieve report for job {job_id}: {str(e)}")
             
             return result
             
         except Exception as e:
-            logger.error(f"Errore recupero status job {job_id}: {str(e)}")
+            logger.error(f"Error retrieving job status {job_id}: {str(e)}")
             raise
     
     def poll_responder_job(self, job_id: str,
@@ -377,49 +377,49 @@ class ResponderManager:
                           max_attempts: int = 30,
                           delay: int = 2) -> Dict[str, Any]:
         """
-        Polling di un job responder fino a completamento.
+        Poll a responder job until completion.
         
         Args:
-            job_id: ID del job
-            username: Username per Basic Auth
-            password: Password per Basic Auth
-            max_attempts: Numero massimo di tentativi
-            delay: Secondi tra i tentativi
+            job_id: Job ID
+            username: Username for Basic Auth
+            password: Password for Basic Auth
+            max_attempts: Maximum attempts
+            delay: Seconds between attempts
         
         Returns:
-            Dict con status finale e report
+            Dict with final status and report
         """
         for attempt in range(max_attempts):
             try:
                 status = self.get_responder_job_status(job_id, username, password, api_key)
                 
                 if status['status'] in ('Success', 'Failure'):
-                    logger.info(f"Job {job_id} completato: {status['status']}")
+                    logger.info(f"Job {job_id} completed: {status['status']}")
                     return status
                 
-                logger.debug(f"Job {job_id} in corso... ({attempt+1}/{max_attempts})")
+                logger.debug(f"Job {job_id} in progress... ({attempt+1}/{max_attempts})")
                 time.sleep(delay)
                 
             except Exception as e:
-                logger.error(f"Errore polling job {job_id}: {str(e)}")
+                logger.error(f"Error polling job {job_id}: {str(e)}")
                 raise
         
-        logger.warning(f"Job {job_id} timeout dopo {max_attempts} tentativi")
+        logger.warning(f"Job {job_id} timed out after {max_attempts} attempts")
         return {
             'id': job_id,
             'status': 'Timeout',
-            'error': f'Job non completato dopo {max_attempts * delay} secondi'
+            'error': f'Job not completed after {max_attempts * delay} seconds'
         }
     
     def get_action_history(self, limit: int = 100) -> List[Dict[str, Any]]:
         """
-        Recupera lo storico delle azioni responder eseguite.
+        Retrieve the history of executed responder actions.
         
         Args:
-            limit: Numero massimo di azioni da ritornare
+            limit: Max number of actions to return
         
         Returns:
-            Lista di azioni in formato dict
+            List of actions as dicts
         """
         history = []
         for action in self._action_history[-limit:]:
@@ -439,24 +439,24 @@ class ResponderManager:
     
     def validate_credentials(self, username: str, password: str) -> bool:
         """
-        Valida le credenziali Cortex tentando una chiamata API.
+        Validate Cortex credentials by attempting an API call.
         
         Args:
             username: Username
             password: Password
         
         Returns:
-            True se credenziali valide, False altrimenti
+            True if credentials are valid, otherwise False
         """
         try:
             api = self.get_authenticated_api(username, password)
-            # Tenta una chiamata leggera per validare
+            # Attempt a lightweight call to validate
             api.responders.find_all({}, range='0-1')
-            logger.info(f"Credenziali valide per utente: {username}")
+            logger.info(f"Valid credentials for user: {username}")
             return True
             
         except Exception as e:
-            logger.warning(f"Credenziali non valide per {username}: {str(e)}")
+            logger.warning(f"Invalid credentials for {username}: {str(e)}")
             return False
     
     def get_responders_for_observable(self, data_type: str,
@@ -464,20 +464,20 @@ class ResponderManager:
                                      password: str = None,
                                      api_key: str = None) -> List[Dict]:
         """
-        Recupera i responder compatibili con un tipo di osservabile.
+        Retrieve responders compatible with an observable type.
         
         Args:
-            data_type: Tipo di dato
-            username: Username per Basic Auth
-            password: Password per Basic Auth
+            data_type: Data type
+            username: Username for Basic Auth
+            password: Password for Basic Auth
         
         Returns:
-            Lista di responder compatibili
+            List of compatible responders
         """
         try:
             all_responders = self.list_responders(username=username, password=password, api_key=api_key)
             
-            # Filtra per dataType
+            # Filter by dataType
             compatible = []
             for resp in all_responders:
                 data_types = resp.get('dataTypeList', [])
@@ -488,15 +488,15 @@ class ResponderManager:
                     resp_with_hint['payloadDataType'] = 'thehive:case_artifact'
                     compatible.append(resp_with_hint)
             
-            logger.info(f"Trovati {len(compatible)} responder per tipo {data_type}")
+            logger.info(f"Found {len(compatible)} responders for type {data_type}")
             return compatible
             
         except Exception as e:
-            logger.error(f"Errore recupero responder per {data_type}: {str(e)}")
+            logger.error(f"Error retrieving responders for {data_type}: {str(e)}")
             raise
 
     def _get_responder_supported_types(self, responder_id: str, api: Api) -> List[str]:
-        """Recupera i dataType supportati da un responder, usando cache se possibile."""
+        """Retrieve responder-supported data types, using cache when possible."""
         cached = self._responder_cache.get(responder_id)
         if cached is not None:
             return cached.get('dataTypeList', [])
@@ -518,7 +518,7 @@ class ResponderManager:
             cached = self._responder_cache.get(responder_id)
             return cached.get('dataTypeList', []) if cached else []
         except Exception as e:
-            logger.warning(f"Impossibile recuperare dataTypeList per responder {responder_id}: {str(e)}")
+            logger.warning(f"Unable to retrieve dataTypeList for responder {responder_id}: {str(e)}")
             return []
 
     def _get_responder_name(self, responder_id: str, api: Api) -> Optional[str]:

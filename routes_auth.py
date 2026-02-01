@@ -4,7 +4,7 @@
 # ============================================================================
 
 """
-Route Flask per gestione autenticazione:
+Flask routes for authentication management:
 - Login (username/password → API Key)
 - Logout
 - Status check
@@ -19,19 +19,19 @@ logger = logging.getLogger(__name__)
 
 def register_auth_routes(app):
     """
-    Registra le route di autenticazione nell'app Flask.
+    Register authentication routes in the Flask app.
     
-    Chiamare da fuco.py dopo l'inizializzazione di auth_manager.
+    Call from fuco.py after initializing auth_manager.
     """
     if app.config.get('AUTH_ROUTES_REGISTERED'):
-        logger.info("Route di autenticazione già registrate, skip")
+        logger.info("Authentication routes already registered, skipping")
         return
     app.config['AUTH_ROUTES_REGISTERED'] = True
     
     @app.route('/api/auth/login', methods=['POST'])
     def auth_login():
         """
-        Login utente e ottieni API Key da Cortex.
+        Log in a user and obtain an API Key from Cortex.
         
         Request Body:
         {
@@ -64,28 +64,28 @@ def register_auth_routes(app):
             username = data.get('username', '').strip()
             password = data.get('password', '')
             
-            # Validazione input
+            # Input validation
             if not username or not password:
                 return jsonify({
                     'success': False,
                     'error': 'Username and password are required'
                 }), 400
             
-            # Tenta login
+            # Attempt login
             auth_manager = current_app.auth_manager
             result = auth_manager.login(username, password)
             
             if result['success']:
-                logger.info(f"Login successful per {username}")
+                logger.info(f"Login successful for {username}")
                 
-                # NON inviare API Key al client!
+                # Do NOT send API Key to the client!
                 return jsonify({
                     'success': True,
                     'username': result['username'],
                     'message': 'Login successful'
                 }), 200
             else:
-                logger.warning(f"Login fallito per {username}: {result.get('error')}")
+                logger.warning(f"Login failed for {username}: {result.get('error')}")
                 
                 return jsonify({
                     'success': False,
@@ -93,7 +93,7 @@ def register_auth_routes(app):
                 }), 401
         
         except Exception as e:
-            logger.error(f"Errore in auth_login: {str(e)}", exc_info=True)
+            logger.error(f"Error in auth_login: {str(e)}", exc_info=True)
             return jsonify({
                 'success': False,
                 'error': 'Internal server error'
@@ -103,7 +103,7 @@ def register_auth_routes(app):
     @app.route('/api/auth/logout', methods=['POST'])
     def auth_logout():
         """
-        Logout utente e invalida sessione.
+        Log out the user and invalidate the session.
         
         Response:
         {
@@ -117,7 +117,7 @@ def register_auth_routes(app):
             
             auth_manager.logout()
             
-            logger.info(f"Logout completato per {username}")
+            logger.info(f"Logout completed for {username}")
             
             return jsonify({
                 'success': True,
@@ -125,7 +125,7 @@ def register_auth_routes(app):
             }), 200
         
         except Exception as e:
-            logger.error(f"Errore in auth_logout: {str(e)}", exc_info=True)
+            logger.error(f"Error in auth_logout: {str(e)}", exc_info=True)
             return jsonify({
                 'success': False,
                 'error': 'Internal server error'
@@ -135,7 +135,7 @@ def register_auth_routes(app):
     @app.route('/api/auth/status', methods=['GET'])
     def auth_status():
         """
-        Verifica status autenticazione corrente.
+        Check current authentication status.
         
         Response:
         {
@@ -151,7 +151,7 @@ def register_auth_routes(app):
             return jsonify(info), 200
         
         except Exception as e:
-            logger.error(f"Errore in auth_status: {str(e)}", exc_info=True)
+            logger.error(f"Error in auth_status: {str(e)}", exc_info=True)
             return jsonify({
                 'authenticated': False,
                 'error': 'Internal server error'
@@ -161,8 +161,8 @@ def register_auth_routes(app):
     @app.route('/api/auth/refresh', methods=['POST'])
     def auth_refresh():
         """
-        Refresh della sessione per estendere timeout.
-        Chiamare quando l'utente fa un'azione importante.
+        Refresh the session to extend timeout.
+        Call when the user performs an important action.
         
         Response:
         {
@@ -187,7 +187,7 @@ def register_auth_routes(app):
             }), 200
         
         except Exception as e:
-            logger.error(f"Errore in auth_refresh: {str(e)}", exc_info=True)
+            logger.error(f"Error in auth_refresh: {str(e)}", exc_info=True)
             return jsonify({
                 'success': False,
                 'error': 'Internal server error'
@@ -197,8 +197,8 @@ def register_auth_routes(app):
     @app.route('/api/auth/validate-key', methods=['POST'])
     def auth_validate_key():
         """
-        Valida un API Key facendo test call a Cortex.
-        Utile per debug o verifica manuale.
+        Validate an API Key by performing a test call to Cortex.
+        Useful for debugging or manual verification.
         
         Request Body:
         {
@@ -227,11 +227,11 @@ def register_auth_routes(app):
             }), 200
         
         except Exception as e:
-            logger.error(f"Errore in auth_validate_key: {str(e)}", exc_info=True)
+            logger.error(f"Error in auth_validate_key: {str(e)}", exc_info=True)
             return jsonify({
                 'valid': False,
                 'error': 'Internal server error'
             }), 500
     
     
-    logger.info("Route di autenticazione registrate con successo")
+    logger.info("Authentication routes registered successfully")

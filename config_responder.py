@@ -1,28 +1,28 @@
 # ============================================================================
-# config_responder.py - Configurazione Responder
+# config_responder.py - Responder Configuration
 # ============================================================================
 
 """
-Configurazioni per il sistema Responder
-Aggiungere a config.py oppure usare come file separato
+Configuration for the Responder system.
+Add to config.py or use as a separate file.
 """
 
 # ============ RESPONDER CONFIGURATION ============
 
-# Abilita/disabilita funzionalità responder
+# Enable/disable responder functionality
 RESPONDER_ENABLED = True
 
-# Timeout esecuzione responder (secondi)
+# Responder execution timeout (seconds)
 RESPONDER_TIMEOUT = 60
 
 # Polling configuration
 RESPONDER_MAX_POLL_ATTEMPTS = 30  # 30 x 2s = 60s max
-RESPONDER_POLL_DELAY = 2  # secondi tra tentativi
+RESPONDER_POLL_DELAY = 2  # seconds between attempts
 
 # ============ RESPONDER PRESETS ============
 
-# Associazioni tipo dato → responder suggeriti
-# Personalizza in base ai tuoi responder configurati su Cortex
+# Data type → suggested responder mapping
+# Customize based on your responders configured on Cortex
 RESPONDER_PRESETS = {
     'ip': [
         # Esempi - sostituisci con i tuoi responder ID
@@ -50,44 +50,44 @@ RESPONDER_PRESETS = {
     ]
 }
 
-# TLP/PAP di default per responder (se non specificato)
+# Default TLP/PAP for responders (if not specified)
 RESPONDER_DEFAULT_TLP = 2  # AMBER
 RESPONDER_DEFAULT_PAP = 2  # AMBER
 
-# Messaggio di default per responder (usato se message è vuoto)
+# Default responder message (used if message is empty)
 RESPONDER_DEFAULT_MESSAGE = "FUCO responder action"
 
 # ============ BULK OPERATIONS ============
 
-# Limite massimo osservabili per operazione bulk
+# Max observables per bulk operation
 MAX_BULK_OBSERVABLES = 100
 
-# Limite massimo responder per operazione bulk
+# Max responders per bulk operation
 MAX_BULK_RESPONDERS = 10
 
-# Delay tra esecuzioni bulk (secondi) per evitare overload
+# Delay between bulk executions (seconds) to avoid overload
 BULK_EXECUTION_DELAY = 0.5
 
 # ============ UI CONFIGURATION ============
 
-# Mostra pulsanti responder inline nei report
+# Show inline responder buttons in reports
 SHOW_INLINE_RESPONDER_BUTTONS = True
 
-# Responder da mostrare nei quick actions (pulsanti inline)
-# Se None, mostra tutti i responder compatibili
+# Responders to show in quick actions (inline buttons)
+# If None, show all compatible responders
 QUICK_ACTION_RESPONDERS = None  # Es: ['Firewall_Block', 'SIEM_Alert']
 
-# Richiedi conferma prima dell'esecuzione
+# Require confirmation before execution
 REQUIRE_CONFIRMATION = True
 
 # ============ SECURITY ============
 
-# IP whitelist per API responder (opzionale)
-# Se None, usa la whitelist generale di config.py
+# IP whitelist for responder APIs (optional)
+# If None, uses the general whitelist from config.py
 RESPONDER_ALLOWED_IPS = None  # Es: ['127.0.0.1', '192.168.1.0/24']
 
-# Logging delle azioni responder
+# Log responder actions
 LOG_RESPONDER_ACTIONS = True
 
-# File log dedicato per responder (opzionale)
+# Dedicated log file for responder (optional)
 RESPONDER_LOG_FILE = None  # Es: '/var/log/fuco/responder.log'

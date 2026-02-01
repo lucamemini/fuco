@@ -50,7 +50,7 @@
     });
   }
 
-// Modifica la funzione getAnalysis esistente
+// Update the existing getAnalysis function
 function getAnalysis(JobId) {
     const Http = new XMLHttpRequest();
   const url='/getAnalysis?JobId='+JobId;
@@ -64,7 +64,7 @@ function getAnalysis(JobId) {
                 document.getElementById(JobId).innerHTML = Http.responseText;
               namespaceReportTabs(document.getElementById(JobId), JobId);
                 
-                // ✅ NUOVO: Aggiungi pulsanti responder
+                // ✅ NEW: Add responder buttons
                 addResponderButtonsToReport(JobId);
             }
             getAnalisys_short(JobId);
@@ -72,17 +72,17 @@ function getAnalysis(JobId) {
     }
 }
 
-// ✅ NUOVO: Funzione per aggiungere responder buttons
+// ✅ NEW: Helper to add responder buttons
 function addResponderButtonsToReport(jobId) {
     const reportDiv = document.getElementById(jobId);
     if (!reportDiv) return;
     
-    // Crea container
+    // Create container
     const responderContainer = document.createElement('div');
     responderContainer.id = 'responder-actions-' + jobId;
     reportDiv.appendChild(responderContainer);
     
-    // Aggiungi pulsanti
+    // Add buttons
     addResponderButtons(
         '{{ data.fuco.question }}',
         '{{ data.fuco.datatype }}',
@@ -90,7 +90,7 @@ function addResponderButtonsToReport(jobId) {
     );
 }
 
-// Nella funzione onload, aggiungi:
+// In the onload function, add:
 function onload() {
     {% for u in data.analysis %}
         getAnalysis("{{ u.id }}");
@@ -255,8 +255,8 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>    
 
     <div class="alert alert-info" id="progress-info">
-      <strong>Sottomissione analisi in corso...</strong> 
-      <span id="status-text">0 / {{ data.analyzers|length }} job sottomessi</span>
+      <strong>Submitting analyses...</strong> 
+      <span id="status-text">0 / {{ data.analyzers|length }} jobs submitted</span>
     </div>
 <div class="card mb-3">
   <div class="card-body">
@@ -270,7 +270,7 @@ document.addEventListener('DOMContentLoaded', function() {
 </div>
     
     <div class="accordion" id="accordion_result">
-      <!-- Gli accordion verranno inseriti qui ordinati alfabeticamente -->
+      <!-- Accordions will be inserted here in alphabetical order -->
     </div>
   </div>
 </main>
@@ -291,7 +291,7 @@ const datatype = "{{ data.fuco.datatype }}";
 const tlp = {{ data.fuco.tlp if data.fuco.tlp is defined else config.DEFAULT_TLP }};
 const pap = {{ data.fuco.pap if data.fuco.pap is defined else config.DEFAULT_PAP }};
 
-// ORDINA GLI ANALYZER ALFABETICAMENTE
+// Sort analyzers alphabetically
 analyzers.sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
 
 let submittedCount = 0;
@@ -300,7 +300,7 @@ const totalCount = analyzers.length;
 const jobsMap = {}; // analyzer -> job_id
 const loadedTaxonomies = new Set();
 
-// Genera l'HTML per un singolo accordion item
+// Build HTML for a single accordion item
 function createAccordionItem(analyzer) {
     const analyzerId = analyzer.replace(/\./g, '_');
     return `
@@ -320,7 +320,7 @@ function createAccordionItem(analyzer) {
             <div class="accordion-body" id="content_${analyzerId}">
                 <div class="text-center">
                     <div class="spinner-border text-warning" role="status"></div>
-                    <p class="mt-2">In attesa di sottomissione...</p>
+                    <p class="mt-2">Waiting for submission...</p>
                 </div>
             </div>
         </div>
@@ -328,27 +328,27 @@ function createAccordionItem(analyzer) {
     `;
 }
 
-// Aggiorna il progresso
+// Update progress
 function updateProgress() {
     if (submittedCount < totalCount) {
-        $('#status-text').text(`${submittedCount} / ${totalCount} job sottomessi`);
+        $('#status-text').text(`${submittedCount} / ${totalCount} jobs submitted`);
     } else if (completedCount < totalCount) {
-        $('#progress-info strong').text('Analisi in corso...');
-        $('#status-text').text(`${completedCount} / ${totalCount} completate`);
+        $('#progress-info strong').text('Analysis in progress...');
+        $('#status-text').text(`${completedCount} / ${totalCount} completed`);
     } else {
         $('#progress-info').removeClass('alert-info').addClass('alert-success');
-        $('#progress-info strong').text('Tutte le analisi completate!');
+        $('#progress-info strong').text('All analyses completed!');
         $('#status-text').text('');
         checkExportReady();
     }
 }
 
-// Sottometti un singolo job
+// Submit a single job
 async function submitJob(analyzer) {
     const analyzerId = analyzer.replace(/\./g, '_');
     
     try {
-        console.log(`Sottomissione job per ${analyzer}...`);
+        console.log(`Submitting job for ${analyzer}...`);
         
         const response = await fetch('/api/submit_job', {
           method: 'POST',
@@ -360,15 +360,15 @@ async function submitJob(analyzer) {
                 analyzer: analyzer,
                 datatype: datatype,
                 data: observable,
-                tlp: tlp,  // NUOVO: Passa TLP
-                pap: pap   // NUOVO: Passa PAP
+                tlp: tlp,  // NEW: Pass TLP
+                pap: pap   // NEW: Pass PAP
             })
         });
         
         const result = await response.json();
         
         if (result.status === 'success') {
-            console.log(`Job ${result.job_id} sottomesso per ${analyzer}`);
+            console.log(`Job ${result.job_id} submitted for ${analyzer}`);
             jobsMap[analyzer] = result.job_id;
             
             submittedCount++;
@@ -378,18 +378,18 @@ async function submitJob(analyzer) {
             $(`#content_${analyzerId}`).html(`
                 <div class="text-center">
                     <div class="spinner-border text-primary" role="status"></div>
-                    <p class="mt-2">Analisi in corso... (Job ID: ${result.job_id})</p>
+                    <p class="mt-2">Analysis in progress... (Job ID: ${result.job_id})</p>
                 </div>
             `);
             
             pollJob(analyzer, result.job_id);
             
         } else {
-            throw new Error(result.error || 'Errore sconosciuto');
+          throw new Error(result.error || 'Unknown error');
         }
         
     } catch (error) {
-        console.error(`Errore sottomissione ${analyzer}:`, error);
+        console.error(`Submission error for ${analyzer}:`, error);
         submittedCount++;
         completedCount++;
         updateProgress();
@@ -398,13 +398,13 @@ async function submitJob(analyzer) {
         $(`#spinner_${analyzerId}`).hide();
         $(`#content_${analyzerId}`).html(`
             <div class="alert alert-danger">
-                Errore nella sottomissione: ${error.message}
+                Submission error: ${error.message}
             </div>
         `);
     }
 }
 
-// Polling di un job specifico
+// Poll a specific job
 function pollJob(analyzer, jobId) {
     const analyzerId = analyzer.replace(/\./g, '_');
     let attempts = 0;
@@ -415,7 +415,7 @@ function pollJob(analyzer, jobId) {
         
         if (attempts > maxAttempts) {
             clearInterval(pollInterval);
-            markJobError(analyzerId, 'Timeout: analisi troppo lunga');
+            markJobError(analyzerId, 'Timeout: analysis is taking too long');
             return;
         }
         
@@ -425,25 +425,25 @@ function pollJob(analyzer, jobId) {
             
             if (result.status === 'success') {
                 clearInterval(pollInterval);
-                console.log(`Job ${jobId} completato con successo`);
+                console.log(`Job ${jobId} completed successfully`);
                 
                 await loadJobTaxonomies(jobId);
                 await loadJobReport(analyzerId, jobId);
                 
             } else if (result.status === 'failed' || result.status === 'error') {
                 clearInterval(pollInterval);
-                markJobError(analyzerId, result.report_status || result.error || 'Errore');
+                markJobError(analyzerId, result.report_status || result.error || 'Error');
             }
             
         } catch (error) {
             clearInterval(pollInterval);
-            markJobError(analyzerId, `Errore polling: ${error.message}`);
+            markJobError(analyzerId, `Polling error: ${error.message}`);
         }
         
     }, 2000);
 }
 
-// Carica il report completo di un job
+// Load the full report for a job
 async function loadJobReport(analyzerId, jobId) {
     try {
         const response = await fetch(`/getAnalysis?JobId=${jobId}`);
@@ -458,16 +458,16 @@ async function loadJobReport(analyzerId, jobId) {
         updateProgress();
         
     } catch (error) {
-        console.error(`Errore caricamento report ${jobId}:`, error);
-        markJobError(analyzerId, 'Errore nel caricamento del report');
+        console.error(`Error loading report ${jobId}:`, error);
+        markJobError(analyzerId, 'Error loading the report');
     }
 }
 
-// Carica le taxonomies di un job
+// Load job taxonomies
 async function loadJobTaxonomies(jobId) {
     try {
         if (loadedTaxonomies.has(jobId)) {
-            console.log(`Taxonomies per ${jobId} già caricate, skip`);
+            console.log(`Taxonomies for ${jobId} already loaded, skipping`);
             return;
         }
         
@@ -478,16 +478,16 @@ async function loadJobTaxonomies(jobId) {
         
         if (html && html.trim() !== '') {
             $('#tagCloud').append(html);
-            console.log(`Taxonomies caricate per ${jobId}`);
+            console.log(`Taxonomies loaded for ${jobId}`);
         }
         
     } catch (error) {
-        console.error(`Errore caricamento taxonomies ${jobId}:`, error);
+        console.error(`Error loading taxonomies ${jobId}:`, error);
         loadedTaxonomies.delete(jobId);
     }
 }
 
-// Marca un job come errore
+// Mark a job as error
 function markJobError(analyzerId, errorMsg) {
     $(`#item_${analyzerId}`).addClass('job-error');
     $(`#spinner_${analyzerId}`).hide();
@@ -499,24 +499,24 @@ function markJobError(analyzerId, errorMsg) {
     updateProgress();
 }
 
-// Abilita il pulsante export
+// Enable the export button
 function checkExportReady() {
     if (completedCount === totalCount) {
         $('#export-pdf-btn').prop('disabled', false);
     }
 }
 
-// Inizializzazione
+// Initialization
 $(document).ready(function() {
-    console.log(`Rendering di ${totalCount} analyzer ordinati alfabeticamente...`);
+    console.log(`Rendering ${totalCount} analyzers in alphabetical order...`);
     
-    // Genera gli accordion ordinati
+    // Build ordered accordions
     const accordionHtml = analyzers.map(analyzer => createAccordionItem(analyzer)).join('');
     $('#accordion_result').html(accordionHtml);
     
-    console.log(`Inizio sottomissione di ${totalCount} job...`);
+    console.log(`Starting submission of ${totalCount} jobs...`);
     
-    // Sottometti tutti i job contemporaneamente
+    // Submit all jobs in parallel
     analyzers.forEach(analyzer => {
         submitJob(analyzer);
     });
@@ -566,11 +566,11 @@ function exportToPDF() {
         exportBtn.prop('disabled', false);
         exportBtn.html('<i class="fas fa-file-pdf"></i> Export PDF');
         
-        alert('PDF generato con successo!');
+        alert('PDF generated successfully!');
     })
     .catch(error => {
-        console.error('Errore export PDF:', error);
-        alert('Errore nella generazione del PDF');
+        console.error('PDF export error:', error);
+        alert('Error generating the PDF');
         exportBtn.disabled = false;
         exportBtn.innerHTML = '<i class="fas fa-file-pdf"></i> Export PDF';
     });
