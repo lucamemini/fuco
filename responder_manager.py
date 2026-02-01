@@ -277,6 +277,8 @@ class ResponderManager:
         """
         actions = []
         
+        # Nota: l'API Cortex dei responder accetta un solo observable per richiesta.
+        # Il "bulk" qui è quindi un loop di chiamate singole (una per observable x responder).
         logger.info(f"Bulk execution: {len(observables)} observables x {len(responder_ids)} responders")
         
         for obs in observables:

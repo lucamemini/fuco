@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Bulk Responder Management - FUCO</title>
     
     <link href="/css/bootstrap.min.css" rel="stylesheet">
@@ -10,6 +11,12 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/css/all.min.css">
     <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
     <script src="/js/responder_actions.js"></script>
+    <script>
+        function getCsrfToken() {
+            const meta = document.querySelector('meta[name="csrf-token"]');
+            return meta ? meta.getAttribute('content') : '';
+        }
+    </script>
     
     <style>
         body {
@@ -144,6 +151,7 @@
                     </div>
                     <div class="card-body">
                         <form id="singleObservableForm">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="form-group">
@@ -212,7 +220,7 @@
             <div class="col-lg-4">
                 <div class="card section-card">
                     <div class="card-header bg-info text-white">
-                        <h5><i class="fas fa-list"></i> Observable Queue (<span id="queueCount">0</span>)</h5>
+                        <h5><i class="fas fa-list"></i> Observable Queue (<span id="queueCount">0</span>/<span id="queueLimit">{{ max_bulk_observables }}</span>)</h5>
                     </div>
                     <div class="card-body">
                         <div id="observableQueue" class="border rounded p-3" style="max-height: 520px; overflow-y: auto;">
@@ -235,6 +243,7 @@
             </div>
             <div class="card-body">
                 <form id="bulkExecuteForm">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
                     <!-- Responder Selection -->
                     <div class="form-group">
                         <label>Select Responders:</label>
@@ -318,6 +327,7 @@
     <script>
         // Observable Queue Management
         let observableQueue = [];
+        const maxQueueSize = {{ max_bulk_observables }};
 
         // Add single observable
         document.getElementById('singleObservableForm').addEventListener('submit', function(e) {
@@ -385,6 +395,7 @@
         function parseCSV(content) {
             const lines = content.split('\n');
             let added = 0;
+            let limitReached = false;
             
             lines.forEach(line => {
                 line = line.trim();
@@ -396,8 +407,12 @@
                     const dataType = parts[1].trim();
                     
                     if (observable && dataType) {
-                        addToQueue({ data: observable, dataType: dataType });
-                        added++;
+                        const ok = addToQueue({ data: observable, dataType: dataType });
+                        if (ok) {
+                            added++;
+                        } else if (!limitReached) {
+                            limitReached = true;
+                        }
                     }
                 }
             });
@@ -405,9 +420,15 @@
             if (added > 0) {
                 alert(`Added ${added} observables to queue`);
             }
+            if (limitReached) {
+                alert(`Queue limit reached (${maxQueueSize}). Extra observables were skipped.`);
+            }
         }
 
         function addToQueue(item) {
+            if (observableQueue.length >= maxQueueSize) {
+                return false;
+            }
             // Check duplicates
             const exists = observableQueue.some(o => 
                 o.data === item.data && o.dataType === item.dataType
@@ -416,7 +437,9 @@
             if (!exists) {
                 observableQueue.push(item);
                 updateQueueDisplay();
+                return true;
             }
+            return false;
         }
 
         function removeFromQueue(index) {
@@ -516,7 +539,10 @@
             try {
                 const response = await fetch('/api/responder/bulk', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCsrfToken()
+                    },
                     body: JSON.stringify(payload)
                 });
                 

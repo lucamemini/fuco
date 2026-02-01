@@ -1,12 +1,15 @@
 Flask
 Flask-RESTful
 Flask-Session
+Flask-WTF
+Flask-Limiter
 Jinja2
 cortex4py
 flask_apscheduler
 wheel
-python-magic-bin; platform_system == "Windows"
-python-magic; platform_system != "Windows"
+python-magic-bin==0.4.14; platform_system == "Windows"
+python-magic==0.4.27; platform_system != "Windows"
 pydantic
 weasyprint
 redis; extra == "redis"
+bleach

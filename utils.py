@@ -11,6 +11,8 @@ import os
 from typing import Optional
 
 from jinja2 import Environment, FileSystemLoader
+import bleach
+from bleach.css_sanitizer import CSSSanitizer
 
 import cortexconfig as cfg
 from cortex4py.api import Api
@@ -26,6 +28,44 @@ logger = logging.getLogger(__name__)
 
 # API Cortex
 cortex_api = Api(cfg.cortex["host"], cfg.cortex["apikey"])
+
+# ============ HTML Sanitization ============
+
+_ALLOWED_TAGS = [
+    'a', 'abbr', 'b', 'blockquote', 'br', 'code', 'div', 'dl', 'dt', 'dd',
+    'em', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'hr', 'i', 'img', 'kbd',
+    'li', 'ol', 'p', 'pre', 'small', 'span', 'strong', 'sub', 'sup',
+    'table', 'thead', 'tbody', 'tfoot', 'tr', 'td', 'th', 'ul'
+]
+
+_ALLOWED_ATTRS = {
+    '*': ['class', 'id', 'title', 'aria-*', 'role', 'data-bs-toggle', 'data-bs-target', 'data-toggle', 'data-target'],
+    'a': ['href', 'target', 'rel', 'name', 'data-bs-toggle', 'data-bs-target', 'data-toggle', 'data-target'],
+    'img': ['src', 'alt', 'title', 'loading'],
+    'td': ['colspan', 'rowspan'],
+    'th': ['colspan', 'rowspan'],
+}
+
+_CSS_SANITIZER = CSSSanitizer(allowed_css_properties=[
+    'color', 'background-color', 'font-weight', 'font-style', 'text-decoration',
+    'text-align', 'white-space', 'width', 'height', 'max-width', 'max-height',
+    'border', 'border-color', 'border-width', 'border-style', 'margin', 'padding'
+])
+
+
+def sanitize_html(html: str) -> str:
+    """Sanitize HTML output to mitigate XSS risks."""
+    if html is None:
+        return ''
+    if not isinstance(html, str):
+        html = str(html)
+    return bleach.clean(
+        html,
+        tags=_ALLOWED_TAGS,
+        attributes=_ALLOWED_ATTRS,
+        strip=True,
+        css_sanitizer=_CSS_SANITIZER
+    )
 
 
 class InputValidator:
@@ -432,6 +472,7 @@ def render_short_template(taxonomies: list, analyzer_name: str, app_root_path: s
 
         # Render UNICO (niente concatenazioni manuali)
         html = template.render(taxonomies=normalized_taxonomies)
+        html = sanitize_html(html)
 
         logger.debug("Rendering short template completato")
         return html

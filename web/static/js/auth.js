@@ -3,6 +3,11 @@
  * Includes login modal HTML, CSS, and all auth functions
  */
 
+function getCsrfToken() {
+    const meta = document.querySelector('meta[name="csrf-token"]');
+    return meta ? meta.getAttribute('content') : '';
+}
+
 // Create login modal HTML once when script loads
 document.addEventListener('DOMContentLoaded', function() {
     // Inject modal only if it doesn't already exist
@@ -182,7 +187,10 @@ async function submitLogin() {
     try {
         const response = await fetch('/api/auth/login', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCsrfToken()
+            },
             body: JSON.stringify({ username, password })
         });
         
@@ -205,7 +213,10 @@ async function handleLogout() {
     if (!confirm('Logout?')) return;
     
     try {
-        await fetch('/api/auth/logout', { method: 'POST' });
+        await fetch('/api/auth/logout', {
+            method: 'POST',
+            headers: { 'X-CSRFToken': getCsrfToken() }
+        });
         showLoggedOut();
         updateAuthState(false, null);
         location.reload();

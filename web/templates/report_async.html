@@ -3,6 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>FUCO Result :: {{ data.fuco.datatype }} - {{ data.fuco.question }}</title>
     <link href="/css/bootstrap.min.css" rel="stylesheet">
     <link href="/css/main.css" rel="stylesheet">
@@ -10,10 +11,49 @@
     <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
     <script src="{{ url_for('static', filename='js/responder_actions.js') }}"></script>
     <script>
-// Modifica la funzione getAnalisys esistente
-function getAnalisys(JobId) {
+  function getCsrfToken() {
+    const meta = document.querySelector('meta[name="csrf-token"]');
+    return meta ? meta.getAttribute('content') : '';
+  }
+
+  function namespaceReportTabs(container, suffix) {
+    if (!container || !suffix) return;
+
+    const tabLinks = container.querySelectorAll('a[data-bs-toggle="tab"], a[data-toggle="tab"]');
+    if (!tabLinks.length) return;
+
+    const getPane = (id) => {
+      if (window.CSS && CSS.escape) {
+        return container.querySelector(`#${CSS.escape(id)}`);
+      }
+      return container.querySelector(`[id="${id.replace(/"/g, '\\"')}"]`);
+    };
+
+    tabLinks.forEach((link, index) => {
+      const target = link.getAttribute('data-bs-target') || link.getAttribute('href');
+      if (!target || !target.startsWith('#')) return;
+
+      const baseId = target.slice(1);
+      const newId = `${baseId}-${suffix}`;
+      const linkId = link.id ? `${link.id}-${suffix}` : `tab-${baseId}-${suffix}-${index}`;
+
+      link.setAttribute('data-bs-target', `#${newId}`);
+      link.setAttribute('href', `#${newId}`);
+      link.setAttribute('id', linkId);
+      link.setAttribute('aria-controls', newId);
+
+      const pane = getPane(baseId);
+      if (pane) {
+        pane.id = newId;
+        pane.setAttribute('aria-labelledby', linkId);
+      }
+    });
+  }
+
+// Modifica la funzione getAnalysis esistente
+function getAnalysis(JobId) {
     const Http = new XMLHttpRequest();
-    const url='/getAnalisys?JobId='+JobId;
+  const url='/getAnalysis?JobId='+JobId;
     Http.open("GET", url);
     Http.send();
 
@@ -22,6 +62,7 @@ function getAnalisys(JobId) {
             if (Http.status == 200) {
                 document.getElementById(JobId).innerHTML = "";
                 document.getElementById(JobId).innerHTML = Http.responseText;
+              namespaceReportTabs(document.getElementById(JobId), JobId);
                 
                 // ✅ NUOVO: Aggiungi pulsanti responder
                 addResponderButtonsToReport(JobId);
@@ -52,7 +93,7 @@ function addResponderButtonsToReport(jobId) {
 // Nella funzione onload, aggiungi:
 function onload() {
     {% for u in data.analysis %}
-        getAnalisys("{{ u.id }}");
+        getAnalysis("{{ u.id }}");
     {% endfor %}
 }
 
@@ -82,8 +123,6 @@ function onload() {
       .job-error { background-color: #f8d7da; }
       .job-submitting { background-color: #fff3cd; }
     </style>
-<!-- Carica responder JavaScript -->
-<script src="/js/responder_actions.js"></script>
 <style>
 body {
     padding-top: 56px;
@@ -312,8 +351,11 @@ async function submitJob(analyzer) {
         console.log(`Sottomissione job per ${analyzer}...`);
         
         const response = await fetch('/api/submit_job', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCsrfToken()
+          },
             body: JSON.stringify({
                 analyzer: analyzer,
                 datatype: datatype,
@@ -404,10 +446,11 @@ function pollJob(analyzer, jobId) {
 // Carica il report completo di un job
 async function loadJobReport(analyzerId, jobId) {
     try {
-        const response = await fetch(`/getAnalisys?JobId=${jobId}`);
+        const response = await fetch(`/getAnalysis?JobId=${jobId}`);
         const html = await response.text();
         
         $(`#content_${analyzerId}`).html(html);
+    namespaceReportTabs(document.getElementById(`content_${analyzerId}`), jobId);
         $(`#item_${analyzerId}`).addClass('job-completed');
         $(`#spinner_${analyzerId}`).hide();
         
@@ -499,8 +542,11 @@ function exportToPDF() {
     };
     
     fetch('/export/pdf', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': getCsrfToken()
+      },
         body: JSON.stringify(exportData)
     })
     .then(response => {

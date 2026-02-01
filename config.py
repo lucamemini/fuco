@@ -74,6 +74,28 @@ REDIS_SOCKET_CONNECT_TIMEOUT = 5
 
 # ============ Fine CACHE CONFIGURATION ============
 
+# ============ RATE LIMITS (Flask-Limiter) ============
+
+# Formato: "N/period" (es: "10/minute", "100/hour")
+# Per disattivare un limite: imposta a None o "" (stringa vuota)
+RATE_LIMIT_EXPORT_PDF = "10/minute"  # Suggested "5-10/minute"
+RATE_LIMIT_SUBMIT_JOB = None  # Suggested "120-180/minute"
+RATE_LIMIT_API_SHORT = None  # Suggested "60-120/minute"
+RATE_LIMIT_API_ANALYSIS = None  # Suggested "30-60/minute"
+RATE_LIMIT_GET_ANALYSIS = None  # Suggested "120-240/minute"
+RATE_LIMIT_GET_SHORT = None  # Suggested "240-360/minute"
+
+RATE_LIMIT_RESPONDER_LIST = "60/minute"  # Suggested "30-60/minute"
+RATE_LIMIT_RESPONDER_EXECUTE = "10/minute"  # Suggested "10-30/minute"
+RATE_LIMIT_RESPONDER_BULK = "None"  # Suggested "3-10/minute"
+RATE_LIMIT_RESPONDER_STATUS = "60/minute"  # Suggested "60-120/minute"
+RATE_LIMIT_RESPONDER_POLL = "60/minute"  # Suggested "120-240/minute"
+RATE_LIMIT_RESPONDER_HISTORY = "30/minute"  # Suggested "30-60/minute"
+RATE_LIMIT_RESPONDER_VALIDATE = "10/minute"  # Suggested "10-30/minute"
+RATE_LIMIT_RESPONDER_FOR_OBSERVABLE = "60/minute"  # Suggested "60-120/minute"
+
+# ============ Fine RATE LIMITS ============
+
 # Analyzer types
 ANALYZER_TYPES = ["domain", "ip", "url", "file", "hash", "mail", "mail_subject", "other"]
 

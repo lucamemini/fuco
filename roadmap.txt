@@ -10,6 +10,35 @@ FUCO è ben strutturato ma ha margini significativi di miglioramento in:
 
 ---
 
+## 🔐 2026-02 – Fase 1 Sicurezza (Piano + Stato)
+
+**Obiettivo**: rendere sicure le azioni sensibili con auth backend, CSRF, sanitizzazione HTML, rate limiting.
+
+### Piano
+1. Decorator auth backend su route sensibili
+2. CSRF protection per form + fetch JSON
+3. Sanitizzazione HTML output (report / short)
+4. Rate limiting minimo su endpoint critici
+
+### Stato (aggiornato)
+- ✅ Auth backend: decorator `login_required_json` applicato a responder + export PDF
+- ✅ CSRF: Flask‑WTF + header `X-CSRFToken` nei fetch + hidden input nei form
+- ✅ Sanitizzazione HTML: `bleach` su output report e short
+- ✅ Rate limiting: limiter attivo su `/getAnalysis`, `/getShort`, `/api/responder/*`, `/export/pdf`
+
+---
+
+## ✅ Già implementato (da roadmap non spuntata)
+
+- ✅ Cache manager unificato Memory/Redis (backend già pronto; Redis attivabile da config)
+- ✅ Cache API protette da IP whitelist (`/api/cache/stats`, `/api/cache/clear`)
+- ✅ Healthcheck endpoint `/health`
+- ✅ Session management + Auth manager (login/logout/status)
+- ✅ Validazione input backend (sanitize + datatype validation)
+- ✅ Limiti bulk lato backend (Pydantic + config_responder)
+
+---
+
 ## 🚀 PERFORMANCE (Impatto: ALTO)
 
 ### 1. **Cache Persistente con Redis** ⭐⭐⭐ (DONE)

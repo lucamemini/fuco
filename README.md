@@ -190,11 +190,36 @@ Edit `config.py` to customize FUCO behavior:
 |-----------|---------|-------------|
 | `DEFAULT_PAP` | 1 (GREEN) | Default PAP level for job submission |
 | `DEFAULT_TLP` | 1 (GREEN) | Default TLP level for job submission |
+| `SECRET_KEY` | `None` | Session secret. Set a strong value in production |
 | `CACHE_TYPE` | `'memory'` | Cache backend: `'memory'` or `'redis'` |
 | `CACHE_TTL_MINUTES` | 30 | Cache lifetime for reports (minutes) |
+| `REDIS_URL` | `None` | Redis URL (overrides host/port if set) |
+| `REDIS_HOST` / `REDIS_PORT` / `REDIS_DB` | `localhost` / `6379` / `0` | Redis connection parameters |
+| `REDIS_PASSWORD` | `None` | Redis password (if enabled) |
 | `API_SHORT_MAX_ATTEMPTS` | 15 | Polling attempts for short API |
 | `API_SHORT_INITIAL_DELAY` | 5 | Initial delay between polls (seconds) |
 | `JOB_RECENT_LIMIT` | 10 | Number of recent searches to display |
+| `ALLOWED_IPS` | `['127.0.0.1','::1']` | Whitelist for cache admin endpoints |
+
+#### Rate limiting (Flask-Limiter)
+
+Rate limits are configurable in `config.py`. Set a value like `"60/minute"`, or disable by using `None` or `""` (empty string). Suggested ranges are included as inline comments.
+
+Key parameters:
+- `RATE_LIMIT_EXPORT_PDF`
+- `RATE_LIMIT_SUBMIT_JOB`
+- `RATE_LIMIT_API_SHORT`
+- `RATE_LIMIT_API_ANALYSIS`
+- `RATE_LIMIT_GET_ANALYSIS`
+- `RATE_LIMIT_GET_SHORT`
+- `RATE_LIMIT_RESPONDER_LIST`
+- `RATE_LIMIT_RESPONDER_EXECUTE`
+- `RATE_LIMIT_RESPONDER_BULK`
+- `RATE_LIMIT_RESPONDER_STATUS`
+- `RATE_LIMIT_RESPONDER_POLL`
+- `RATE_LIMIT_RESPONDER_HISTORY`
+- `RATE_LIMIT_RESPONDER_VALIDATE`
+- `RATE_LIMIT_RESPONDER_FOR_OBSERVABLE`
 
 ### Responder & Authentication
 
@@ -745,7 +770,7 @@ curl http://localhost:5000/api/getAnalyzer
 | `/api/cache/clear` | POST | Clear cache (IP-restricted) |
 | `/health` | GET | Health check endpoint |
 | `/getShort?JobId=<id>` | GET | Get taxonomy HTML for job |
-| `/getAnalisys?JobId=<id>` | GET | Get full report HTML for job |
+| `/getAnalysis?JobId=<id>` | GET | Get full report HTML for job |
 | `/allReports?observable=<val>&datatype=<type>` | GET | View all reports for observable |
 
 ### Request/Response Examples

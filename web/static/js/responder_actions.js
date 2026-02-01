@@ -3,6 +3,21 @@
  * VERSIONE CON SESSIONI - Non richiede più username/password ad ogni azione
  */
 
+(function() {
+    if (window.__responderActionsLoaded) {
+        return;
+    }
+    if (window.ResponderModal) {
+        window.__responderActionsLoaded = true;
+        return;
+    }
+    window.__responderActionsLoaded = true;
+
+function getCsrfToken() {
+    const meta = document.querySelector('meta[name="csrf-token"]');
+    return meta ? meta.getAttribute('content') : '';
+}
+
 // ============ Modal Management ============
 
 class ResponderModal {
@@ -238,7 +253,10 @@ class ResponderModal {
     async executeResponder(params) {
         const response = await fetch('/api/responder/execute', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCsrfToken()
+            },
             body: JSON.stringify(params)  // NO username/password!
         });
 
@@ -323,11 +341,15 @@ function addResponderButtons(observable, dataType, containerId) {
 // ============ Initialization ============
 
 document.addEventListener('DOMContentLoaded', function() {
-    window.responderModal = new ResponderModal();
-    console.log('Responder modal initialized (session-based auth)');
+    if (!window.responderModal) {
+        window.responderModal = new ResponderModal();
+        console.log('Responder modal initialized (session-based auth)');
+    }
 });
 
 // ============ Export ============
 
 window.ResponderModal = ResponderModal;
 window.addResponderButtons = addResponderButtons;
+
+})();

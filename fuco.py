@@ -16,6 +16,7 @@ from routes_responder import register_responder_routes
 
 from auth_manager import init_auth_manager
 from routes_auth import register_auth_routes
+from security import csrf, limiter
 
 # Configurazione logging
 logging.basicConfig(
@@ -118,20 +119,25 @@ app = Flask(__name__,
             static_folder='web/static',
             template_folder=config.TEMPLATE_FOLDER)
 
+# ============ CSRF + Rate Limiting ============
+csrf.init_app(app)
+limiter.init_app(app)
+
 # ============ SESSIONI FLASK (NUOVO!) ============
 
 import secrets
 from flask_session import Session
 
-# Genera SECRET_KEY se non presente
-if not hasattr(config, 'SECRET_KEY'):
+# Genera SECRET_KEY se non presente o None
+if not getattr(config, 'SECRET_KEY', None):
     SECRET_KEY = secrets.token_hex(32)
-    logger.warning("SECRET_KEY non in config.py, generata automaticamente (NON per production!)")
+    logger.warning("SECRET_KEY mancante o None, generata automaticamente (NON per production!)")
 else:
     SECRET_KEY = config.SECRET_KEY
 
 # Configurazione sessioni
 app.config['SECRET_KEY'] = SECRET_KEY
+app.config['WTF_CSRF_SECRET_KEY'] = SECRET_KEY
 app.config['SESSION_TYPE'] = 'redis' if validated_config['cache_type'] == 'redis' else 'filesystem'
 app.config['SESSION_PERMANENT'] = False
 app.config['PERMANENT_SESSION_LIFETIME'] = 1800  # 30 minuti

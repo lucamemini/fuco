@@ -3,12 +3,19 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>FUCO - Tutti i report per {{ data.fuco.question }}</title>
     <link href="/css/bootstrap.min.css" rel="stylesheet">
     <link href="/css/main.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/css/all.min.css">
     <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
     <script src="/js/responder_actions.js"></script>
+    <script>
+      function getCsrfToken() {
+        const meta = document.querySelector('meta[name="csrf-token"]');
+        return meta ? meta.getAttribute('content') : '';
+      }
+    </script>
     
     <style>
       body { 
@@ -261,6 +268,40 @@ function formatTimestamp(timestamp) {
     });
 }
 
+function namespaceReportTabs(container, suffix) {
+  if (!container || !suffix) return;
+
+  const tabLinks = container.querySelectorAll('a[data-bs-toggle="tab"], a[data-toggle="tab"]');
+  if (!tabLinks.length) return;
+
+  const getPane = (id) => {
+    if (window.CSS && CSS.escape) {
+      return container.querySelector(`#${CSS.escape(id)}`);
+    }
+    return container.querySelector(`[id="${id.replace(/"/g, '\\"')}"]`);
+  };
+
+  tabLinks.forEach((link, index) => {
+    const target = link.getAttribute('data-bs-target') || link.getAttribute('href');
+    if (!target || !target.startsWith('#')) return;
+
+    const baseId = target.slice(1);
+    const newId = `${baseId}-${suffix}`;
+    const linkId = link.id ? `${link.id}-${suffix}` : `tab-${baseId}-${suffix}-${index}`;
+
+    link.setAttribute('data-bs-target', `#${newId}`);
+    link.setAttribute('href', `#${newId}`);
+    link.setAttribute('id', linkId);
+    link.setAttribute('aria-controls', newId);
+
+    const pane = getPane(baseId);
+    if (pane) {
+      pane.id = newId;
+      pane.setAttribute('aria-labelledby', linkId);
+    }
+  });
+}
+
 // Calcola quanto tempo fa è stato creato il job
 function timeAgo(timestamp) {
     const now = Date.now();
@@ -285,10 +326,11 @@ function timeAgo(timestamp) {
 // Carica un singolo report
 async function loadReport(jobId) {
     try {
-        const response = await fetch(`/getAnalisys?JobId=${jobId}`);
+        const response = await fetch(`/getAnalysis?JobId=${jobId}`);
         const html = await response.text();
         
         $(`#content_${jobId}`).html(html);
+    namespaceReportTabs(document.getElementById(`content_${jobId}`), jobId);
         $(`#item_${jobId}`).addClass('report-loaded');
         
         // Carica anche le taxonomies
@@ -392,8 +434,11 @@ function exportToPDF() {
     
     // Chiamata API per generare PDF
     fetch('/export/pdf', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': getCsrfToken()
+      },
         body: JSON.stringify(exportData)
     })
     .then(response => {

@@ -4,6 +4,7 @@
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="csrf-token" content="{{ csrf_token() }}" />
     <link href="https://fonts.googleapis.com/css?family=Poppins" rel="stylesheet" />
     <link href="css/main.css" rel="stylesheet" />
 
@@ -631,6 +632,7 @@
 <div class="s003">
 
       <form action="/analysis" id="form" name="form" method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
         <div class="inner-form">
 	 <img src="/images/abeja.png" style="transform: scaleX(-1);" width="80" height="60">
           <div class="input-field first-wrap">

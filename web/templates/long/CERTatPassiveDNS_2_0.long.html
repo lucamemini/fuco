@@ -1,5 +1,6 @@
 {% if artifact.status == "Success" %}
-{% set content = artifact.report.full %}
+{% set content = artifact.report.full if artifact.report and artifact.report.full is defined else {} %}
+{% set results = content.results if content.results is defined else [] %}
 <div class="card border-success">
     <div class="card-header">
     <ul class="nav nav-tabs card-header-tabs">
@@ -28,7 +29,7 @@
 		CERT.at Passive DNS Report
 	</div>
 	<div class="panel-body">
-        {% if content.results|length == 0%}
+  {% if results|length == 0 %}
         <p >
             No result found.
         </p>
@@ -42,27 +43,33 @@
                 <th>Last time</th>
             </thead>
             <tbody >
-                <tr>
-                    <td>{{r.countrequested}}</td>
-                    <td>{{r.rrtype}}</td>
-		    {% if r.rrtype != 'SOA'%}
-                    <td >
-                        {{r.rraddress }} - {{r.rrdname}}
-                    </td>
-		    {% else %}
-                    <td >
-                        <p>primary: {{r.rrprimary}}</p>
-                        <p>hostmaster: {{r.rrhostmaster}}</p>
-                        <p>serial: {{r.rrserial}}</p>
-                        <p>refresh: {{r.rrrefresh}}</p>
-                        <p>retry: {{r.rrretry}}</p>
-                        <p>expire: {{r.rrexpire}}</p>
-                        <p>minimum: {{r.rrminimum}}</p>
-                    </td>
-		    {% endif %}
-                    <td>{{r.seenfirst}}</td>
-                    <td>{{r.seenlast}}</td>
-                </tr>
+              {% for r in results %}
+              <tr>
+                <td>{{ r.countrequested if r.countrequested is defined else 'N/A' }}</td>
+                <td>{{ r.rrtype if r.rrtype is defined else 'N/A' }}</td>
+      		    {% if r.rrtype is defined and r.rrtype != 'SOA' %}
+                <td >
+                  {{ r.rraddress if r.rraddress is defined else 'N/A' }} - {{ r.rrdname if r.rrdname is defined else 'N/A' }}
+                </td>
+      		    {% elif r.rrtype is defined and r.rrtype == 'SOA' %}
+                <td >
+                  <p>primary: {{ r.rrprimary if r.rrprimary is defined else 'N/A' }}</p>
+                  <p>hostmaster: {{ r.rrhostmaster if r.rrhostmaster is defined else 'N/A' }}</p>
+                  <p>serial: {{ r.rrserial if r.rrserial is defined else 'N/A' }}</p>
+                  <p>refresh: {{ r.rrrefresh if r.rrrefresh is defined else 'N/A' }}</p>
+                  <p>retry: {{ r.rrretry if r.rrretry is defined else 'N/A' }}</p>
+                  <p>expire: {{ r.rrexpire if r.rrexpire is defined else 'N/A' }}</p>
+                  <p>minimum: {{ r.rrminimum if r.rrminimum is defined else 'N/A' }}</p>
+                </td>
+      		    {% else %}
+                <td >
+                  <span class="text-muted">N/A</span>
+                </td>
+      		    {% endif %}
+                <td>{{ r.seenfirst if r.seenfirst is defined else 'N/A' }}</td>
+                <td>{{ r.seenlast if r.seenlast is defined else 'N/A' }}</td>
+              </tr>
+              {% endfor %}
             </tbody>
         </table>
         {% endif %}

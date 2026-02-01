@@ -16,6 +16,8 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import utils
 import config
+import config_responder as responder_cfg
+from security import login_required_json, optional_limit
 
 from datetime import datetime
 from flask import jsonify, current_app
@@ -116,6 +118,8 @@ def error_response(message: str, code: int = 500):
 
 
 @routes_bp.route('/export/pdf', methods=['POST'])
+@login_required_json
+@optional_limit(config.RATE_LIMIT_EXPORT_PDF)
 def export_pdf():
     """
     Esporta i risultati in PDF.
@@ -195,9 +199,11 @@ def render_report_html(report, app_root_path):
             template_name = generic_template
         
         try:
-            return render_template(template_name, artifact=report)
+            rendered = render_template(template_name, artifact=report)
+            return utils.sanitize_html(rendered)
         except Exception:
-            return render_template(generic_template, artifact=report)
+            rendered = render_template(generic_template, artifact=report)
+            return utils.sanitize_html(rendered)
             
     except Exception as e:
         logger.error(f"Errore rendering report HTML: {str(e)}")
@@ -258,10 +264,13 @@ def analysis():
         data = utils.InputValidator.sanitize_observable(data)
 
         datatype = request.form.get('datatype')
-        if not datatype:
-            return error_response("Parametro 'datatype' mancante", 400)
-        datatype = utils.InputValidator.validate_datatype(datatype)
-        utils.InputValidator.validate_observable_by_type(datatype, data)
+        if not datatype or str(datatype).strip().lower() == '_disabled':
+            datatype = utils.detect_data_type(data)
+            if not datatype:
+                return error_response("Impossibile determinare automaticamente il tipo di dato", 400)
+        else:
+            datatype = utils.InputValidator.validate_datatype(datatype)
+            utils.InputValidator.validate_observable_by_type(datatype, data)
         
         analyzer_list = request.form.getlist('analyzer')
         if not analyzer_list:
@@ -305,6 +314,7 @@ def analysis():
         return error_response(str(e))
 
 @routes_bp.route('/api/submit_job', methods=['POST'])
+@optional_limit(config.RATE_LIMIT_SUBMIT_JOB)
 def api_submit_job():
     """
     API per sottomettere UN SINGOLO job a Cortex.
@@ -406,6 +416,7 @@ def api_poll_job(job_id):
 # ============ Route API ============
 
 @routes_bp.route('/api/short', methods=['POST'])
+@optional_limit(config.RATE_LIMIT_API_SHORT)
 def api_short():
     """
     API per analisi brevi con supporto a IP multipli.
@@ -495,6 +506,7 @@ def api_short():
 
 
 @routes_bp.route('/api/analysis', methods=['POST'])
+@optional_limit(config.RATE_LIMIT_API_ANALYSIS)
 def api_analysis():
     """
     API per analisi complete che restituisce il report completo.
@@ -607,6 +619,8 @@ def api_get_analyzer():
 # ============ Route di supporto ============
 
 @routes_bp.route('/getAnalisys', methods=['GET'])
+@routes_bp.route('/getAnalysis', methods=['GET'])
+@optional_limit(config.RATE_LIMIT_GET_ANALYSIS)
 def get_analysis():
     analysis_id = request.args.get('JobId')
     if not analysis_id:
@@ -622,7 +636,8 @@ def get_analysis():
         template_name = generic_template
 
     try:
-        return render_template(template_name, artifact=report)
+        rendered = render_template(template_name, artifact=report)
+        return utils.sanitize_html(rendered)
 
     except Exception as e:
         logger.error(
@@ -632,7 +647,8 @@ def get_analysis():
         )
 
         try:
-            return render_template(generic_template, artifact=report)
+            rendered = render_template(generic_template, artifact=report)
+            return utils.sanitize_html(rendered)
         except Exception:
             logger.critical(
                 "Errore anche nel template generico",
@@ -641,6 +657,7 @@ def get_analysis():
             abort(500, "Template rendering failed")
 
 @routes_bp.route('/getShort', methods=['GET'])
+@optional_limit(config.RATE_LIMIT_GET_SHORT)
 def get_short():
     """Restituisce il template short per le taxonomies di un job."""
     try:
@@ -681,6 +698,8 @@ def all_reports():
         if not observable:
             return error_response(f"Parametro 'observable' mancante  {observable}", 400)
         observable = utils.InputValidator.sanitize_observable(observable)
+        if datatype and str(datatype).strip().lower() == '_disabled':
+            datatype = default_datatype
         if datatype and datatype != default_datatype:
             datatype = utils.InputValidator.validate_datatype(datatype)
         
@@ -847,4 +866,7 @@ def clear_cache():
 # @app.route('/bulk-responder')
 @routes_bp.route('/bulk-responder', methods=['GET'])
 def bulk_responder_page():
-    return render_template('bulk_responder.html')
+    return render_template(
+        'bulk_responder.html',
+        max_bulk_observables=responder_cfg.MAX_BULK_OBSERVABLES
+    )

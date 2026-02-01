@@ -252,7 +252,11 @@
       <div class="tab-pane fade"
            id="json_{{ artifact.id }}"
            role="tabpanel">
-        {% set json_data = artifact.json() %}
+        {% if artifact.json is defined %}
+          {% set json_data = artifact.json() %}
+        {% else %}
+          {% set json_data = artifact %}
+        {% endif %}
         <pre><code class="language-json">{{ json_data | tojson(indent=2) }}</code></pre>
       </div>
 

@@ -11,8 +11,10 @@ from flask import request, jsonify, current_app
 from pydantic import BaseModel, Field
 
 import config_responder as responder_cfg
+import config
 from notify_manager import notify_responder_action
 import utils
+from security import login_required_json, optional_limit
 
 logger = logging.getLogger(__name__)
 
@@ -75,6 +77,8 @@ def register_responder_routes(app):
     app.config['RESPONDER_ROUTES_REGISTERED'] = True
     
     @app.route('/api/responder/list', methods=['GET'])
+    @login_required_json
+    @optional_limit(config.RATE_LIMIT_RESPONDER_LIST)
     def list_responders():
         """
         Lista responder disponibili, opzionalmente filtrati per tipo.
@@ -118,6 +122,8 @@ def register_responder_routes(app):
     
     
     @app.route('/api/responder/execute', methods=['POST'])
+    @login_required_json
+    @optional_limit(config.RATE_LIMIT_RESPONDER_EXECUTE)
     def execute_responder():
         """
         Esegue un responder su un osservabile.
@@ -127,7 +133,6 @@ def register_responder_routes(app):
         {
             "observable": "1.2.3.4",
             "dataType": "ip",
-            "responderId": "Responder_ID",
             "tlp": 2,
             "pap": 2,
             "message": "Optional note"
@@ -172,7 +177,6 @@ def register_responder_routes(app):
             )
             
             # Refresh sessione
-            auth_manager.refresh_session()
 
             # Notifica
             notify_responder_action(action, username)
@@ -197,6 +201,8 @@ def register_responder_routes(app):
     
     
     @app.route('/api/responder/bulk', methods=['POST'])
+    @login_required_json
+    @optional_limit(config.RATE_LIMIT_RESPONDER_BULK)
     def execute_bulk_responders():
         """
         Esegue responder multipli su osservabili multipli.
@@ -205,7 +211,6 @@ def register_responder_routes(app):
         {
             "observables": [
                 {"data": "1.2.3.4", "dataType": "ip"},
-                {"data": "evil.com", "dataType": "domain"}
             ],
             "responderIds": ["Responder1", "Responder2"],
             "username": "cortex_user",
@@ -252,7 +257,6 @@ def register_responder_routes(app):
             )
             
             # Notifica per ogni azione
-            executed_by = None
             auth_manager = getattr(current_app, 'auth_manager', None)
             if auth_manager and auth_manager.is_authenticated():
                 executed_by = auth_manager.get_username()
@@ -288,6 +292,8 @@ def register_responder_routes(app):
     
     
     @app.route('/api/responder/status/<job_id>', methods=['GET'])
+    @login_required_json
+    @optional_limit(config.RATE_LIMIT_RESPONDER_STATUS)
     def get_responder_status(job_id):
         """
         Recupera lo status di un job responder.
@@ -328,6 +334,8 @@ def register_responder_routes(app):
     
     
     @app.route('/api/responder/poll/<job_id>', methods=['GET'])
+    @login_required_json
+    @optional_limit(config.RATE_LIMIT_RESPONDER_POLL)
     def poll_responder_job(job_id):
         """
         Polling di un job responder fino a completamento.
@@ -376,6 +384,8 @@ def register_responder_routes(app):
     
     
     @app.route('/api/responder/history', methods=['GET'])
+    @login_required_json
+    @optional_limit(config.RATE_LIMIT_RESPONDER_HISTORY)
     def get_responder_history():
         """
         Recupera lo storico delle azioni responder eseguite.
@@ -401,6 +411,8 @@ def register_responder_routes(app):
     
     
     @app.route('/api/responder/validate', methods=['POST'])
+    @login_required_json
+    @optional_limit(config.RATE_LIMIT_RESPONDER_VALIDATE)
     def validate_credentials():
         """
         Valida credenziali Cortex Basic Auth.
@@ -441,6 +453,8 @@ def register_responder_routes(app):
     
     
     @app.route('/api/responder/for-observable', methods=['GET'])
+    @login_required_json
+    @optional_limit(config.RATE_LIMIT_RESPONDER_FOR_OBSERVABLE)
     def get_responders_for_observable():
         """
         Recupera responder compatibili con un tipo di osservabile.
