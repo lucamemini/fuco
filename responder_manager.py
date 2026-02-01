@@ -156,8 +156,8 @@ class ResponderManager:
                      username: str = None,
                      password: str = None,
                      api_key: str = None,
-                     tlp: int = 2,
-                     pap: int = 2,
+                     tlp: int = responder_cfg.RESPONDER_DEFAULT_TLP,
+                     pap: int = responder_cfg.RESPONDER_DEFAULT_PAP,
                      message: str = None) -> ResponderAction:
         """
         Execute a responder on an observable.
@@ -257,8 +257,8 @@ class ResponderManager:
                           username: str = None,
                           password: str = None,
                           api_key: str = None,
-                          tlp: int = 2,
-                          pap: int = 2,
+                          tlp: int = responder_cfg.RESPONDER_DEFAULT_TLP,
+                          pap: int = responder_cfg.RESPONDER_DEFAULT_PAP,
                           message: str = None) -> List[ResponderAction]:
         """
         Execute multiple responders on multiple observables.

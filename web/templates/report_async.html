@@ -9,6 +9,10 @@
     <link href="/css/main.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/css/all.min.css">
     <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <script>
+      window.FUCO_DEFAULT_TLP = {{ config.DEFAULT_TLP }};
+      window.FUCO_DEFAULT_PAP = {{ config.DEFAULT_PAP }};
+    </script>
     <script src="{{ url_for('static', filename='js/responder_actions.js') }}"></script>
     <script>
   function getCsrfToken() {

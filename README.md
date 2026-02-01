@@ -810,8 +810,11 @@ curl http://localhost:5000/api/getAnalyzer
 ### Search Interface
 ![FUCO Search](https://github.com/lucamemini/fuco/blob/master/img/fuco_search.jpg?raw=true)
 
-### Results View
+### Results Results
 ![FUCO Results](https://github.com/lucamemini/fuco/blob/master/img/fuco_result.jpg?raw=true)
+
+### Bulk Action
+![FUCO Bulk](https://github.com/lucamemini/fuco/blob/master/img/fuco_bulk.jpg?raw=true)
 
 ## 🔧 Troubleshooting
 

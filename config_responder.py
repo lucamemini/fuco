@@ -7,6 +7,8 @@ Configuration for the Responder system.
 Add to config.py or use as a separate file.
 """
 
+import config
+
 # ============ RESPONDER CONFIGURATION ============
 
 # Enable/disable responder functionality
@@ -51,8 +53,8 @@ RESPONDER_PRESETS = {
 }
 
 # Default TLP/PAP for responders (if not specified)
-RESPONDER_DEFAULT_TLP = 2  # AMBER
-RESPONDER_DEFAULT_PAP = 2  # AMBER
+RESPONDER_DEFAULT_TLP = config.DEFAULT_TLP
+RESPONDER_DEFAULT_PAP = config.DEFAULT_PAP
 
 # Default responder message (used if message is empty)
 RESPONDER_DEFAULT_MESSAGE = "FUCO responder action"

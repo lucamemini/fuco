@@ -29,6 +29,16 @@ class ResponderModal {
         this.init();
     }
 
+    getDefaultTlp() {
+        const value = Number(window.FUCO_DEFAULT_TLP);
+        return Number.isInteger(value) ? value : 2;
+    }
+
+    getDefaultPap() {
+        const value = Number(window.FUCO_DEFAULT_PAP);
+        return Number.isInteger(value) ? value : 2;
+    }
+
     init() {
         if (!document.getElementById('responderModal')) {
             this.createModal();
@@ -107,6 +117,15 @@ class ResponderModal {
         `;
 
         document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+        const tlpSelect = document.getElementById('tlpSelect');
+        if (tlpSelect) {
+            tlpSelect.value = String(this.getDefaultTlp());
+        }
+        const papSelect = document.getElementById('papSelect');
+        if (papSelect) {
+            papSelect.value = String(this.getDefaultPap());
+        }
 
         document.getElementById('executeResponderBtn').addEventListener('click', () => {
             this.executeResponders();
