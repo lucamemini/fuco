@@ -106,7 +106,7 @@ class ResponderModal {
                         <div id="responderStatus" class="mt-3"></div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-secondary" id="closeResponderBtn" data-bs-dismiss="modal" style="display:none;">Close</button>
                         <button type="button" class="btn btn-danger" id="executeResponderBtn">
                             <i class="fas fa-bolt"></i> Execute Action
                         </button>
@@ -154,6 +154,10 @@ class ResponderModal {
 
         document.getElementById('responderMessage').value = '';
         document.getElementById('responderStatus').innerHTML = '';
+        const closeBtn = document.getElementById('closeResponderBtn');
+        if (closeBtn) {
+            closeBtn.style.display = 'none';
+        }
 
         $(this.modal).modal('show');
     }
@@ -212,6 +216,11 @@ class ResponderModal {
             return;
         }
 
+        const statusDiv = document.getElementById('responderStatus');
+        if (statusDiv) {
+            statusDiv.innerHTML = '';
+        }
+
         // Disable button
         const executeBtn = document.getElementById('executeResponderBtn');
         executeBtn.disabled = true;
@@ -239,6 +248,21 @@ class ResponderModal {
                 results.push({ name: responderName, success: true, data: result });
                 this.showSuccess(`✓ ${responderName}: Job ${result.job_id} started`);
 
+                try {
+                    const jobResult = await this.pollResponderJob(result.job_id);
+                    if (jobResult && jobResult.status) {
+                        if (jobResult.status === 'Success') {
+                            this.showSuccess(`✓ ${responderName}: Completed (Job ${result.job_id})`);
+                        } else if (jobResult.status === 'Failure') {
+                            this.showError(`✗ ${responderName}: Failed (Job ${result.job_id})`);
+                        } else {
+                            this.showWarning(`• ${responderName}: ${jobResult.status} (Job ${result.job_id})`);
+                        }
+                    }
+                } catch (pollError) {
+                    this.showWarning(`• ${responderName}: Status check failed (${pollError.message})`);
+                }
+
             } catch (error) {
                 console.error(`Error executing ${responderName}:`, error);
                 
@@ -257,6 +281,10 @@ class ResponderModal {
         // Re-enable button
         executeBtn.disabled = false;
         executeBtn.innerHTML = '<i class="fas fa-bolt"></i> Execute Action';
+        const closeBtn = document.getElementById('closeResponderBtn');
+        if (closeBtn) {
+            closeBtn.style.display = 'inline-block';
+        }
 
         // Show summary
         const successful = results.filter(r => r.success).length;
@@ -278,20 +306,48 @@ class ResponderModal {
             },
             body: JSON.stringify(params)  // NO username/password!
         });
+        const contentType = response.headers.get('content-type') || '';
 
         if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || 'Execution failed');
+            if (contentType.includes('application/json')) {
+                const error = await response.json();
+                throw new Error(error.error || 'Execution failed');
+            }
+            if (response.status === 401 || response.status === 403 || response.status === 400) {
+                throw new Error('Session expired or invalid CSRF token. Please reload the page and login again.');
+            }
+            throw new Error('Execution failed. Please reload the page and try again.');
+        }
+
+        if (!contentType.includes('application/json')) {
+            throw new Error('Unexpected response format. Please reload the page and try again.');
         }
 
         return await response.json();
+    }
+
+    async pollResponderJob(jobId) {
+        const response = await fetch(`/api/responder/poll/${encodeURIComponent(jobId)}`);
+        const contentType = response.headers.get('content-type') || '';
+        if (!response.ok) {
+            if (contentType.includes('application/json')) {
+                const error = await response.json();
+                throw new Error(error.error || 'Status check failed');
+            }
+            throw new Error('Status check failed');
+        }
+        if (!contentType.includes('application/json')) {
+            throw new Error('Unexpected response format');
+        }
+        const data = await response.json();
+        return data.job;
     }
 
     showError(message) {
         const statusDiv = document.getElementById('responderStatus');
         statusDiv.innerHTML += `<div class="alert alert-danger alert-dismissible fade show" role="alert">
             ${message}
-            <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>`;
     }
 
@@ -299,7 +355,7 @@ class ResponderModal {
         const statusDiv = document.getElementById('responderStatus');
         statusDiv.innerHTML += `<div class="alert alert-success alert-dismissible fade show" role="alert">
             ${message}
-            <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>`;
     }
 
@@ -307,7 +363,7 @@ class ResponderModal {
         const statusDiv = document.getElementById('responderStatus');
         statusDiv.innerHTML += `<div class="alert alert-info alert-dismissible fade show" role="alert">
             ${message}
-            <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>`;
     }
 
@@ -315,7 +371,7 @@ class ResponderModal {
         const statusDiv = document.getElementById('responderStatus');
         statusDiv.innerHTML += `<div class="alert alert-warning alert-dismissible fade show" role="alert">
             ${message}
-            <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>`;
     }
 }
