@@ -596,13 +596,19 @@
             
             result.results.forEach(r => {
                 const row = tbody.insertRow();
-                row.setAttribute('data-job-id', r.job_id);
+                if (r.job_id) {
+                    row.setAttribute('data-job-id', r.job_id);
+                }
+                const statusText = r.status || 'In esecuzione';
+                const statusClass = (statusText === 'Invalid data type')
+                    ? 'status-error'
+                    : 'status-pending';
                 row.innerHTML = `
                     <td>${r.observable}</td>
                     <td><span class="badge badge-secondary">${r.data_type}</span></td>
                     <td>${r.responder_name}</td>
-                    <td><code>${r.job_id}</code></td>
-                    <td><span class="status-badge status-pending">In esecuzione</span></td>
+                    <td><code>${r.job_id || 'N/A'}</code></td>
+                    <td><span class="status-badge ${statusClass}">${statusText}</span></td>
                 `;
             });
             

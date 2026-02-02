@@ -344,6 +344,20 @@ class ResponderManager:
                     
                 except Exception as e:
                     logger.error(f"Bulk execution error for {obs['data']}: {str(e)}")
+                    if isinstance(e, ValueError) and "not allowed for data type" in str(e):
+                        actions.append(
+                            ResponderAction(
+                                job_id="",
+                                observable=obs['data'],
+                                data_type=obs['dataType'],
+                                responder_name=resp_id,
+                                status="Invalid data type",
+                                created_at=datetime.now(),
+                                payload_data_type=obs['dataType'],
+                                payload_data=obs,
+                                error=str(e)
+                            )
+                        )
                     # Continue with the next ones
                     continue
         

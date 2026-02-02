@@ -84,7 +84,7 @@ RATE_LIMIT_GET_SHORT = None  # Suggested "240-360/minute"
 
 RATE_LIMIT_RESPONDER_LIST = "60/minute"  # Suggested "30-60/minute"
 RATE_LIMIT_RESPONDER_EXECUTE = "10/minute"  # Suggested "10-30/minute"
-RATE_LIMIT_RESPONDER_BULK = "None"  # Suggested "3-10/minute"
+RATE_LIMIT_RESPONDER_BULK = None  # Suggested "3-10/minute"
 RATE_LIMIT_RESPONDER_STATUS = "60/minute"  # Suggested "60-120/minute"
 RATE_LIMIT_RESPONDER_POLL = "60/minute"  # Suggested "120-240/minute"
 RATE_LIMIT_RESPONDER_HISTORY = "30/minute"  # Suggested "30-60/minute"
