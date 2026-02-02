@@ -225,11 +225,11 @@ def home():
            type_param = '_default'
            
         if q_param and type_param:
-            return render_template('index.html', q=q_param, t=type_param)
+            return render_template('index.html', q=q_param, t=type_param, cortex_host=_get_cortex_host())
         else:
             result = utils.get_analyzer_by_type("_default")
             recent = utils.get_recent_searches()
-            return render_template('index.html', t=result, recent=recent)
+            return render_template('index.html', t=result, recent=recent, cortex_host=_get_cortex_host())
     except Exception as e:
         logger.error(f"Error in home(): {str(e)}")
         return error_response(str(e))
@@ -307,7 +307,7 @@ def analysis():
         
         # Render immediately
         logger.info("Immediate report page render")
-        return render_template('report_async.html', data=result)
+        return render_template('report_async.html', data=result, cortex_host=_get_cortex_host())
         
     except Exception as e:
         logger.error(f"Error in analysis(): {str(e)}", exc_info=True)
@@ -742,13 +742,27 @@ def all_reports():
             logger.info(f"No reports found for {observable}")
             return render_template('no_reports.html', 
                                  observable=observable, 
-                                 datatype=datatype)
+                                 datatype=datatype,
+                                 cortex_host=_get_cortex_host())
         
+        # Resolve datatype if default
+        resolved_datatype = datatype
+        if datatype == default_datatype:
+            for job in jobs:
+                if hasattr(job, 'dataType') and job.dataType:
+                    resolved_datatype = job.dataType
+                    break
+            if resolved_datatype == default_datatype:
+                try:
+                    resolved_datatype = utils.detect_data_type(observable)
+                except Exception:
+                    resolved_datatype = datatype
+
         # Prepare data structure for the template
         result = {
             'fuco': {
                 'question': observable,
-                'datatype': datatype
+                'datatype': resolved_datatype
             },
             'jobs': []
         }
@@ -768,7 +782,7 @@ def all_reports():
         
         result['jobs'] = sorted(result['jobs'], key=lambda x: x.get('analyzer', '').lower())
         logger.info(f"Rendering {len(result['jobs'])} reports for {observable}")
-        return render_template('all_reports.html', data=result)
+        return render_template('all_reports.html', data=result, cortex_host=_get_cortex_host())
     
     except Exception as e:
         logger.error(f"Error in all_reports(): {str(e)}", exc_info=True)
@@ -868,5 +882,15 @@ def clear_cache():
 def bulk_responder_page():
     return render_template(
         'bulk_responder.html',
-        max_bulk_observables=responder_cfg.MAX_BULK_OBSERVABLES
+        max_bulk_observables=responder_cfg.MAX_BULK_OBSERVABLES,
+        cortex_host=_get_cortex_host()
     )
+
+
+def _get_cortex_host() -> str:
+    try:
+        import cortexconfig as cortex_cfg
+        host = cortex_cfg.cortex.get('host') if hasattr(cortex_cfg, 'cortex') else None
+        return host.rstrip('/') if host else ''
+    except Exception:
+        return ''

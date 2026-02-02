@@ -133,6 +133,13 @@
               <span id="usernameDisplay"></span>
             </a>
             <ul class="dropdown-menu dropdown-menu-end">
+              {% if cortex_host %}
+              <li>
+                <a class="dropdown-item" href="{{ cortex_host }}" target="_blank" rel="noopener">
+                  <i class="fas fa-key"></i> Change password
+                </a>
+              </li>
+              {% endif %}
               <li>
                 <a class="dropdown-item" href="#" onclick="handleLogout()">
                   <i class="fas fa-sign-out-alt"></i> Logout
