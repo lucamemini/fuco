@@ -250,6 +250,8 @@ class ResponderManager:
                 message = message.strip()
                 if message == '':
                     message = None
+                elif not message.lower().startswith('[fuco]:'):
+                    message = f"[fuco]: {message}"
 
             if not message:
                 message = responder_cfg.RESPONDER_DEFAULT_MESSAGE
