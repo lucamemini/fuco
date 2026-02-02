@@ -53,8 +53,44 @@ class ResponderManager:
         self.api = Api(cortex_host, cortex_api_key) if cortex_api_key else None
         self._action_history: List[ResponderAction] = []
         self._responder_cache: Dict[str, Dict[str, Any]] = {}
+        self._responder_type_constraints: Dict[str, List[str]] = self._build_type_constraints()
         
         logger.info(f"ResponderManager initialized for {cortex_host}")
+
+    def _build_type_constraints(self) -> Dict[str, List[str]]:
+        constraints: Dict[str, set] = {}
+
+        explicit = getattr(responder_cfg, 'RESPONDER_TYPE_CONSTRAINTS', {}) or {}
+        for responder_key, types in explicit.items():
+            if not types:
+                continue
+            normalized = {str(t).lower() for t in types}
+            if normalized:
+                constraints.setdefault(responder_key, set()).update(normalized)
+
+        if getattr(responder_cfg, 'RESPONDER_ENFORCE_PRESET_TYPES', False):
+            presets = getattr(responder_cfg, 'RESPONDER_PRESETS', {}) or {}
+            for data_type, responders in presets.items():
+                if not responders:
+                    continue
+                dtype = str(data_type).lower()
+                for responder_key in responders:
+                    constraints.setdefault(responder_key, set()).add(dtype)
+
+        return {k: sorted(list(v)) for k, v in constraints.items()}
+
+    def _is_allowed_by_config(self, responder_id: str, responder_name: str, data_type: str) -> bool:
+        dtype = str(data_type).lower()
+        allowed = None
+
+        if responder_id in self._responder_type_constraints:
+            allowed = self._responder_type_constraints[responder_id]
+        elif responder_name in self._responder_type_constraints:
+            allowed = self._responder_type_constraints[responder_name]
+
+        if not allowed:
+            return True
+        return dtype in {t.lower() for t in allowed}
     
     def get_authenticated_api(self, username: str = None, password: str = None, api_key: str = None) -> Api:
         """
@@ -184,6 +220,12 @@ class ResponderManager:
                 api = self.get_authenticated_api(username=username, password=password)
             else:
                 raise ValueError("Must provide api_key OR username+password")
+
+            responder_name = self._get_responder_name(responder_id, api) or responder_id
+            if not self._is_allowed_by_config(responder_id, responder_name, data_type):
+                raise ValueError(
+                    f"Responder '{responder_name}' is not allowed for data type '{data_type}' by configuration"
+                )
             
             # Determine effective payload datatype
             payload_data_type = data_type
@@ -234,7 +276,7 @@ class ResponderManager:
                 job_id=job.id,
                 observable=observable,
                 data_type=data_type,
-                responder_name=self._get_responder_name(responder_id, api) or (job.responderId if hasattr(job, 'responderId') else responder_id),
+                responder_name=responder_name or (job.responderId if hasattr(job, 'responderId') else responder_id),
                 status=job.status,
                 created_at=datetime.now(),
                 payload_data_type=payload_data_type,

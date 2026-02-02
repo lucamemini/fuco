@@ -1,6 +1,9 @@
 # Cortex configuration (contiene API key)
 cortexconfig.py
 
+# Secret configuration (contains Flask session key)
+secretconfig.py
+
 flask_session/*
 flask_session
 

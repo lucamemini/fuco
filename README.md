@@ -232,6 +232,28 @@ FUCO supports responder actions with session-based authentication. Users login o
 **Responder settings:**
 See [config_responder.py](config_responder.py) for defaults such as TLP/PAP and bulk limits.
 
+#### Responder configuration parameters (config_responder.py)
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `RESPONDER_ENABLED` | `True` | Enable/disable responder features |
+| `RESPONDER_TIMEOUT` | `60` | Responder execution timeout (seconds) |
+| `RESPONDER_MAX_POLL_ATTEMPTS` | `30` | Max polling attempts for responder jobs |
+| `RESPONDER_POLL_DELAY` | `2` | Delay between polling attempts (seconds) |
+| `RESPONDER_PRESETS` | `{...}` | Suggested responders per data type |
+| `RESPONDER_DEFAULT_TLP` | `config.DEFAULT_TLP` | Default TLP for responders |
+| `RESPONDER_DEFAULT_PAP` | `config.DEFAULT_PAP` | Default PAP for responders |
+| `RESPONDER_DEFAULT_MESSAGE` | `"FUCO responder action"` | Default responder message |
+| `MAX_BULK_OBSERVABLES` | `100` | Max observables per bulk run |
+| `MAX_BULK_RESPONDERS` | `10` | Max responders per bulk run |
+| `BULK_EXECUTION_DELAY` | `0.5` | Delay between bulk executions (seconds) |
+| `SHOW_INLINE_RESPONDER_BUTTONS` | `True` | Show inline responder buttons in reports |
+| `QUICK_ACTION_RESPONDERS` | `None` | Restrict quick actions to a list of responders |
+| `REQUIRE_CONFIRMATION` | `True` | Require confirmation before execution |
+| `RESPONDER_ALLOWED_IPS` | `None` | IP whitelist override for responder APIs |
+| `LOG_RESPONDER_ACTIONS` | `True` | Enable responder action logging |
+| `RESPONDER_LOG_FILE` | `None` | Optional dedicated log file for responders |
+
 ### Notifications (Email)
 
 FUCO can send an email notification whenever a responder action is requested.

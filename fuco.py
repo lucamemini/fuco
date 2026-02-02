@@ -8,6 +8,10 @@ from flask import Flask
 from urllib.parse import quote
 
 import config
+try:
+    import secretconfig
+except Exception:
+    secretconfig = None
 from routes import routes_bp
 from cache_manager import CacheManager
 
@@ -129,11 +133,18 @@ import secrets
 from flask_session import Session
 
 # Generate SECRET_KEY if missing or None
-if not getattr(config, 'SECRET_KEY', None):
+external_secret = None
+if secretconfig is not None:
+    external_secret = getattr(secretconfig, 'SECRET_KEY', None)
+
+if external_secret:
+    SECRET_KEY = external_secret
+    logger.info("SECRET_KEY loaded from secretconfig.py")
+elif getattr(config, 'SECRET_KEY', None):
+    SECRET_KEY = config.SECRET_KEY
+else:
     SECRET_KEY = secrets.token_hex(32)
     logger.warning("SECRET_KEY missing or None, generated automatically (NOT for production!)")
-else:
-    SECRET_KEY = config.SECRET_KEY
 
 # Session configuration
 app.config['SECRET_KEY'] = SECRET_KEY

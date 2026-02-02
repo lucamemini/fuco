@@ -37,14 +37,11 @@ LAST_ANALYSIS_RANGE = '0-150'
 
 # ============ SECRET KEY FOR SESSIONS ============
 
-# IMPORTANT: In production, generate a secure key:
-# import secrets; print(secrets.token_hex(32))
-# And place it below
+# IMPORTANT: In production, store the secret key in secretconfig.py
+# (see secretconfig.py.template) and keep it out of git.
+# This value is only a fallback for development.
 
 SECRET_KEY = None  # Auto-generated if None (dev only!)
-
-# For production, uncomment and insert the generated key:
-# SECRET_KEY = 'your_secret_key_here_64_hex_chars'
 
 # ============ CACHE CONFIGURATION ============
 

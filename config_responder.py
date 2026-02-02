@@ -52,6 +52,15 @@ RESPONDER_PRESETS = {
     ]
 }
 
+# Enforce responder constraints derived from RESPONDER_PRESETS.
+# If True, responders listed in presets are restricted to those data types.
+RESPONDER_ENFORCE_PRESET_TYPES = True
+
+# Optional explicit constraints: responder id/name -> list of allowed data types.
+# If a responder is not present here (or in presets when enforcement is enabled),
+# no constraint is applied.
+RESPONDER_TYPE_CONSTRAINTS = {}
+
 # Default TLP/PAP for responders (if not specified)
 RESPONDER_DEFAULT_TLP = config.DEFAULT_TLP
 RESPONDER_DEFAULT_PAP = config.DEFAULT_PAP
