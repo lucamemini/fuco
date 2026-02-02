@@ -11,13 +11,13 @@ import os
 from typing import Optional
 
 from jinja2 import Environment, FileSystemLoader
-import bleach
-from bleach.css_sanitizer import CSSSanitizer
 
 import cortexconfig as cfg
 from cortex4py.api import Api
 from cortex4py.query import And, Eq
 import config
+
+import bleach
 
 # cache
 #from cache_manager import cache_manager
@@ -46,11 +46,31 @@ _ALLOWED_ATTRS = {
     'th': ['colspan', 'rowspan'],
 }
 
-_CSS_SANITIZER = CSSSanitizer(allowed_css_properties=[
+_ALLOWED_STYLES = [
     'color', 'background-color', 'font-weight', 'font-style', 'text-decoration',
     'text-align', 'white-space', 'width', 'height', 'max-width', 'max-height',
     'border', 'border-color', 'border-width', 'border-style', 'margin', 'padding'
-])
+]
+
+# --- bleach feature detection ---
+try:
+    from bleach.css_sanitizer import CSSSanitizer
+
+    _CSS_SANITIZER = CSSSanitizer(
+        allowed_css_properties=_ALLOWED_STYLES
+    )
+    _USE_CSS_SANITIZER = True
+
+except ImportError:
+    from bleach.sanitizer import Cleaner
+
+    _CLEANER = Cleaner(
+        tags=_ALLOWED_TAGS,
+        attributes=_ALLOWED_ATTRS,
+        styles=_ALLOWED_STYLES,
+        strip=True,
+    )
+    _USE_CSS_SANITIZER = False
 
 
 def sanitize_html(html: str) -> str:
@@ -59,14 +79,17 @@ def sanitize_html(html: str) -> str:
         return ''
     if not isinstance(html, str):
         html = str(html)
-    return bleach.clean(
-        html,
-        tags=_ALLOWED_TAGS,
-        attributes=_ALLOWED_ATTRS,
-        strip=True,
-        css_sanitizer=_CSS_SANITIZER
-    )
 
+    if _USE_CSS_SANITIZER:
+        return bleach.clean(
+            html,
+            tags=_ALLOWED_TAGS,
+            attributes=_ALLOWED_ATTRS,
+            strip=True,
+            css_sanitizer=_CSS_SANITIZER,
+        )
+    else:
+        return _CLEANER.clean(html)
 
 class InputValidator:
     """Input validation and sanitization."""
