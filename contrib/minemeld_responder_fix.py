@@ -100,6 +100,14 @@ class Minemeld(Responder):
         if not verified:
             comment = f"{comment} - [data type unverified]"
         
+        # Normalize TTL
+        ttl_value = None
+        if self.minemeld_ttl is not None:
+            try:
+                ttl_value = int(self.minemeld_ttl)
+            except (TypeError, ValueError):
+                ttl_value = None
+
         # Build payload
         payload = {
             "indicator": self.observable,
@@ -107,7 +115,7 @@ class Minemeld(Responder):
             "comment": comment,
             "share_level": self.minemeld_share_level,
             "confidence": self.minemeld_confidence,
-            "ttl": self.minemeld_ttl
+            "ttl": ttl_value
         }
 
         # Send request
