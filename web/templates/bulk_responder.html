@@ -550,10 +550,26 @@
                     body: JSON.stringify(payload)
                 });
                 
+                const contentType = response.headers.get('content-type') || '';
+                if (!response.ok) {
+                    if (contentType.includes('application/json')) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || 'Execution failed');
+                    }
+                    if (response.status === 401 || response.status === 403 || response.status === 400) {
+                        throw new Error('Session expired or invalid CSRF token. Please reload the page and login again.');
+                    }
+                    throw new Error('Execution failed. Please reload the page and try again.');
+                }
+
+                if (!contentType.includes('application/json')) {
+                    throw new Error('Unexpected response format. Please reload the page and try again.');
+                }
+
                 const result = await response.json();
-                
                 if (result.success) {
                     displayResults(result);
+                    pollBulkResults(result.results || []);
                 } else {
                     alert('Error: ' + result.error);
                 }
@@ -580,6 +596,7 @@
             
             result.results.forEach(r => {
                 const row = tbody.insertRow();
+                row.setAttribute('data-job-id', r.job_id);
                 row.innerHTML = `
                     <td>${r.observable}</td>
                     <td><span class="badge badge-secondary">${r.data_type}</span></td>
@@ -591,6 +608,42 @@
             
             // Scroll to results
             section.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        async function pollBulkResults(results) {
+            const jobs = results.filter(r => r.job_id);
+            if (!jobs.length) return;
+
+            await Promise.all(jobs.map(async (job) => {
+                try {
+                    const response = await fetch(`/api/responder/poll/${encodeURIComponent(job.job_id)}`);
+                    const contentType = response.headers.get('content-type') || '';
+                    if (!response.ok || !contentType.includes('application/json')) {
+                        return;
+                    }
+                    const data = await response.json();
+                    const status = data.job && data.job.status ? data.job.status : 'Unknown';
+                    updateJobStatus(job.job_id, status);
+                } catch (error) {
+                    console.error('Polling error:', error);
+                }
+            }));
+        }
+
+        function updateJobStatus(jobId, status) {
+            const row = document.querySelector(`#resultsTableBody tr[data-job-id="${jobId}"]`);
+            if (!row) return;
+            const badge = row.querySelector('.status-badge');
+            if (!badge) return;
+            badge.textContent = status;
+            badge.classList.remove('status-pending', 'status-success', 'status-error');
+            if (status === 'Success') {
+                badge.classList.add('status-success');
+            } else if (status === 'Failure' || status === 'Error' || status === 'Timeout') {
+                badge.classList.add('status-error');
+            } else {
+                badge.classList.add('status-pending');
+            }
         }
 
         // Initialize
