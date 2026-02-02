@@ -264,7 +264,8 @@ def register_responder_routes(app):
                 executed_by = req.username or 'unknown'
 
             for action in actions:
-                notify_responder_action(action, executed_by)
+                if action.job_id and action.status != "Invalid data type":
+                    notify_responder_action(action, executed_by)
 
             # Build response
             results = []
