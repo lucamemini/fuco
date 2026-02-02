@@ -1,9 +1,9 @@
 # ============================================================================
-# config.py - Full Configuration
+# config.py - Configurazione Completa
 # ============================================================================
 
 """
-Configuration and constants for the FUCO application.
+Configurazioni e costanti per l'applicazione FUCO
 """
 import logging
 import os
@@ -14,7 +14,7 @@ IS_WINDOWS = sys.platform.startswith("win")
 def is_pdf_enabled() -> bool:
     return not IS_WINDOWS
 
-# Template path (relative to app directory)
+# Percorso template (relativo alla directory dell'app)
 TEMPLATE_FOLDER = os.path.join('web', 'templates')
 
 # TLP / PAP levels
@@ -22,7 +22,7 @@ TEMPLATE_FOLDER = os.path.join('web', 'templates')
 DEFAULT_PAP = 1
 DEFAULT_TLP = 1
 
-# Polling settings
+# Polling configurazioni
 DEFAULT_MAX_ATTEMPTS = 10
 DEFAULT_INITIAL_DELAY = 3
 API_SHORT_MAX_ATTEMPTS = 15
@@ -35,40 +35,41 @@ JOB_SEARCH_RANGE = '0-50'
 JOB_RECENT_LIMIT = 10
 LAST_ANALYSIS_RANGE = '0-150'
 
-# ============ SECRET KEY FOR SESSIONS ============
+# ============ SECRET KEY PER SESSIONI ============
 
-# IMPORTANT: In production, generate a secure key:
+# IMPORTANTE: In production, genera una chiave sicura:
 # import secrets; print(secrets.token_hex(32))
-# And place it below
+# E mettila qui sotto
 
-SECRET_KEY = None  # Auto-generated if None (dev only!)
+#SECRET_KEY = None  # Verrà generata automaticamente se None (solo dev!)
 
-# For production, uncomment and insert the generated key:
-# SECRET_KEY = 'your_secret_key_here_64_hex_chars'
+# Per production, decomenta e inserisci chiave generata:
+SECRET_KEY = '1whjpxSkORmeoKGFgG2imCNsTmaWyz3g6YqcH2fKTfg2VWGdMNtwMOavoV3nszd9'
+
 
 # ============ CACHE CONFIGURATION ============
 
-# Cache type: "memory" or "redis"
-# memory = In-memory cache (volatile, lost on restart)
-# redis  = Persistent cache with Redis (requires Redis server)
-CACHE_TYPE = 'memory'  # Change to 'redis' to use Redis
+# Tipo di cache: "memory" o "redis"
+# memory = Cache in-memory (volatile, si perde al restart)
+# redis  = Cache persistente con Redis (richiede Redis server)
+CACHE_TYPE = 'redis'  # Cambia in 'redis' per usare Redis
 
-# Cache TTL (minutes) - report lifetime in cache
-CACHE_TTL_MINUTES = 30
+# TTL Cache (in minuti) - tempo di vita dei report in cache
+CACHE_TTL_MINUTES = 120
 
-# ---- Redis configuration (used only if CACHE_TYPE == 'redis') ----
-# Uncomment and configure if you use Redis
+# ---- Configurazione Redis (usata solo se CACHE_TYPE == 'redis') ----
+# Decommenta e configura se usi Redis
 
 REDIS_HOST = 'localhost'
 REDIS_PORT = 6379
 REDIS_DB = 0
-REDIS_PASSWORD = None  # None if Redis has no password, otherwise string
+REDIS_PASSWORD = None  # None se Redis non ha password, altrimenti stringa
 
-# Or use Redis URL directly (takes precedence over host/port)
-# Format: redis://[:password@]host:port/db
-REDIS_URL = None  # e.g., 'redis://localhost:6379/0' or 'redis://:mypass@localhost:6379/0'
+# Oppure usa direttamente Redis URL (ha precedenza su host/port)
+# Formato: redis://[:password@]host:port/db
+REDIS_URL = None  # Es: 'redis://localhost:6379/0' o 'redis://:mypass@localhost:6379/0'
 
-# Redis connection timeouts (seconds)
+# Timeout connessione Redis (secondi)
 REDIS_SOCKET_TIMEOUT = 5
 REDIS_SOCKET_CONNECT_TIMEOUT = 5
 
@@ -96,10 +97,13 @@ RATE_LIMIT_RESPONDER_FOR_OBSERVABLE = "60/minute"  # Suggested "60-120/minute"
 
 # ============ END RATE LIMITS ============
 
+
+# ============ Fine CACHE CONFIGURATION ============
+
 # Analyzer types
 ANALYZER_TYPES = ["domain", "ip", "url", "file", "hash", "mail", "mail_subject", "other"]
 
-# Regex patterns for input validation
+# Regex patterns per validazione input
 IPV4_REGEX = r'^(\d{1,3}\.){3}\d{1,3}$'
 DOMAIN_REGEX = r'^(?!\-)([A-Za-z0-9\-]{1,63}(?<!\-)\.)+[A-Za-z]{2,6}$'
 URL_REGEX = r'^https?:\/\/[^\s\/$.?#].[^\s]*$'
@@ -113,13 +117,13 @@ LOG_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 
 # ============ NOTIFY CONFIGURATION ============
 
-# Enable/disable email notifications
-NOTIFY_ENABLED = False
+# Abilita/disabilita notifiche email
+NOTIFY_ENABLED = True
 
-# Method: 'auto' (sendmail on Linux if available, otherwise SMTP), 'sendmail', 'smtp'
+# Metodo: 'auto' (sendmail su Linux se disponibile, altrimenti SMTP), 'sendmail', 'smtp'
 NOTIFY_METHOD = 'auto'
 
-# Sendmail path (Linux only)
+# Sendmail path (solo Linux)
 NOTIFY_SENDMAIL_PATH = '/usr/sbin/sendmail'
 
 # SMTP configuration
@@ -133,15 +137,15 @@ NOTIFY_SMTP_TIMEOUT = 10
 NOTIFY_ALLOW_SELF_SIGNED = False
 
 # Mail addresses
-NOTIFY_FROM = ''
-# One or more recipients separated by semicolons
-NOTIFY_TO = ''
+NOTIFY_FROM = 'fuco@fastweb.it'
+# Uno o più destinatari separati da punto e virgola
+NOTIFY_TO = 'csirt@fastweb.it;soc.corporate@fastweb.it'
 
-# ============ IP Whitelist for Cache API ============
+# ============ IP Whitelist per API Cache ============
 
-# List of IPs allowed to access cache management APIs
+# Lista IP autorizzati ad accedere alle API di gestione cache
 ALLOWED_IPS = [
     '127.0.0.1',      # Localhost IPv4
     '::1',            # Localhost IPv6
-    # Add your server/admin IPs here
+    # Aggiungi qui gli IP dei tuoi server/admin
 ]
