@@ -597,27 +597,34 @@ gunicorn --workers 4 \
          fuco:app
 ```
 
+Or use the helper script (recommended):
+
+```bash
+./run_gunicorn.sh --user fuco
+```
+
 #### Nginx Reverse Proxy
 
-Create `/etc/nginx/sites-available/fuco`:
+Use the provided example [deploy/nginx/fuco.conf](deploy/nginx/fuco.conf) and copy it to `/etc/nginx/sites-available/fuco`:
 
 ```nginx
 server {
-    listen 80;
-    server_name fuco.yourdomain.com;
-    
-    location / {
-        proxy_pass http://127.0.0.1:8000;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_read_timeout 300;
-    }
-    
-    location /static {
-        alias /path/to/fuco/web/static;
-        expires 30d;
-    }
+  listen 80;
+  server_name fuco.example.com;
+
+  location / {
+    proxy_pass http://127.0.0.1:8000;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_read_timeout 300;
+  }
+
+  location /static {
+    alias /opt/fuco/web/static;
+    expires 30d;
+  }
 }
 ```
 
@@ -630,20 +637,25 @@ sudo systemctl reload nginx
 
 #### Systemd Service (Linux)
 
-Create `/etc/systemd/system/fuco.service`:
+Use the provided unit file [systemd/fuco.service](systemd/fuco.service) and copy it to `/etc/systemd/system/fuco.service`:
 
 ```ini
 [Unit]
 Description=FUCO - Cortex Search Engine
 After=network.target redis.service
 
+
 [Service]
-Type=notify
-User=www-data
-Group=www-data
+Type=simple
+User=fuco
+Group=fuco
 WorkingDirectory=/opt/fuco
 Environment="PATH=/opt/fuco/venv/bin"
-ExecStart=/opt/fuco/venv/bin/gunicorn --workers 4 --bind 0.0.0.0:8000 fuco:app
+Environment="GUNICORN_WORKERS=4"
+Environment="GUNICORN_BIND=0.0.0.0:8000"
+Environment="GUNICORN_TIMEOUT=120"
+Environment="GUNICORN_LOG_DIR=/opt/fuco/logs"
+ExecStart=/opt/fuco/run_gunicorn.sh
 Restart=always
 RestartSec=10
 
@@ -658,6 +670,62 @@ sudo systemctl daemon-reload
 sudo systemctl enable fuco
 sudo systemctl start fuco
 sudo systemctl status fuco
+```
+
+#### Apache Reverse Proxy
+
+Use the provided example [deploy/apache/fuco.conf](deploy/apache/fuco.conf) and copy it to `/etc/apache2/sites-available/fuco.conf`:
+
+```apache
+<VirtualHost *:80>
+  ServerName fuco.example.com
+
+  ProxyPreserveHost On
+  ProxyRequests Off
+
+  RequestHeader set X-Forwarded-Proto "http"
+  RequestHeader set X-Forwarded-Port "80"
+
+  ProxyPass /static !
+  Alias /static /opt/fuco/web/static
+
+  <Directory /opt/fuco/web/static>
+    Require all granted
+    ExpiresActive On
+    ExpiresDefault "access plus 30 days"
+  </Directory>
+
+  ProxyPass / http://127.0.0.1:8000/
+  ProxyPassReverse / http://127.0.0.1:8000/
+
+  ErrorLog ${APACHE_LOG_DIR}/fuco_error.log
+  CustomLog ${APACHE_LOG_DIR}/fuco_access.log combined
+</VirtualHost>
+```
+
+Enable required modules and the site:
+
+```bash
+sudo a2enmod proxy proxy_http headers expires
+sudo a2ensite fuco
+sudo systemctl reload apache2
+```
+
+#### Logrotate
+
+Use the provided example [deploy/logrotate/fuco](deploy/logrotate/fuco) and copy it to `/etc/logrotate.d/fuco`:
+
+```conf
+/opt/fuco/logs/*.log {
+  daily
+  rotate 14
+  compress
+  delaycompress
+  missingok
+  notifempty
+  copytruncate
+  create 0640 fuco fuco
+}
 ```
 
 #### Docker Compose
@@ -691,6 +759,7 @@ services:
       - fuco_net
     volumes:
       - ./logs:/app/logs
+      - ./flask_session:/app/flask_session
 
 volumes:
   redis_data:

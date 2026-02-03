@@ -87,11 +87,11 @@
         background: #0b5ed7;
         color: white;
       }
-      .action-btn-header.btn-block {
+      .action-btn-header.btn-respond {
         background: #dc3545;
         color: white;
       }
-      .action-btn-header.btn-block:hover {
+      .action-btn-header.btn-respond:hover {
         background: #bb2d3b;
         color: white;
       }
@@ -175,7 +175,7 @@
 function initResponderButtons() {
   if (typeof window.addResponderButtons === 'function') {
     window.addResponderButtons('{{ data.fuco.question }}', '{{ data.fuco.datatype }}', 'responder-actions-{{ data.fuco.id }}');
-    console.log('Block button initialized');
+    console.log('Respond button initialized');
   } else {
     setTimeout(initResponderButtons, 100);
   }

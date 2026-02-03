@@ -1,0 +1,20 @@
+[Unit]
+Description=FUCO - Cortex Search Engine
+After=network.target redis.service
+
+[Service]
+Type=simple
+User=fuco
+Group=fuco
+WorkingDirectory=/opt/fuco
+Environment="PATH=/opt/fuco/venv/bin"
+Environment="GUNICORN_WORKERS=4"
+Environment="GUNICORN_BIND=0.0.0.0:8000"
+Environment="GUNICORN_TIMEOUT=120"
+Environment="GUNICORN_LOG_DIR=/opt/fuco/logs"
+ExecStart=/opt/fuco/run_gunicorn.sh
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

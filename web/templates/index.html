@@ -212,9 +212,9 @@
   color: #202124;
 }
 
-/* Search and Block Buttons Styling */
+/* Search and Respond Buttons Styling */
 .btn-search,
-.btn-block {
+.btn-respond {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -239,23 +239,23 @@
   background: #e6c200;
 }
 
-.btn-block {
+.btn-respond {
   background: #dc3545;
   color: white;
 }
 
-.btn-block:hover:not(:disabled) {
+.btn-respond:hover:not(:disabled) {
   background: #bb2d3b;
 }
 
-.btn-block:disabled {
+.btn-respond:disabled {
   opacity: 0.5;
   cursor: not-allowed;
   background: #dc3545;
 }
 
 .btn-search svg,
-.btn-block i {
+.btn-respond i {
   width: 16px;
   height: 16px;
   display: block;
@@ -488,10 +488,10 @@
             }
         }
         
-        // Dynamic Submit/Block Button Logic
+        // Dynamic Submit/Respond Button Logic
         function updateSubmitButtonState() {
           const typeField = document.getElementById('typefield');
-          const blockBtn = document.getElementById('blockBtn');
+          const respondBtn = document.getElementById('respondBtn');
           const submitLabel = document.getElementById('submitLabel');
           const observable = document.getElementById('observable');
           const form = document.getElementById('form');
@@ -510,12 +510,12 @@
             form.action = "/analysis";
           }
 
-          if (blockBtn) {
-            blockBtn.disabled = !isAuthenticated || selectedType === '_disabled' || !selectedType;
+          if (respondBtn) {
+            respondBtn.disabled = !isAuthenticated || selectedType === '_disabled' || !selectedType;
           }
         }
         
-        function handleBlock() {
+        function handleRespond() {
             const observable = document.getElementById('observable').value.trim();
             const dataType = document.getElementById('typefield').value;
           const isAuthenticated = window.authState && window.authState.authenticated;
@@ -528,7 +528,7 @@
           }
             
             if (!observable) {
-                alert('Please enter an observable to block');
+              alert('Please enter an observable to respond');
                 return;
             }
             
@@ -545,7 +545,7 @@
             }
         }
 
-          function quickBlock(observable, dataType) {
+          function quickRespond(observable, dataType) {
             const isAuthenticated = window.authState && window.authState.authenticated;
             if (!isAuthenticated) {
               if (typeof window.handleLogin === 'function') {
@@ -682,9 +682,9 @@
               </svg>
               <span id="submitLabel">Search</span>
             </button>
-            <button id="blockBtn" class="btn-block requires-auth" data-requires-auth="true" type="button" onclick="handleBlock()" disabled>
+            <button id="respondBtn" class="btn-respond requires-auth" data-requires-auth="true" type="button" onclick="handleRespond()" disabled>
               <i class="fas fa-shield-alt"></i>
-              <span>Block</span>
+              <span>Respond</span>
             </button>
           </div>
         </div>
@@ -782,8 +782,8 @@
           </button>
             <button class="btn btn-sm btn-outline-danger recent-action-btn recent-action-btn--icon requires-auth"
               data-requires-auth="true"
-              onclick="quickBlock('{{ data }}', '{{ dtype }}')"
-              title="Block">
+              onclick="quickRespond('{{ data }}', '{{ dtype }}')"
+              title="Respond">
             <i class="fas fa-shield-alt"></i>
           </button>
         </div>

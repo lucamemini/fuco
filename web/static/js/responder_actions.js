@@ -386,11 +386,11 @@ function addResponderButtons(observable, dataType, containerId) {
     }
 
     const buttonsHTML = `
-        <button class="action-btn-header btn-block responder-action-btn requires-auth"
+        <button class="action-btn-header btn-respond responder-action-btn requires-auth"
                 data-requires-auth="true"
                 data-observable="${observable}"
                 data-datatype="${dataType}">
-            <i class="fas fa-shield-alt"></i> Block
+            <i class="fas fa-shield-alt"></i> Respond
         </button>
     `;
 
