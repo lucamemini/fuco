@@ -178,8 +178,18 @@ def register_responder_routes(app):
             
             # Refresh session
 
-            # Notification
-            notify_responder_action(action, username)
+            # Notification (only on success)
+            try:
+                final_result = responder_manager.poll_responder_job(
+                    job_id=action.job_id,
+                    api_key=api_key,
+                    max_attempts=responder_cfg.RESPONDER_MAX_POLL_ATTEMPTS,
+                    delay=responder_cfg.RESPONDER_POLL_DELAY
+                )
+                if final_result.get('status') == 'Success':
+                    notify_responder_action(action, username)
+            except Exception as e:
+                logger.warning(f"Responder notification skipped: {str(e)}")
             
             logger.info(f"Responder executed by {username}: {req.responderId} on {req.observable}")
             
@@ -264,8 +274,19 @@ def register_responder_routes(app):
                 executed_by = req.username or 'unknown'
 
             for action in actions:
-                if action.job_id and action.status != "Invalid data type":
-                    notify_responder_action(action, executed_by)
+                if not action.job_id or action.status == "Invalid data type":
+                    continue
+                try:
+                    final_result = responder_manager.poll_responder_job(
+                        job_id=action.job_id,
+                        api_key=api_key,
+                        max_attempts=responder_cfg.RESPONDER_MAX_POLL_ATTEMPTS,
+                        delay=responder_cfg.RESPONDER_POLL_DELAY
+                    )
+                    if final_result.get('status') == 'Success':
+                        notify_responder_action(action, executed_by)
+                except Exception as e:
+                    logger.warning(f"Bulk responder notification skipped: {str(e)}")
 
             # Build response
             results = []
