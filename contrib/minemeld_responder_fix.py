@@ -4,8 +4,13 @@ import requests
 import json
 import ipaddress
 import re
+from urllib.parse import urlparse
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+URL_REGEX = re.compile(r'^https?://[^\s/$.?#].[^\s]*$', re.IGNORECASE)
+DOMAIN_REGEX = re.compile(r'^(?!-)([A-Za-z0-9-]{1,63}(?<!-)\.)+[A-Za-z]{2,63}$')
+EMAIL_REGEX = re.compile(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
 
 class Minemeld(Responder):
     def __init__(self):
@@ -40,13 +45,20 @@ class Minemeld(Responder):
                     return None
 
         if obs_type == "url":
-            return "URL"
+            parsed = urlparse(value)
+            if parsed.scheme in {"http", "https"} and parsed.netloc:
+                return "URL"
+            return None
 
         if obs_type in {"domain", "fqdn"}:
-            return "domain"
+            if DOMAIN_REGEX.match(value):
+                return "domain"
+            return None
 
         if obs_type in {"mail", "email", "email-addr"}:
-            return "email-addr"
+            if EMAIL_REGEX.match(value):
+                return "email-addr"
+            return None
 
         if obs_type in {"user", "user-id"}:
             return "user-id"
@@ -95,7 +107,10 @@ class Minemeld(Responder):
             "confidence": self.minemeld_confidence
         }
         if self.minemeld_ttl is not None and str(self.minemeld_ttl).strip() != "":
-            payload["ttl"] = int(self.minemeld_ttl)
+            try:
+                payload["ttl"] = int(self.minemeld_ttl)
+            except (TypeError, ValueError):
+                pass
 
         #print(f"Payload: {json.dumps(payload, indent=2)}\n")
 

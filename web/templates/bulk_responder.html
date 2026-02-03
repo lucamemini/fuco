@@ -475,7 +475,7 @@
                     <div class="observable-item">
                         <span>
                             <strong>${item.data}</strong>
-                            <span class="badge badge-secondary ml-2">${item.dataType}</span>
+                            <span class="badge bg-secondary text-white ms-2">${item.dataType}</span>
                         </span>
                         <button class="btn btn-sm btn-danger" onclick="removeFromQueue(${index})">
                             <i class="fas fa-times"></i>
@@ -612,7 +612,7 @@
                     : 'status-pending';
                 row.innerHTML = `
                     <td>${r.observable}</td>
-                    <td><span class="badge badge-secondary">${r.data_type}</span></td>
+                    <td><span class="badge bg-secondary text-white">${r.data_type}</span></td>
                     <td>${r.responder_name}</td>
                     <td><code>${r.job_id || 'N/A'}</code></td>
                     <td><span class="status-badge ${statusClass}">${statusText}</span></td>
