@@ -575,6 +575,8 @@
                 pap: pap,
                 message: message
             };
+
+            showResultsLoading(observableQueue.length, selectedResponders.length);
             
             try {
                 const response = await fetch('/api/responder/bulk', {
@@ -614,6 +616,31 @@
                 alert('Execution failed: ' + error.message);
             }
         });
+
+        function showResultsLoading(observableCount, responderCount) {
+            const section = document.getElementById('resultsSection');
+            const tbody = document.getElementById('resultsTableBody');
+            const container = document.getElementById('resultsContainer');
+            const totalRequested = observableCount * responderCount;
+
+            section.style.display = 'block';
+            container.innerHTML = `
+                <div class="alert alert-info d-flex align-items-center gap-2">
+                    <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
+                    <div>
+                        <strong>Executing bulk actions...</strong>
+                        <div class="small text-muted">Submitting ${totalRequested} jobs</div>
+                    </div>
+                </div>
+            `;
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="5" class="text-center text-muted">Waiting for execution results...</td>
+                </tr>
+            `;
+
+            section.scrollIntoView({ behavior: 'smooth' });
+        }
 
         function displayResults(result) {
             const section = document.getElementById('resultsSection');

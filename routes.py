@@ -192,11 +192,13 @@ def render_report_html(report, app_root_path):
     Uses the same LONG template system.
     """
     try:
-        template_name = utils.resolve_long_template(report, app_root_path)
         generic_template = "long/generic.long.html"
-        
-        if not template_name:
-            template_name = generic_template
+        template_name = generic_template
+
+        if report and getattr(report, "status", None) == "Success":
+            template_name = utils.resolve_long_template(report, app_root_path)
+            if not template_name:
+                template_name = generic_template
         
         try:
             rendered = render_template(template_name, artifact=report)
@@ -628,12 +630,16 @@ def get_analysis():
 
     report = utils.get_cached_report(analysis_id)
 
-    template_name = utils.resolve_long_template(report, current_app.root_path)
     generic_template = "long/generic.long.html"
+    template_name = generic_template
 
-    if not template_name:
-        logger.warning("Specific template not found, using generic")
-        template_name = generic_template
+    if report and getattr(report, "status", None) == "Success":
+        template_name = utils.resolve_long_template(report, current_app.root_path)
+        if not template_name:
+            logger.warning("Specific template not found, using generic")
+            template_name = generic_template
+    else:
+        logger.info("Report status not successful, using generic template")
 
     try:
         rendered = render_template(template_name, artifact=report)

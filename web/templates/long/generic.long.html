@@ -10,6 +10,7 @@
 {% else %}
 <div class="alert alert-danger">
   <strong>{{ artifact.data }}</strong><br>
-  {{ artifact.report.errorMessage }}
+  {% set error_message = artifact.report.errorMessage if artifact.report and artifact.report.errorMessage is defined else (artifact.errorMessage if artifact.errorMessage is defined else '') %}
+  {{ error_message if error_message else 'Unknown error occurred' }}
 </div>
 {% endif %}
