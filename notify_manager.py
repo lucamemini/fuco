@@ -112,6 +112,8 @@ def send_notification(subject: str, body: str) -> None:
 def notify_responder_action(action, executed_by: str) -> None:
     """Send notification for a single responder action."""
     try:
+        if getattr(action, 'status', None) not in {"Success", "Completed"}:
+            return
         payload = {
             'dataType': action.payload_data_type,
             'data': action.payload_data
