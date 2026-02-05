@@ -1,0 +1,137 @@
+{% if artifact.status == "Success" %}
+{% set content = artifact.report.full if artifact.report.full is defined else {} %}
+{% set reports = content.reports if content.reports is defined else [] %}
+
+<style>
+	.report-Proofpoint dl { margin-bottom: 2px; }
+	.report-Proofpoint .smaller { width: 25%; }
+</style>
+
+<div class="card border-success report-Proofpoint">
+	<div class="card-header">
+		<ul class="nav nav-tabs card-header-tabs">
+			<li class="nav-item">
+				<a class="nav-link active" id="home-tab_{{ artifact.id }}" data-bs-toggle="tab" data-bs-target="#home_{{ artifact.id }}" role="tab" aria-controls="home_{{ artifact.id }}" aria-selected="true">Result</a>
+			</li>
+			<li class="nav-item">
+				<a class="nav-link" id="json-tab_{{ artifact.id }}" data-bs-toggle="tab" data-bs-target="#json_{{ artifact.id }}" role="tab" aria-controls="json_{{ artifact.id }}" aria-selected="false">Json</a>
+			</li>
+		</ul>
+	</div>
+
+	<div class="card-body">
+		<div class="tab-content" id="myTabContent">
+			<div class="tab-pane fade show active" id="home_{{ artifact.id }}" role="tabpanel" aria-labelledby="home-tab_{{ artifact.id }}">
+
+				{% if content.known is defined and content.known %}
+				<div class="panel panel-info">
+					<div class="panel-heading"><strong>Proofpoint Report</strong></div>
+					<div class="panel-body">
+						<dl class="dl-horizontal">
+							<dt>Last analysis date</dt>
+							<dd>{{ content.generated if content.generated is defined else '-' }}</dd>
+						</dl>
+
+						{% if reports | length > 0 %}
+							{% for report in reports %}
+							<div class="dl-horizontal">
+								{% if report.name is defined %}
+								<dl class="dl-horizontal">
+									<dt>Threat Name</dt>
+									<dd>{{ report.name }}</dd>
+								</dl>
+								{% endif %}
+								{% if report.type is defined %}
+								<dl class="dl-horizontal">
+									<dt>Threat Type</dt>
+									<dd>{{ report.type }}</dd>
+								</dl>
+								{% endif %}
+								{% if report.threatStatus is defined %}
+								<dl class="dl-horizontal">
+									<dt>Threat Status</dt>
+									<dd>{{ report.threatStatus }}</dd>
+								</dl>
+								{% endif %}
+							</div>
+							{% endfor %}
+						{% else %}
+							<div>No reports available.</div>
+						{% endif %}
+					</div>
+				</div>
+
+				{% if reports | length > 0 %}
+				<div class="panel panel-info">
+					<div class="panel-heading"><strong>Malicious Indicators</strong></div>
+					<div class="panel-body">
+						{% for report in reports %}
+							{% if report.forensics is defined and report.forensics | length > 0 %}
+								{% for forensics in report.forensics %}
+									{% if forensics.malicious is defined and forensics.malicious %}
+									<div class="dl-horizontal">
+										<dt>IOC Type</dt>
+										<dd>{{ forensics.type if forensics.type is defined else '-' }}</dd>
+										<dt>IOC Description</dt>
+										<dd>{{ forensics.display if forensics.display is defined else '-' }}</dd>
+										{% if forensics.note is defined %}
+										<dt>IOC Category</dt>
+										<dd>{{ forensics.note }}</dd>
+										{% endif %}
+									</div>
+									<hr>
+									{% endif %}
+
+									{% if forensics.type is defined and forensics.type == 'screenshot' %}
+										{% if forensics.what is defined and forensics.what.url is defined %}
+										<div class="dl-horizontal">
+											<dd><img class="img-responsive smaller" src="{{ forensics.what.url }}" alt="screenshot"/></dd>
+										</div>
+										{% endif %}
+									{% endif %}
+								{% endfor %}
+							{% endif %}
+						{% endfor %}
+					</div>
+				</div>
+				{% endif %}
+
+				{% elif content.known is defined and not content.known %}
+				<div class="panel panel-info">
+					<div class="panel-heading"><strong>Proofpoint Report</strong></div>
+					<div class="panel-body">
+						<dl class="dl-horizontal">
+							<dt>Last analysis date</dt>
+							<dd>Data Unknown by Proofpoint</dd>
+						</dl>
+					</div>
+				</div>
+				{% else %}
+				<div class="panel panel-info">
+					<div class="panel-heading"><strong>Proofpoint Report</strong></div>
+					<div class="panel-body">No data available.</div>
+				</div>
+				{% endif %}
+
+			</div>
+
+			<div class="tab-pane fade" id="json_{{ artifact.id }}" role="tabpanel" aria-labelledby="json-tab_{{ artifact.id }}">
+				{% set json_data = artifact.report if artifact.report is defined else artifact %}
+				<pre><code class="language-json">{{ json_data | tojson(indent=2) }}</code></pre>
+			</div>
+		</div>
+	</div>
+</div>
+
+{% else %}
+<!-- General error -->
+<div class="card border-danger">
+	<div class="card-header alert alert-danger">
+		<strong>Error</strong>
+	</div>
+	<div class="card-body">
+		<strong>{{ (artifact.data if artifact.data is defined else (artifact.attachment.name if artifact.attachment is defined and artifact.attachment.name is defined else '')) | fang }}</strong><br>
+		{{ artifact.report.errorMessage if artifact.report is defined and artifact.report.errorMessage is defined else 'Unknown error occurred' }}
+	</div>
+</div>
+{% endif %}

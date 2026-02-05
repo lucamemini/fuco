@@ -44,7 +44,7 @@
                 <h4>Signatures</h4>
                 <br>
                 <dl class="dl-horizontal" >
-                    <dd>{{ signature }}<dd>
+                    <dd>{{ signature }}</dd>
                 </dl>
             </div>
             <div >
@@ -84,7 +84,7 @@
                 <h4>URI</h4>
                 <br>
                 <dl class="dl-horizontal" >
-                    <dd>{{ uri }}<dd>
+                    <dd>{{ uri }}</dd>
                 </dl>
             </div>
             <div >
@@ -104,7 +104,7 @@
                 <h4>Yara</h4>
                 <br>
                 <dl class="dl-horizontal">
-                    <dd>{{ content.yara }}<dd>
+                    <dd>{{ content.yara }}</dd>
                 </dl>
             </div>
             <div >
@@ -123,7 +123,7 @@
                 <h4>Suricata Alerts</h4>
                 <br>
                 <dl class="dl-horizontal" >
-                    <dd>{{ suri }}<dd>
+                    <dd>{{ suri }}</dd>
                 </dl>
             </div>
         </div>
@@ -139,7 +139,7 @@
                 <h4>Snort Alerts</h4>
                 <br>
                 <dl class="dl-horizontal" >
-                    <dd>{{ snort }}<dd>
+                    <dd>{{ snort }}</dd>
                 </dl>
             </div>
 			
@@ -151,9 +151,9 @@
 <!-- General error  -->
 <div class="panel panel-danger" >
     <div class="panel-heading">
-        <strong>{{(artifact.data || artifact.attachment.name) | fang}}</strong>
+        <strong>{{ (artifact.data or (artifact.attachment.name if artifact.attachment is defined and artifact.attachment.name is defined else '')) | fang }}</strong>
     </div>
     <div class="panel-body">
-        {{artifact.report.errorMessage}}
+        {{ artifact.report.errorMessage if artifact.report is defined and artifact.report.errorMessage is defined else '' }}
     </div>
 </div>

@@ -95,9 +95,9 @@
 <!-- General error -->
 <div class="panel panel-danger" >
     <div class="panel-heading">
-        <strong>{{(artifact.data || artifact.attachment.name) | fang}}</strong>
+        <strong>{{ (artifact.data or (artifact.attachment.name if artifact.attachment is defined and artifact.attachment.name is defined else '')) | fang }}</strong>
     </div>
     <div class="panel-body">
-        {{artifact.report.errorMessage}}
+        {{ artifact.report.errorMessage if artifact.report is defined and artifact.report.errorMessage is defined else '' }}
     </div>
 </div>

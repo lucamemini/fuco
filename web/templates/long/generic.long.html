@@ -1,7 +1,7 @@
-{% if artifact.status == "Success" %}
+{% if artifact and artifact.status == "Success" %}
 <div class="card">
   <div class="card-header">
-    {{ artifact.analyzerName }}
+    {{ artifact.analyzerName if artifact.analyzerName is defined else 'Analyzer' }}
   </div>
   <div class="card-body">
     <pre><code>{{ artifact.report | tojson(indent=2) }}</code></pre>
@@ -9,8 +9,15 @@
 </div>
 {% else %}
 <div class="alert alert-danger">
-  <strong>{{ artifact.data }}</strong><br>
-  {% set error_message = artifact.report.errorMessage if artifact.report and artifact.report.errorMessage is defined else (artifact.errorMessage if artifact.errorMessage is defined else '') %}
+  <strong>{{ artifact.data if artifact and artifact.data is defined else 'Unknown observable' }}</strong><br>
+  {% set error_message = '' %}
+  {% if artifact %}
+    {% if artifact.report is defined and artifact.report and artifact.report.errorMessage is defined %}
+      {% set error_message = artifact.report.errorMessage %}
+    {% elif artifact.errorMessage is defined %}
+      {% set error_message = artifact.errorMessage %}
+    {% endif %}
+  {% endif %}
   {{ error_message if error_message else 'Unknown error occurred' }}
 </div>
 {% endif %}

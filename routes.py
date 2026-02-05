@@ -10,6 +10,7 @@ from urllib.parse import quote
 from functools import wraps
 
 from flask import render_template, request, jsonify, Blueprint, current_app, abort
+from markupsafe import escape
 from pydantic import BaseModel, Field, validator
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -36,6 +37,55 @@ logger = logging.getLogger(__name__)
 
 # Blueprint for routes
 routes_bp = Blueprint('routes', __name__)
+
+
+def _render_generic_fallback(report):
+    """
+    Render a safe fallback HTML block.
+    - Success: show JSON
+    - Failure/None: show error message
+    """
+    try:
+        rendered = render_template("long/generic.long.html", artifact=report)
+        return utils.sanitize_html(rendered)
+    except Exception:
+        pass
+
+    status = getattr(report, "status", None) if report else None
+    if status == "Success":
+        payload = getattr(report, "report", None)
+        if payload is None:
+            json_method = getattr(report, "json", None)
+            payload = json_method() if callable(json_method) else report
+        try:
+            json_text = json.dumps(payload, indent=2, default=str)
+        except Exception:
+            json_text = json.dumps({"error": "Unable to serialize report"}, indent=2)
+
+        return (
+            "<div class='card'>"
+            "<div class='card-header'>Report JSON</div>"
+            "<div class='card-body'><pre><code>"
+            f"{escape(json_text)}"
+            "</code></pre></div></div>"
+        )
+
+    error_message = None
+    if report is not None:
+        error_message = getattr(report, "errorMessage", None)
+        report_body = getattr(report, "report", None)
+        if not error_message and isinstance(report_body, dict):
+            error_message = report_body.get("errorMessage")
+
+    if not error_message:
+        error_message = "Unknown error occurred"
+
+    return (
+        "<div class='alert alert-danger'>"
+        "<strong>Error</strong><br>"
+        f"{escape(str(error_message))}"
+        "</div>"
+    )
 
 # ============ IP Filtering Decorator ============
 
@@ -204,12 +254,11 @@ def render_report_html(report, app_root_path):
             rendered = render_template(template_name, artifact=report)
             return utils.sanitize_html(rendered)
         except Exception:
-            rendered = render_template(generic_template, artifact=report)
-            return utils.sanitize_html(rendered)
+            return _render_generic_fallback(report)
             
     except Exception as e:
         logger.error(f"Error rendering report HTML: {str(e)}")
-        return f"<div class='alert alert-danger'>Rendering error: {str(e)}</div>"
+        return _render_generic_fallback(report)
 
 
 @routes_bp.route('/')
@@ -645,22 +694,13 @@ def get_analysis():
         rendered = render_template(template_name, artifact=report)
         return utils.sanitize_html(rendered)
 
-    except Exception as e:
+    except Exception:
         logger.error(
             "Error rendering template %s, falling back to generic",
             template_name,
             exc_info=True
         )
-
-        try:
-            rendered = render_template(generic_template, artifact=report)
-            return utils.sanitize_html(rendered)
-        except Exception:
-            logger.critical(
-                "Error rendering the generic template as well",
-                exc_info=True
-            )
-            abort(500, "Template rendering failed")
+        return _render_generic_fallback(report)
 
 @routes_bp.route('/getShort', methods=['GET'])
 @optional_limit(config.RATE_LIMIT_GET_SHORT)

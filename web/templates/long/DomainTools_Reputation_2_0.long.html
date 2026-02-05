@@ -1,5 +1,7 @@
 {% if artifact.status == "Success" %}
-{% set content = artifact.report.full %}
+{% set content = artifact.report.full if artifact.report.full is defined else {} %}
+{% set risk_score = content.risk_score if content.risk_score is defined else 0 %}
+{% set reasons = content.reasons if content.reasons is defined else [] %}
 <div class="card border-success">
     <div class="card-header">
     <ul class="nav nav-tabs card-header-tabs">
@@ -31,12 +33,12 @@
 			<dt>Domaintools Reputation</dt>
 			<dd>
 		<span>
-		{% if content.risk_score == 0 %}
-		<span class="badge bg-success">{{content.risk_score}}</span> 		
-		{% elif content.risk_score < 50 %}
-		<span class="badge bg-warning text-dark">{{content.risk_score}}</span> 		
+    {% if risk_score == 0 %}
+    <span class="badge bg-success">{{ risk_score }}</span> 		
+    {% elif risk_score < 50 %}
+    <span class="badge bg-warning text-dark">{{ risk_score }}</span> 		
 		{% else %}
-		<span class="badge bg-danger">{{content.risk_score}}</span> 		
+    <span class="badge bg-danger">{{ risk_score }}</span> 		
 		{% endif %}
 		</span>
             </dd>
@@ -44,7 +46,7 @@
         <dl  class="dl-horizontal">
 			<dt>Reasons</dt>
 			<dd>
-		{% for r in content.reasons %}
+		{% for r in reasons %}
                 <span  class="badge bg-primary mr-xxxs">
                     {{r}}
                 </span>

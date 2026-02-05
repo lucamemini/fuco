@@ -131,3 +131,41 @@ def notify_responder_action(action, executed_by: str) -> None:
         send_notification(subject, body)
     except Exception as e:
         logger.error("Notification error: %s", e)
+
+
+def notify_responder_bulk(actions, executed_by: str, statuses: dict) -> None:
+    """Send a single summary notification for bulk responder actions."""
+    try:
+        if not actions:
+            return
+
+        status_counts = {}
+        lines = []
+        for action in actions:
+            key = action.job_id or f"{action.observable}:{action.responder_name}"
+            status = statuses.get(key) or getattr(action, 'status', 'Unknown')
+            status_counts[status] = status_counts.get(status, 0) + 1
+
+            lines.append(
+                "\n".join([
+                    f"Responder: {action.responder_name}",
+                    f"Observable: {action.observable}",
+                    f"DataType: {action.data_type}",
+                    f"Job ID: {action.job_id or 'N/A'}",
+                    f"Status: {status}",
+                ])
+            )
+
+        subject = f"FUCO Bulk Responder Summary ({len(actions)} actions)"
+        summary = "\n".join([f"{k}: {v}" for k, v in sorted(status_counts.items())])
+        body = (
+            "Bulk responder actions completed\n\n"
+            f"Executed by: {executed_by}\n"
+            f"Total actions: {len(actions)}\n"
+            f"Status summary:\n{summary}\n\n"
+            "Details:\n\n" + "\n\n".join(lines)
+        )
+
+        send_notification(subject, body)
+    except Exception as e:
+        logger.error("Bulk notification error: %s", e)

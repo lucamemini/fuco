@@ -1,5 +1,6 @@
 {% if artifact.status == "Success" %}
-{% set content = artifact.report.full %}
+{% set content = artifact.report.full if artifact.report.full is defined else {} %}
+{% set threatfeed_count = content.threatfeedscount if content.threatfeedscount is defined else 0 %}
 <div class="card border-success">
     <div class="card-header">
     <ul class="nav nav-tabs card-header-tabs">
@@ -104,11 +105,11 @@
           <strong>Threat Feeds</strong>
       </div>
       <div class="panel-body">
-	  {% if content.threatfeedscount == 0 %}
+	  {% if threatfeed_count == 0 %}
           <div >
               No threat feed found
           </div>
-	  {% else %}
+	  {% elif content.threatfeeds is defined %}
           <div>
 	    {% for key,value in content.threatfeeds.items() %}
             <dl class="dl-horizontal" >
@@ -117,6 +118,10 @@
               <dd class="wrap">Last Seen: {{value.lastseen}}</dd>
             </dl>
 	    {% endfor %}
+          </div>
+	  {% else %}
+          <div>
+              No threat feed found
           </div>
 	  {% endif %}
       </div>

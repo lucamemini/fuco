@@ -60,10 +60,10 @@
                 <h4>Signatures</h4>
                 <br>
                 <dl  class="dl-horizontal" >
-                    <dd>{{l}}<dd>
+                    <dd>{{ l }}</dd>
                 </dl>
                 <dl  class="dl-horizontal">
-                    <dd>{{content.signatures.signare}}<dd>
+                    <dd>{{ content.signatures.signare }}</dd>
                 </dl>
             </div>
             <div >
@@ -95,10 +95,10 @@
                                 </span>
                                 <span  class="text-success"><i class="fa fa-thumbs-up"></i>
                                 </span>
-                                {{ip.$}}
+                                {{ ip['$'] if ip is mapping and '$' in ip else ip }}
                             </dd>
                             <dd >
-                                {{ip}}
+                                {{ ip }}
                             </dd>
                         </dl>
                     </div>
@@ -182,9 +182,9 @@
 <!-- General error  -->
 <div class="panel panel-danger" >
     <div class="panel-heading">
-        <strong>{{(artifact.data || artifact.attachment.name) | fang}}</strong>
+        <strong>{{ (artifact.data or (artifact.attachment.name if artifact.attachment is defined and artifact.attachment.name is defined else '')) | fang }}</strong>
     </div>
     <div class="panel-body">
-        {{artifact.report.errorMessage}}
+        {{ artifact.report.errorMessage if artifact.report is defined and artifact.report.errorMessage is defined else '' }}
     </div>
 </div>

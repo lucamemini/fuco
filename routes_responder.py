@@ -12,7 +12,7 @@ from pydantic import BaseModel, Field
 
 import config_responder as responder_cfg
 import config
-from notify_manager import notify_responder_action
+from notify_manager import notify_responder_action, notify_responder_bulk
 import utils
 from security import login_required_json, optional_limit
 
@@ -34,7 +34,7 @@ class ResponderExecuteRequest(BaseModel):
 class ObservableItem(BaseModel):
     """Single observable for bulk"""
     data: str = Field(..., min_length=1)
-    dataType: str = Field(..., min_length=1)
+    dataType: Optional[str] = Field(default=None)
 
 
 class ResponderBulkRequest(BaseModel):
@@ -238,6 +238,18 @@ def register_responder_routes(app):
             req = ResponderBulkRequest(**data)
             for obs in req.observables:
                 obs.data = utils.InputValidator.sanitize_observable(obs.data)
+                if not obs.dataType or not str(obs.dataType).strip():
+                    detected = utils.detect_data_type(obs.data)
+                    if not detected:
+                        return error_response(
+                            f"Unable to detect data type for: {obs.data}",
+                            400
+                        )
+                    if detected in ("md5", "sha256"):
+                        detected = "hash"
+                    if detected == "email":
+                        detected = "mail"
+                    obs.dataType = detected
                 obs.dataType = utils.InputValidator.validate_datatype(obs.dataType, allow_thehive=True)
 
             responder_manager = current_app.responder_manager
@@ -273,8 +285,10 @@ def register_responder_routes(app):
             else:
                 executed_by = req.username or 'unknown'
 
+            bulk_statuses = {}
             for action in actions:
                 if not action.job_id or action.status == "Invalid data type":
+                    bulk_statuses[action.job_id or f"{action.observable}:{action.responder_name}"] = action.status
                     continue
                 try:
                     final_result = responder_manager.poll_responder_job(
@@ -283,10 +297,15 @@ def register_responder_routes(app):
                         max_attempts=responder_cfg.RESPONDER_MAX_POLL_ATTEMPTS,
                         delay=responder_cfg.RESPONDER_POLL_DELAY
                     )
-                    if final_result.get('status') == 'Success':
-                        notify_responder_action(action, executed_by)
+                    bulk_statuses[action.job_id] = final_result.get('status') if isinstance(final_result, dict) else None
                 except Exception as e:
                     logger.warning(f"Bulk responder notification skipped: {str(e)}")
+                    bulk_statuses[action.job_id] = "Unknown"
+
+            try:
+                notify_responder_bulk(actions, executed_by, bulk_statuses)
+            except Exception as e:
+                logger.warning(f"Bulk responder summary notification skipped: {str(e)}")
 
             # Build response
             results = []

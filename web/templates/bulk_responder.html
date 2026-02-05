@@ -223,6 +223,7 @@
                             </button>
                         </div>
                         <div id="fileInfo" class="mt-3"></div>
+                        <div id="fileWarnings" class="mt-2"></div>
                     </div>
                 </div>
             </div>
@@ -427,6 +428,7 @@
                         <i class="fas fa-check-circle"></i> File loaded: ${file.name}
                     </div>
                 `;
+                document.getElementById('fileWarnings').innerHTML = '';
             };
             
             reader.readAsText(file);
@@ -436,16 +438,22 @@
             const lines = content.split('\n');
             let added = 0;
             let limitReached = false;
+            let skippedUnknown = 0;
+            const skippedUnknownItems = [];
             
             lines.forEach(line => {
                 line = line.trim();
                 if (!line || line.startsWith('#')) return;
                 
                 const parts = line.split(',');
-                if (parts.length >= 2) {
+                if (parts.length >= 1) {
                     const observable = parts[0].trim();
-                    const dataType = parts[1].trim();
-                    
+                    let dataType = (parts[1] || '').trim();
+
+                    if (observable && !dataType) {
+                        dataType = detectSingleDataType(observable);
+                    }
+
                     if (observable && dataType) {
                         const ok = addToQueue({ data: observable, dataType: dataType });
                         if (ok) {
@@ -453,6 +461,9 @@
                         } else if (!limitReached) {
                             limitReached = true;
                         }
+                    } else if (observable && !dataType) {
+                        skippedUnknown++;
+                        skippedUnknownItems.push(observable);
                     }
                 }
             });
@@ -462,6 +473,19 @@
             }
             if (limitReached) {
                 alert(`Queue limit reached (${maxQueueSize}). Extra observables were skipped.`);
+            }
+            if (skippedUnknown > 0) {
+                const list = skippedUnknownItems.slice(0, 50).map(item => `<li>${item}</li>`).join('');
+                const more = skippedUnknownItems.length > 50
+                    ? `<div class="small text-muted">${skippedUnknownItems.length - 50} more not shown</div>`
+                    : '';
+                document.getElementById('fileWarnings').innerHTML = `
+                    <div class="alert alert-warning">
+                        <div><strong>Skipped ${skippedUnknown} observables (unknown data type).</strong></div>
+                        <ul class="mb-1">${list}</ul>
+                        ${more}
+                    </div>
+                `;
             }
         }
 

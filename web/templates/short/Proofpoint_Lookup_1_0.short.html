@@ -1,0 +1,5 @@
+{% for t in taxonomies %}
+<span class="ms-1 badge {{ t.css }}" style="display:inline-block;">
+    {{ t.namespace }}:{{ t.predicate }}={{ t.value }}
+</span>
+{% endfor %}

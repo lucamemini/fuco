@@ -7,7 +7,7 @@
             <h4>{{m.common_name}} <span style="font-size: small">[{{m.family}}]</span></h4>
             <dl class="dl-horizontal">
                 <dt>Description</dt>
-                <dd>{{m.description || "No description given."}}</dd>
+                <dd>{{ m.description or "No description given." }}</dd>
                 <dt>Attributions</dt>
 		<dd>
 			<span >No attributions given.</span>
@@ -45,12 +45,12 @@
 <!-- General error  -->
 <div class="panel panel-danger" >
     <div class="panel-heading">
-        <strong>{{(artifact.data || artifact.attachment.name) | fang}}</strong>
+        <strong>{{ (artifact.data or (artifact.attachment.name if artifact.attachment is defined and artifact.attachment.name is defined else '')) | fang }}</strong>
     </div>
     <div class="panel-body">
         <dl class="dl-horizontal" >
             <dt><i class="fa fa-warning"></i> Yara: </dt>
-            <dd class="wrap">{{artifact.report.errorMessage}}</dd>
+            <dd class="wrap">{{ artifact.report.errorMessage if artifact.report is defined and artifact.report.errorMessage is defined else '' }}</dd>
         </dl>
     </div>
 </div>

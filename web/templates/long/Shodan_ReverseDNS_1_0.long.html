@@ -1,5 +1,6 @@
 {% if artifact.status == "Success" %}
-{% set content = artifact.report.full %}
+{% set content = artifact.report.full if artifact.report.full is defined else {} %}
+{% set records = content.records if content.records is defined else {} %}
 <div class="card border-success">
     <div class="card-header">
     <ul class="nav nav-tabs card-header-tabs">
@@ -28,7 +29,7 @@
     </div>
     <div class="panel-body">
         <dl class="dl-horizontal">
-	    {% for domain,ip in content.records.items() %}
+  	    {% for domain,ip in records.items() %}
             <dd >
                 {{domain}}: {{ip}}
             </dd>

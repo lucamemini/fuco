@@ -1,5 +1,6 @@
 {% if artifact.status == "Success" %}
-{% set content = artifact.report.full %}
+{% set content = artifact.report.full if artifact.report.full is defined else {} %}
+{% set pulse_count = content.pulse_count if content.pulse_count is defined else 0 %}
 {% set artifacts_list = artifact.report.artifacts if artifact.report.artifacts is defined else [] %}
 
 <div class="card border-success">
@@ -58,7 +59,7 @@
           </div>
           <div class="panel-body">
 
-            {% if content.errortext %}
+            {% if content.errortext is defined and content.errortext %}
             <div class="alert alert-danger">
               <i class="fas fa-exclamation-triangle"></i> 
               <strong>Error:</strong> {{ content.errortext }}
@@ -111,15 +112,15 @@
                 <dl class="row mb-2">
                   <dt class="col-sm-3">Pulses Found:</dt>
                   <dd class="col-sm-9">
-                    {% if content.pulse_count > 0 %}
-                      <span class="badge bg-warning text-dark">{{ content.pulse_count }}</span>
+                    {% if pulse_count > 0 %}
+                      <span class="badge bg-warning text-dark">{{ pulse_count }}</span>
                     {% else %}
                       <span class="badge bg-success">0</span>
                     {% endif %}
                   </dd>
                 </dl>
 
-                {% if content.pulse_count > 0 %}
+                {% if pulse_count > 0 %}
                 <hr>
                 <h6>Pulse Details:</h6>
                 {% for pulse in content.pulses %}
@@ -433,7 +434,7 @@
       <div class="tab-pane fade" 
            id="json_{{ artifact.id }}" 
            role="tabpanel">
-        {% set json_data = artifact.json() %}
+        {% set json_data = artifact.report if artifact.report is defined else artifact %}
         <pre><code class="language-json">{{ json_data | tojson(indent=2) }}</code></pre>
       </div>
 

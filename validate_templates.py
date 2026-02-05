@@ -2,7 +2,7 @@
 import sys
 import re
 from pathlib import Path
-from jinja2 import Environment, FileSystemLoader, StrictUndefined
+from jinja2 import Environment, FileSystemLoader, ChainableUndefined
 from bs4 import BeautifulSoup
 
 
@@ -104,9 +104,12 @@ def main():
 
     env = Environment(
         loader=FileSystemLoader(str(base)),
-        undefined=StrictUndefined,
+        undefined=ChainableUndefined,
         autoescape=True
     )
+
+    # Register app-like filters used in templates
+    env.filters["fang"] = lambda s: str(s).upper() if s is not None else ""
 
     errors = 0
     fixed = 0

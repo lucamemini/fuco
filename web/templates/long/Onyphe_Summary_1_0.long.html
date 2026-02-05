@@ -1,5 +1,6 @@
 {% if artifact.status == "Success" %}
-{% set content = artifact.report.full %}
+{% set content = artifact.report.full if artifact.report.full is defined else {} %}
+{% set totals = content.get('totals_category') if content is mapping and content.get('totals_category') is not none else {} %}
 <div class="card border-success">
     <div class="card-header">
     <ul class="nav nav-tabs card-header-tabs">
@@ -28,7 +29,7 @@
 		Onyphe Summary - <strong>{{artifact.data}}</strong>
 	</div>
 	<div class="panel-body">
-	    {% if content.totals_category.threatlist > 0 %}
+        {% if totals.threatlist is defined and totals.threatlist > 0 %}
 	    <table class="table" >
             <thead>
                 <th>IPv6</th>
@@ -53,7 +54,7 @@
     </div>
 </div>
 
-{% if content.totals_category.threats > 0 %}
+{% if totals.threats is defined and totals.threats > 0 %}
 <div class="panel panel-info" >
     <div class="panel-heading">
         Threats</strong>
@@ -83,7 +84,7 @@
 </div>
 {% endif %}
 
-{% if content.totals_category.geoloc > 0 %}
+{% if totals.geoloc is defined and totals.geoloc > 0 %}
 <div class="panel panel-info" >
     <div class="panel-heading">
         Geolocate
@@ -124,7 +125,7 @@
 </div>
 {% endif %}
 
-{% if content.totals_category.inetnum > 0 %}
+{% if totals.inetnum is defined and totals.inetnum > 0 %}
 <div class="panel panel-info" >
     <div class="panel-heading">
         inetnum
@@ -162,7 +163,7 @@
 </div>
 {% endif %}
 
-{% if content.totals_category.ports > 0 %}
+{% if totals.ports is defined and totals.ports > 0 %}
 <div class="panel panel-info" >
     <div class="panel-heading">
         Ports
@@ -200,7 +201,7 @@
 </div>
 {% endif %}
 
-{% if content.totals_category.reverse > 0 %}
+{% if totals.reverse is defined and totals.reverse > 0 %}
 <div class="panel panel-info" >
     <div class="panel-heading">
         Reverse</strong>
@@ -232,7 +233,7 @@
 </div>
 {% endif %}
 
-{% if content.totals_category.datascan > 0 %}
+{% if totals.datascan is defined and totals.datascan > 0 %}
 <div class="panel panel-info" >
     <div class="panel-heading">
         DataScan
@@ -278,7 +279,7 @@
 </div>
 {% endif %}
 
-{% if content.totals_category.forward > 0 %}
+{% if totals.forward is defined and totals.forward > 0 %}
 <div class="panel panel-info" >
     <div class="panel-heading">
         Forward
