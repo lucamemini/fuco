@@ -1,0 +1,460 @@
+{% if artifact.status == "Success" %}
+{% set content = artifact.report.full if artifact.report.full is defined else {} %}
+{% set reports = content.reports if content.reports is defined else [] %}
+{% set threat_summary = content.threat_summary if content.threat_summary is defined else none %}
+{% set enriched = content.enriched if content.enriched is defined else false %}
+
+<style>
+	.report-Proofpoint dl { margin-bottom: 2px; }
+	.report-Proofpoint .smaller { width: 25%; }
+	.report-Proofpoint .badge-malicious { background-color: #d9534f; }
+	.report-Proofpoint .badge-suspicious { background-color: #f0ad4e; }
+	.report-Proofpoint .badge-safe { background-color: #5cb85c; }
+	.report-Proofpoint .badge-info { background-color: #5bc0de; }
+	.report-Proofpoint .threat-actor { color: #d9534f; font-weight: bold; }
+	.report-Proofpoint .severity-high { color: #d9534f; font-weight: bold; }
+	.report-Proofpoint .severity-medium { color: #f0ad4e; font-weight: bold; }
+	.report-Proofpoint .severity-low { color: #5bc0de; }
+</style>
+
+<div class="card border-success report-Proofpoint">
+	<div class="card-header">
+		<ul class="nav nav-tabs card-header-tabs">
+			<li class="nav-item">
+				<a class="nav-link active" id="summary-tab_{{ artifact.id }}" data-bs-toggle="tab" data-bs-target="#summary_{{ artifact.id }}" role="tab" aria-controls="summary_{{ artifact.id }}" aria-selected="true">Summary</a>
+			</li>
+			{% if threat_summary %}
+			<li class="nav-item">
+				<a class="nav-link" id="intelligence-tab_{{ artifact.id }}" data-bs-toggle="tab" data-bs-target="#intelligence_{{ artifact.id }}" role="tab" aria-controls="intelligence_{{ artifact.id }}" aria-selected="false">Threat Intelligence</a>
+			</li>
+			{% endif %}
+			{% if reports | length > 0 %}
+			<li class="nav-item">
+				<a class="nav-link" id="forensics-tab_{{ artifact.id }}" data-bs-toggle="tab" data-bs-target="#forensics_{{ artifact.id }}" role="tab" aria-controls="forensics_{{ artifact.id }}" aria-selected="false">Forensics (IOC)</a>
+			</li>
+			{% endif %}
+			<li class="nav-item">
+				<a class="nav-link" id="json-tab_{{ artifact.id }}" data-bs-toggle="tab" data-bs-target="#json_{{ artifact.id }}" role="tab" aria-controls="json_{{ artifact.id }}" aria-selected="false">Json</a>
+			</li>
+		</ul>
+	</div>
+
+	<div class="card-body">
+		<div class="tab-content" id="myTabContent">
+			
+			<!-- SUMMARY TAB -->
+			<div class="tab-pane fade show active" id="summary_{{ artifact.id }}" role="tabpanel" aria-labelledby="summary-tab_{{ artifact.id }}">
+				{% if content.known is defined and content.known %}
+				
+				<div class="panel panel-info">
+					<div class="panel-heading">
+						<strong>Threat Overview</strong>
+						{% if enriched %}
+						<span class="badge badge-success pull-right">Enriched</span>
+						{% endif %}
+					</div>
+					<div class="panel-body">
+						<dl class="dl-horizontal">
+							<dt>Threat ID</dt>
+							<dd><code>{{ content.sha256 if content.sha256 is defined else '-' }}</code></dd>
+							
+							{% if content.original_url is defined %}
+							<dt>Original URL</dt>
+							<dd>{{ content.original_url }}</dd>
+							{% endif %}
+							
+							<dt>Analysis Date</dt>
+							<dd>{{ content.generated if content.generated is defined else '-' }}</dd>
+							
+							{% if threat_summary %}
+							<dt>Category</dt>
+							<dd>
+								{% if threat_summary.category == 'malware' %}
+								<span class="badge badge-malicious">{{ threat_summary.category | upper }}</span>
+								{% elif threat_summary.category == 'phish' %}
+								<span class="badge badge-malicious">{{ threat_summary.category | upper }}</span>
+								{% elif threat_summary.category == 'impostor' %}
+								<span class="badge badge-suspicious">{{ threat_summary.category | upper }}</span>
+								{% elif threat_summary.category == 'spam' %}
+								<span class="badge badge-suspicious">{{ threat_summary.category | upper }}</span>
+								{% else %}
+								<span class="badge badge-info">{{ threat_summary.category | upper }}</span>
+								{% endif %}
+							</dd>
+							
+							<dt>Status</dt>
+							<dd>
+								{% if threat_summary.status == 'active' %}
+								<span class="badge badge-malicious">ACTIVE</span>
+								{% else %}
+								<span class="badge badge-safe">{{ threat_summary.status | upper }}</span>
+								{% endif %}
+							</dd>
+							
+							<dt>Severity</dt>
+							<dd>
+								{% if threat_summary.severity >= 700 %}
+								<span class="severity-high">{{ threat_summary.severity }}/1000 (HIGH)</span>
+								{% elif threat_summary.severity >= 400 %}
+								<span class="severity-medium">{{ threat_summary.severity }}/1000 (MEDIUM)</span>
+								{% else %}
+								<span class="severity-low">{{ threat_summary.severity }}/1000 (LOW)</span>
+								{% endif %}
+							</dd>
+							
+							<dt>Attack Spread</dt>
+							<dd>{{ threat_summary.attackSpread }} Proofpoint customers affected</dd>
+							
+							{% if threat_summary.notable %}
+							<dt>Notable</dt>
+							<dd><span class="badge badge-malicious">YES - Flagged by Proofpoint Analysts</span></dd>
+							{% endif %}
+							
+							<dt>Identified At</dt>
+							<dd>{{ threat_summary.identifiedAt if threat_summary.identifiedAt is defined else '-' }}</dd>
+							{% endif %}
+						</dl>
+					</div>
+				</div>
+
+				{% if reports | length > 0 %}
+				<div class="panel panel-info">
+					<div class="panel-heading"><strong>Threat Details</strong></div>
+					<div class="panel-body">
+						{% for report in reports %}
+						<dl class="dl-horizontal">
+							{% if report.name is defined %}
+							<dt>Threat Name</dt>
+							<dd>{{ report.name }}</dd>
+							{% endif %}
+							
+							{% if report.type is defined %}
+							<dt>Threat Type</dt>
+							<dd>{{ report.type }}</dd>
+							{% endif %}
+							
+							{% if report.threatStatus is defined %}
+							<dt>Status</dt>
+							<dd>
+								{% if report.threatStatus == 'active' %}
+								<span class="badge badge-malicious">{{ report.threatStatus | upper }}</span>
+								{% else %}
+								<span class="badge badge-safe">{{ report.threatStatus | upper }}</span>
+								{% endif %}
+							</dd>
+							{% endif %}
+							
+							{% if report.scope is defined %}
+							<dt>Scope</dt>
+							<dd>{{ report.scope }}</dd>
+							{% endif %}
+						</dl>
+						{% endfor %}
+					</div>
+				</div>
+				{% endif %}
+
+				{% elif content.known is defined and not content.known %}
+				<div class="panel panel-warning">
+					<div class="panel-heading"><strong>Proofpoint Report</strong></div>
+					<div class="panel-body">
+						<dl class="dl-horizontal">
+							<dt>Status</dt>
+							<dd><span class="badge badge-info">Unknown by Proofpoint</span></dd>
+							<dt>SHA256</dt>
+							<dd><code>{{ content.sha256 if content.sha256 is defined else '-' }}</code></dd>
+							<dt>Message</dt>
+							<dd>{{ content.message if content.message is defined else 'This threat is not in Proofpoint database' }}</dd>
+						</dl>
+					</div>
+				</div>
+				{% else %}
+				<div class="panel panel-info">
+					<div class="panel-heading"><strong>Proofpoint Report</strong></div>
+					<div class="panel-body">No data available.</div>
+				</div>
+				{% endif %}
+
+			</div>
+
+			<!-- THREAT INTELLIGENCE TAB -->
+			{% if threat_summary %}
+			<div class="tab-pane fade" id="intelligence_{{ artifact.id }}" role="tabpanel" aria-labelledby="intelligence-tab_{{ artifact.id }}">
+				
+				<!-- Actors -->
+				{% if threat_summary.actors is defined and threat_summary.actors | length > 0 %}
+				<div class="panel panel-danger">
+					<div class="panel-heading"><strong>Threat Actors</strong></div>
+					<div class="panel-body">
+						{% for actor in threat_summary.actors %}
+						<dl class="dl-horizontal">
+							<dt>Actor Name</dt>
+							<dd class="threat-actor">{{ actor.name }}</dd>
+							<dt>Actor ID</dt>
+							<dd><code>{{ actor.id }}</code></dd>
+						</dl>
+						{% if not loop.last %}<hr>{% endif %}
+						{% endfor %}
+					</div>
+				</div>
+				{% endif %}
+
+				<!-- Malware -->
+				{% if threat_summary.malware is defined and threat_summary.malware | length > 0 %}
+				<div class="panel panel-danger">
+					<div class="panel-heading"><strong>Malware Identified</strong></div>
+					<div class="panel-body">
+						{% for malware in threat_summary.malware %}
+						<dl class="dl-horizontal">
+							<dt>Malware Name</dt>
+							<dd><span class="badge badge-malicious">{{ malware.name }}</span></dd>
+							<dt>Malware ID</dt>
+							<dd><code>{{ malware.id }}</code></dd>
+						</dl>
+						{% if not loop.last %}<hr>{% endif %}
+						{% endfor %}
+					</div>
+				</div>
+				{% endif %}
+
+				<!-- Families -->
+				{% if threat_summary.families is defined and threat_summary.families | length > 0 %}
+				<div class="panel panel-warning">
+					<div class="panel-heading"><strong>Threat Families</strong></div>
+					<div class="panel-body">
+						{% for family in threat_summary.families %}
+						<dl class="dl-horizontal">
+							<dt>Family Name</dt>
+							<dd>{{ family.name }}</dd>
+							<dt>Family ID</dt>
+							<dd><code>{{ family.id }}</code></dd>
+						</dl>
+						{% if not loop.last %}<hr>{% endif %}
+						{% endfor %}
+					</div>
+				</div>
+				{% endif %}
+
+				<!-- Techniques (MITRE ATT&CK) -->
+				{% if threat_summary.techniques is defined and threat_summary.techniques | length > 0 %}
+				<div class="panel panel-info">
+					<div class="panel-heading"><strong>Attack Techniques (MITRE ATT&CK)</strong></div>
+					<div class="panel-body">
+						{% for technique in threat_summary.techniques %}
+						<dl class="dl-horizontal">
+							<dt>Technique</dt>
+							<dd>{{ technique.name }}</dd>
+							<dt>Technique ID</dt>
+							<dd><code>{{ technique.id }}</code></dd>
+						</dl>
+						{% if not loop.last %}<hr>{% endif %}
+						{% endfor %}
+					</div>
+				</div>
+				{% endif %}
+
+				<!-- Brands -->
+				{% if threat_summary.brands is defined and threat_summary.brands | length > 0 %}
+				<div class="panel panel-warning">
+					<div class="panel-heading"><strong>Brand Impersonation</strong></div>
+					<div class="panel-body">
+						{% for brand in threat_summary.brands %}
+						<dl class="dl-horizontal">
+							<dt>Brand Name</dt>
+							<dd><strong>{{ brand.name }}</strong></dd>
+							<dt>Brand ID</dt>
+							<dd><code>{{ brand.id }}</code></dd>
+						</dl>
+						{% if not loop.last %}<hr>{% endif %}
+						{% endfor %}
+					</div>
+				</div>
+				{% endif %}
+
+				<!-- Targeting -->
+				<div class="panel panel-info">
+					<div class="panel-heading"><strong>Targeting Information</strong></div>
+					<div class="panel-body">
+						<dl class="dl-horizontal">
+							<dt>Vertically Targeted</dt>
+							<dd>{{ 'Yes' if threat_summary.verticals else 'No' }}</dd>
+							<dt>Geographically Targeted</dt>
+							<dd>{{ 'Yes' if threat_summary.geographies else 'No' }}</dd>
+						</dl>
+					</div>
+				</div>
+
+			</div>
+			{% endif %}
+
+			<!-- FORENSICS TAB -->
+			{% if reports | length > 0 %}
+			<div class="tab-pane fade" id="forensics_{{ artifact.id }}" role="tabpanel" aria-labelledby="forensics-tab_{{ artifact.id }}">
+				
+				<div class="panel panel-info">
+					<div class="panel-heading"><strong>Malicious Indicators (IOC)</strong></div>
+					<div class="panel-body">
+						{% for report in reports %}
+							{% if report.forensics is defined and report.forensics | length > 0 %}
+								{% for forensics in report.forensics %}
+									{% if forensics.malicious is defined and forensics.malicious %}
+									<div class="dl-horizontal">
+										<dt>IOC Type</dt>
+										<dd><span class="badge badge-malicious">{{ forensics.type if forensics.type is defined else '-' }}</span></dd>
+										
+										<dt>Description</dt>
+										<dd>{{ forensics.display if forensics.display is defined else '-' }}</dd>
+										
+										{% if forensics.note is defined %}
+										<dt>Note</dt>
+										<dd>{{ forensics.note }}</dd>
+										{% endif %}
+										
+										{% if forensics.engine is defined %}
+										<dt>Engine</dt>
+										<dd>{{ forensics.engine }}</dd>
+										{% endif %}
+										
+										<!-- Type-specific details -->
+										{% if forensics.what is defined %}
+										<dt>Details</dt>
+										<dd>
+											{% if forensics.type == 'dns' %}
+												<strong>Host:</strong> {{ forensics.what.host if forensics.what.host is defined else '-' }}<br>
+												{% if forensics.what.ips is defined %}
+												<strong>IPs:</strong> {{ forensics.what.ips | join(', ') }}<br>
+												{% endif %}
+												{% if forensics.what.nameservers is defined %}
+												<strong>Nameservers:</strong> {{ forensics.what.nameservers | join(', ') }}
+												{% endif %}
+											{% elif forensics.type == 'network' %}
+												<strong>Action:</strong> {{ forensics.what.action if forensics.what.action is defined else '-' }}<br>
+												<strong>IP:</strong> {{ forensics.what.ip if forensics.what.ip is defined else '-' }}<br>
+												<strong>Port:</strong> {{ forensics.what.port if forensics.what.port is defined else '-' }}<br>
+												<strong>Type:</strong> {{ forensics.what.type if forensics.what.type is defined else '-' }}
+											{% elif forensics.type == 'file' %}
+												{% if forensics.what.path is defined %}
+												<strong>Path:</strong> <code>{{ forensics.what.path }}</code><br>
+												{% endif %}
+												{% if forensics.what.sha256 is defined %}
+												<strong>SHA256:</strong> <code>{{ forensics.what.sha256 }}</code><br>
+												{% endif %}
+												{% if forensics.what.md5 is defined %}
+												<strong>MD5:</strong> <code>{{ forensics.what.md5 }}</code><br>
+												{% endif %}
+												{% if forensics.what.action is defined %}
+												<strong>Action:</strong> {{ forensics.what.action }}
+												{% endif %}
+											{% elif forensics.type == 'url' %}
+												{% if forensics.what.url is defined %}
+												<strong>URL:</strong> {{ forensics.what.url }}<br>
+												{% endif %}
+												{% if forensics.what.ip is defined %}
+												<strong>IP:</strong> {{ forensics.what.ip }}<br>
+												{% endif %}
+												{% if forensics.what.blacklisted is defined %}
+												<strong>Blacklisted:</strong> {{ 'Yes' if forensics.what.blacklisted else 'No' }}<br>
+												{% endif %}
+												{% if forensics.what.httpStatus is defined %}
+												<strong>HTTP Status:</strong> {{ forensics.what.httpStatus }}
+												{% endif %}
+											{% elif forensics.type == 'attachment' %}
+												{% if forensics.what.sha256 is defined %}
+												<strong>SHA256:</strong> <code>{{ forensics.what.sha256 }}</code><br>
+												{% endif %}
+												{% if forensics.what.rule is defined %}
+												<strong>Rule:</strong> {{ forensics.what.rule }}<br>
+												{% endif %}
+												{% if forensics.what.blacklisted is defined %}
+												<strong>Blacklisted:</strong> {{ 'Yes' if forensics.what.blacklisted else 'No' }}
+												{% endif %}
+											{% elif forensics.type == 'registry' %}
+												{% if forensics.what.key is defined %}
+												<strong>Key:</strong> <code>{{ forensics.what.key }}</code><br>
+												{% endif %}
+												{% if forensics.what.action is defined %}
+												<strong>Action:</strong> {{ forensics.what.action }}<br>
+												{% endif %}
+												{% if forensics.what.value is defined %}
+												<strong>Value:</strong> {{ forensics.what.value }}
+												{% endif %}
+											{% elif forensics.type == 'process' %}
+												{% if forensics.what.path is defined %}
+												<strong>Path:</strong> <code>{{ forensics.what.path }}</code><br>
+												{% endif %}
+												{% if forensics.what.action is defined %}
+												<strong>Action:</strong> {{ forensics.what.action }}
+												{% endif %}
+											{% elif forensics.type == 'mutex' %}
+												{% if forensics.what.name is defined %}
+												<strong>Mutex Name:</strong> {{ forensics.what.name }}<br>
+												{% endif %}
+												{% if forensics.what.path is defined %}
+												<strong>Process:</strong> <code>{{ forensics.what.path }}</code>
+												{% endif %}
+											{% elif forensics.type == 'ids' %}
+												{% if forensics.what.name is defined %}
+												<strong>Rule Name:</strong> {{ forensics.what.name }}<br>
+												{% endif %}
+												{% if forensics.what.signatureId is defined %}
+												<strong>Signature ID:</strong> {{ forensics.what.signatureId }}
+												{% endif %}
+											{% else %}
+												<pre>{{ forensics.what | tojson(indent=2) }}</pre>
+											{% endif %}
+										</dd>
+										{% endif %}
+										
+										{% if forensics.platforms is defined and forensics.platforms | length > 0 %}
+										<dt>Platforms</dt>
+										<dd>
+											{% for platform in forensics.platforms %}
+											<span class="badge badge-info">{{ platform.name }} ({{ platform.os }} {{ platform.version }})</span>
+											{% endfor %}
+										</dd>
+										{% endif %}
+									</div>
+									<hr>
+									{% endif %}
+
+									<!-- Screenshot rendering -->
+									{% if forensics.type is defined and forensics.type == 'screenshot' %}
+										{% if forensics.what is defined and forensics.what.url is defined %}
+										<div class="dl-horizontal">
+											<dt>Screenshot</dt>
+											<dd><img class="img-responsive smaller" src="{{ forensics.what.url }}" alt="Threat Screenshot"/></dd>
+										</div>
+										<hr>
+										{% endif %}
+									{% endif %}
+								{% endfor %}
+							{% endif %}
+						{% endfor %}
+					</div>
+				</div>
+
+			</div>
+			{% endif %}
+
+			<!-- JSON TAB -->
+			<div class="tab-pane fade" id="json_{{ artifact.id }}" role="tabpanel" aria-labelledby="json-tab_{{ artifact.id }}">
+				{% set json_data = artifact.report if artifact.report is defined else artifact %}
+				<pre><code class="language-json">{{ json_data | tojson(indent=2) }}</code></pre>
+			</div>
+
+		</div>
+	</div>
+</div>
+
+{% else %}
+<!-- General error -->
+<div class="card border-danger">
+	<div class="card-header alert alert-danger">
+		<strong>Error</strong>
+	</div>
+	<div class="card-body">
+		<strong>{{ (artifact.data if artifact.data is defined else (artifact.attachment.name if artifact.attachment is defined and artifact.attachment.name is defined else '')) | fang }}</strong><br>
+		{{ artifact.report.errorMessage if artifact.report is defined and artifact.report.errorMessage is defined else 'Unknown error occurred' }}
+	</div>
+</div>
+{% endif %}

@@ -1,0 +1,13 @@
+{
+  "config": {
+    "service": "query",
+    "url": "https://tap-api-v2.proofpoint.com",
+    "apikey": "your-principal-here",
+    "secret": "your-secret-here",
+    "verifyssl": true,
+    "includeCampaignForensics": false,
+    "autoEnrich": true
+  },
+  "dataType": "hash",
+  "data": "f030dbaec17d0db45b267e232b6f7a6641154ec5029b6e36a031939f403dde7d"
+}
