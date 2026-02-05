@@ -51,7 +51,7 @@ class ProofpointForensicsAnalyzer(Analyzer):
             )
             
             # Taxonomy: Severity
-            severity = threat.get('severity', 0)
+            severity = threat.get('severityScore', threat.get('severity', 0))
             sev_level = "info"
             if severity >= 700:
                 sev_level = "malicious"
