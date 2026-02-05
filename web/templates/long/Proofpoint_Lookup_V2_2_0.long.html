@@ -2,6 +2,10 @@
 {% set content = artifact.report.full if artifact.report.full is defined else {} %}
 {% set reports = content.reports if content.reports is defined else [] %}
 {% set threat_summary = content.threat_summary if content.threat_summary is defined else none %}
+{% set severity_score = (threat_summary.severityScore if threat_summary is not none and threat_summary.severityScore is defined else (threat_summary.severity if threat_summary is not none and threat_summary.severity is defined else 0)) %}
+{% set threat_category = threat_summary.category if threat_summary is not none and threat_summary.category is defined else 'unknown' %}
+{% set threat_status = threat_summary.status if threat_summary is not none and threat_summary.status is defined else 'unknown' %}
+{% set attack_spread = threat_summary.attackSpread if threat_summary is not none and threat_summary.attackSpread is defined else '-' %}
 {% set enriched = content.enriched if content.enriched is defined else false %}
 
 <style>
@@ -69,41 +73,41 @@
 							{% if threat_summary %}
 							<dt>Category</dt>
 							<dd>
-								{% if threat_summary.category == 'malware' %}
-								<span class="badge badge-malicious">{{ threat_summary.category | upper }}</span>
-								{% elif threat_summary.category == 'phish' %}
-								<span class="badge badge-malicious">{{ threat_summary.category | upper }}</span>
-								{% elif threat_summary.category == 'impostor' %}
-								<span class="badge badge-suspicious">{{ threat_summary.category | upper }}</span>
-								{% elif threat_summary.category == 'spam' %}
-								<span class="badge badge-suspicious">{{ threat_summary.category | upper }}</span>
+								{% if threat_category == 'malware' %}
+								<span class="badge badge-malicious">{{ threat_category | upper }}</span>
+								{% elif threat_category == 'phish' %}
+								<span class="badge badge-malicious">{{ threat_category | upper }}</span>
+								{% elif threat_category == 'impostor' %}
+								<span class="badge badge-suspicious">{{ threat_category | upper }}</span>
+								{% elif threat_category == 'spam' %}
+								<span class="badge badge-suspicious">{{ threat_category | upper }}</span>
 								{% else %}
-								<span class="badge badge-info">{{ threat_summary.category | upper }}</span>
+								<span class="badge badge-info">{{ threat_category | upper }}</span>
 								{% endif %}
 							</dd>
 							
 							<dt>Status</dt>
 							<dd>
-								{% if threat_summary.status == 'active' %}
+								{% if threat_status == 'active' %}
 								<span class="badge badge-malicious">ACTIVE</span>
 								{% else %}
-								<span class="badge badge-safe">{{ threat_summary.status | upper }}</span>
+								<span class="badge badge-safe">{{ threat_status | upper }}</span>
 								{% endif %}
 							</dd>
 							
 							<dt>Severity</dt>
 							<dd>
-								{% if threat_summary.severity >= 700 %}
-								<span class="severity-high">{{ threat_summary.severity }}/1000 (HIGH)</span>
-								{% elif threat_summary.severity >= 400 %}
-								<span class="severity-medium">{{ threat_summary.severity }}/1000 (MEDIUM)</span>
+								{% if severity_score >= 700 %}
+								<span class="severity-high">{{ severity_score }}/1000 (HIGH)</span>
+								{% elif severity_score >= 400 %}
+								<span class="severity-medium">{{ severity_score }}/1000 (MEDIUM)</span>
 								{% else %}
-								<span class="severity-low">{{ threat_summary.severity }}/1000 (LOW)</span>
+								<span class="severity-low">{{ severity_score }}/1000 (LOW)</span>
 								{% endif %}
 							</dd>
 							
 							<dt>Attack Spread</dt>
-							<dd>{{ threat_summary.attackSpread }} Proofpoint customers affected</dd>
+							<dd>{{ attack_spread }} Proofpoint customers affected</dd>
 							
 							{% if threat_summary.notable %}
 							<dt>Notable</dt>
@@ -111,7 +115,7 @@
 							{% endif %}
 							
 							<dt>Identified At</dt>
-							<dd>{{ threat_summary.identifiedAt if threat_summary.identifiedAt is defined else '-' }}</dd>
+							<dd>{{ threat_summary.identifiedAt if threat_summary is not none and threat_summary.identifiedAt is defined else '-' }}</dd>
 							{% endif %}
 						</dl>
 					</div>
@@ -277,9 +281,9 @@
 					<div class="panel-body">
 						<dl class="dl-horizontal">
 							<dt>Vertically Targeted</dt>
-							<dd>{{ 'Yes' if threat_summary.verticals else 'No' }}</dd>
+							<dd>{{ 'Yes' if threat_summary is not none and threat_summary.verticallyTargeted is defined and threat_summary.verticallyTargeted else 'No' }}</dd>
 							<dt>Geographically Targeted</dt>
-							<dd>{{ 'Yes' if threat_summary.geographies else 'No' }}</dd>
+							<dd>{{ 'Yes' if threat_summary is not none and threat_summary.geoTargeted is defined and threat_summary.geoTargeted else 'No' }}</dd>
 						</dl>
 					</div>
 				</div>

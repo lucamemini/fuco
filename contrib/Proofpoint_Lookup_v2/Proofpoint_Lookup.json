@@ -12,7 +12,7 @@
     "max_tlp": 1,
     "check_tlp": true
   },
-  "command": "Proofpoint/proofpoint_lookup.py",
+  "command": "Proofpoint_Lookup_v2/proofpoint_lookup.py",
   "configurationItems": [
     {
       "name": "url",
