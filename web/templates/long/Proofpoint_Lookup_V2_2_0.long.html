@@ -8,18 +8,7 @@
 {% set attack_spread = threat_summary.attackSpread if threat_summary is not none and threat_summary.attackSpread is defined else '-' %}
 {% set enriched = content.enriched if content.enriched is defined else false %}
 
-<style>
-	.report-Proofpoint dl { margin-bottom: 2px; }
-	.report-Proofpoint .smaller { width: 25%; }
-	.report-Proofpoint .badge-malicious { background-color: #d9534f; }
-	.report-Proofpoint .badge-suspicious { background-color: #f0ad4e; }
-	.report-Proofpoint .badge-safe { background-color: #5cb85c; }
-	.report-Proofpoint .badge-info { background-color: #5bc0de; }
-	.report-Proofpoint .threat-actor { color: #d9534f; font-weight: bold; }
-	.report-Proofpoint .severity-high { color: #d9534f; font-weight: bold; }
-	.report-Proofpoint .severity-medium { color: #f0ad4e; font-weight: bold; }
-	.report-Proofpoint .severity-low { color: #5bc0de; }
-</style>
+
 
 <div class="card border-success report-Proofpoint">
 	<div class="card-header">
@@ -74,13 +63,13 @@
 							<dt>Category</dt>
 							<dd>
 								{% if threat_category == 'malware' %}
-								<span class="badge badge-malicious">{{ threat_category | upper }}</span>
+								<span class="badge badge-danger">{{ threat_category | upper }}</span>
 								{% elif threat_category == 'phish' %}
-								<span class="badge badge-malicious">{{ threat_category | upper }}</span>
+								<span class="badge badge-danger">{{ threat_category | upper }}</span>
 								{% elif threat_category == 'impostor' %}
-								<span class="badge badge-suspicious">{{ threat_category | upper }}</span>
+								<span class="badge badge-warning">{{ threat_category | upper }}</span>
 								{% elif threat_category == 'spam' %}
-								<span class="badge badge-suspicious">{{ threat_category | upper }}</span>
+								<span class="badge badge-warning">{{ threat_category | upper }}</span>
 								{% else %}
 								<span class="badge badge-info">{{ threat_category | upper }}</span>
 								{% endif %}
@@ -89,20 +78,20 @@
 							<dt>Status</dt>
 							<dd>
 								{% if threat_status == 'active' %}
-								<span class="badge badge-malicious">ACTIVE</span>
+								<span class="badge badge-danger">ACTIVE</span>
 								{% else %}
-								<span class="badge badge-safe">{{ threat_status | upper }}</span>
+								<span class="badge badge-success">{{ threat_status | upper }}</span>
 								{% endif %}
 							</dd>
 							
 							<dt>Severity</dt>
 							<dd>
 								{% if severity_score >= 700 %}
-								<span class="severity-high">{{ severity_score }}/1000 (HIGH)</span>
+								<span class="text-danger font-weight-bold">{{ severity_score }}/1000 (HIGH)</span>
 								{% elif severity_score >= 400 %}
-								<span class="severity-medium">{{ severity_score }}/1000 (MEDIUM)</span>
+								<span class="text-warning font-weight-bold">{{ severity_score }}/1000 (MEDIUM)</span>
 								{% else %}
-								<span class="severity-low">{{ severity_score }}/1000 (LOW)</span>
+								<span class="text-info">{{ severity_score }}/1000 (LOW)</span>
 								{% endif %}
 							</dd>
 							
@@ -111,7 +100,7 @@
 							
 							{% if threat_summary.notable %}
 							<dt>Notable</dt>
-							<dd><span class="badge badge-malicious">YES - Flagged by Proofpoint Analysts</span></dd>
+							<dd><span class="badge badge-danger">YES - Flagged by Proofpoint Analysts</span></dd>
 							{% endif %}
 							
 							<dt>Identified At</dt>
@@ -141,9 +130,9 @@
 							<dt>Status</dt>
 							<dd>
 								{% if report.threatStatus == 'active' %}
-								<span class="badge badge-malicious">{{ report.threatStatus | upper }}</span>
+									<span class="badge badge-danger">{{ report.threatStatus | upper }}</span>
 								{% else %}
-								<span class="badge badge-safe">{{ report.threatStatus | upper }}</span>
+									<span class="badge badge-success">{{ report.threatStatus | upper }}</span>
 								{% endif %}
 							</dd>
 							{% endif %}
@@ -193,7 +182,7 @@
 						{% for actor in threat_summary.actors %}
 						<dl class="dl-horizontal">
 							<dt>Actor Name</dt>
-							<dd class="threat-actor">{{ actor.name }}</dd>
+							<dd class="text-danger font-weight-bold">{{ actor.name }}</dd>
 							<dt>Actor ID</dt>
 							<dd><code>{{ actor.id }}</code></dd>
 						</dl>
@@ -211,7 +200,7 @@
 						{% for malware in threat_summary.malware %}
 						<dl class="dl-horizontal">
 							<dt>Malware Name</dt>
-							<dd><span class="badge badge-malicious">{{ malware.name }}</span></dd>
+							<dd><span class="badge badge-danger">{{ malware.name }}</span></dd>
 							<dt>Malware ID</dt>
 							<dd><code>{{ malware.id }}</code></dd>
 						</dl>
@@ -304,7 +293,7 @@
 									{% if forensics.malicious is defined and forensics.malicious %}
 									<div class="dl-horizontal">
 										<dt>IOC Type</dt>
-										<dd><span class="badge badge-malicious">{{ forensics.type if forensics.type is defined else '-' }}</span></dd>
+											<dd><span class="badge badge-danger">{{ forensics.type if forensics.type is defined else '-' }}</span></dd>
 										
 										<dt>Description</dt>
 										<dd>{{ forensics.display if forensics.display is defined else '-' }}</dd>
@@ -413,7 +402,7 @@
 										<dt>Platforms</dt>
 										<dd>
 											{% for platform in forensics.platforms %}
-											<span class="badge badge-info">{{ platform.name }} ({{ platform.os }} {{ platform.version }})</span>
+												<span class="badge badge-info">{{ platform.name }} ({{ platform.os }} {{ platform.version }})</span>
 											{% endfor %}
 										</dd>
 										{% endif %}
@@ -426,7 +415,7 @@
 										{% if forensics.what is defined and forensics.what.url is defined %}
 										<div class="dl-horizontal">
 											<dt>Screenshot</dt>
-											<dd><img class="img-responsive smaller" src="{{ forensics.what.url }}" alt="Threat Screenshot"/></dd>
+												<dd><img class="img-fluid" style="width: 25%;" src="{{ forensics.what.url }}" alt="Threat Screenshot"/></dd>
 										</div>
 										<hr>
 										{% endif %}
