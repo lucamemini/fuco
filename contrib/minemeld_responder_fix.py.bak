@@ -6,10 +6,7 @@ import ipaddress
 import re
 from urllib.parse import urlparse
 import urllib3
-import logging
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
-logger = logging.getLogger(__name__)
 
 URL_REGEX = re.compile(r'^https?://[^\s/$.?#].[^\s]*$', re.IGNORECASE)
 DOMAIN_REGEX = re.compile(r'^(?!-)([A-Za-z0-9-]{1,63}(?<!-)\.)+[A-Za-z]{2,63}$')
@@ -25,11 +22,6 @@ class Minemeld(Responder):
         self.minemeld_share_level = self.get_param('config.minemeld_share_level', None, "Share level missing!")
         self.minemeld_confidence = self.get_param('config.minemeld_confidence', None, "Confidence level missing!")
         self.minemeld_ttl = self.get_param('config.minemeld_ttl', None, "TTL missing!")
-
-        self.allowed_users = self.get_param('config.allowed_users', None)
-        self.invoked_by = self.get_param('data.parameters.user', None)
-        if not self.invoked_by:
-            self.invoked_by = self.get_param('data.createdBy', None)
 
         self.observable_type = self.get_param('data.dataType', None, "Data type is empty")
         self.observable_description = self.get_param('data.message', None, "Message is empty")
@@ -88,26 +80,8 @@ class Minemeld(Responder):
 
         return None
 
-    def _is_user_allowed(self):
-        if not self.allowed_users:
-            return True
-        if not self.invoked_by:
-            return False
-        raw = str(self.allowed_users)
-        users = [u.strip() for u in raw.replace(',', ';').split(';') if u.strip()]
-        if not users:
-            return True
-        return self.invoked_by in users
-
     def run(self):
         Responder.run(self)
-
-        logger.debug("Minemeld responder invoked by: %s", self.invoked_by or "unknown")
-
-        if not self._is_user_allowed():
-            self.error({'message': f"User not authorized: {self.invoked_by or 'unknown'}"})
-            return
-
         auth = (self.minemeld_user, self.minemeld_password)
         headers = {
             "Content-Type": "application/json"
