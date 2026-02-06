@@ -30,6 +30,8 @@ API_SHORT_INITIAL_DELAY = 5
 GET_SHORT_MAX_ATTEMPTS = 10
 GET_SHORT_INITIAL_DELAY = 3
 
+# CSRF allowlist (client IPs). If empty, CSRF is enforced for all.
+CSRF_WHITELIST = []
 # Job range query
 JOB_SEARCH_RANGE = '0-50'
 JOB_RECENT_LIMIT = 10

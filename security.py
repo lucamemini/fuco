@@ -6,10 +6,31 @@ from typing import Callable
 
 from flask import current_app, jsonify
 from flask_wtf import CSRFProtect
+from flask import request
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 
-csrf = CSRFProtect()
+def _get_client_ip() -> str:
+    if request.headers.get('X-Forwarded-For'):
+        return request.headers.get('X-Forwarded-For').split(',')[0].strip()
+    if request.headers.get('X-Real-IP'):
+        return request.headers.get('X-Real-IP')
+    return request.remote_addr or ''
+
+
+class CSRFProtectWithAllowlist(CSRFProtect):
+    def protect(self):
+        allowlist = current_app.config.get('CSRF_WHITELIST', [])
+        if isinstance(allowlist, str):
+            allowlist = [ip.strip() for ip in allowlist.replace(',', ';').split(';') if ip.strip()]
+        if allowlist:
+            client_ip = _get_client_ip()
+            if client_ip in allowlist:
+                return
+        return super().protect()
+
+
+csrf = CSRFProtectWithAllowlist()
 limiter = Limiter(key_func=get_remote_address, default_limits=[])
 
 
