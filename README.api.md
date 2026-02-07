@@ -16,6 +16,9 @@ Most APIs require an authenticated session and CSRF protection.
 
 If authentication is missing, endpoints protected by `login_required_json` return 401.
 
+**CSRF allowlist**
+If configured, requests from IPs in `CSRF_WHITELIST` bypass CSRF checks. This is intended for trusted automation clients.
+
 ## Common Error Format
 Most errors are returned as:
 - { "error": "message" }
@@ -176,6 +179,7 @@ Body:
 Notes:
 - dataType can be omitted; FUCO will auto‑detect when possible.
 - Limits: MAX_BULK_OBSERVABLES and MAX_BULK_RESPONDERS.
+- Responder access can be restricted per user using `RESPONDER_USER_CONSTRAINTS`.
 
 Response:
 - success (bool)
@@ -207,4 +211,5 @@ Returns compatible responders for a data type.
 ## Notes for Integrators
 - All POST requests should include `Content-Type: application/json`.
 - For POST requests, include `X-CSRFToken` header and session cookies.
+- If you cannot change a legacy script, add its source IP to `CSRF_WHITELIST`.
 - Rate limits may be enabled per endpoint (see configuration).

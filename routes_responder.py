@@ -19,6 +19,29 @@ from security import login_required_json, optional_limit
 logger = logging.getLogger(__name__)
 
 
+def _get_user_constraints(responder_id: str, responder_name: str) -> Optional[List[str]]:
+    constraints = getattr(responder_cfg, 'RESPONDER_USER_CONSTRAINTS', None)
+    if constraints is None:
+        constraints = getattr(responder_cfg, 'RESPONDER_TYPE_CONSTRAINTS', {})
+    constraints = constraints or {}
+    if responder_id in constraints:
+        return constraints.get(responder_id)
+    if responder_name in constraints:
+        return constraints.get(responder_name)
+    return None
+
+
+def _is_responder_allowed_for_user(responder_id: str, responder_name: str, username: Optional[str]) -> bool:
+    allowed_users = _get_user_constraints(responder_id, responder_name)
+    if allowed_users is None:
+        return True
+    if not allowed_users:
+        return False
+    if not username:
+        return False
+    return username in allowed_users
+
+
 # ============ Pydantic validation models ============
 
 class ResponderExecuteRequest(BaseModel):
@@ -100,6 +123,7 @@ def register_responder_routes(app):
             auth_manager = getattr(current_app, 'auth_manager', None)
             if auth_manager and auth_manager.is_authenticated():
                 api_key = auth_manager.get_api_key()
+                username = auth_manager.get_username()
             elif not (username and password):
                 return error_response("Authentication required", 401)
 
@@ -110,6 +134,12 @@ def register_responder_routes(app):
                 api_key=api_key
             )
             
+            if username:
+                responders = [
+                    r for r in responders
+                    if _is_responder_allowed_for_user(r.get('id'), r.get('name'), username)
+                ]
+
             return jsonify({
                 'success': True,
                 'count': len(responders),
@@ -166,6 +196,10 @@ def register_responder_routes(app):
             
             # Execute responder with API key
             responder_manager = current_app.responder_manager
+            responder_name = responder_manager._get_responder_name(req.responderId, responder_manager.get_authenticated_api(api_key=api_key))
+            if not _is_responder_allowed_for_user(req.responderId, responder_name, username):
+                return error_response("Responder not allowed for this user", 403)
+
             action = responder_manager.run_responder(
                 observable=req.observable,
                 data_type=req.dataType,
@@ -284,6 +318,29 @@ def register_responder_routes(app):
                 executed_by = auth_manager.get_username()
             else:
                 executed_by = req.username or 'unknown'
+
+            api_for_lookup = None
+            if api_key:
+                api_for_lookup = responder_manager.get_authenticated_api(api_key=api_key)
+            elif req.username and req.password:
+                api_for_lookup = responder_manager.get_authenticated_api(username=req.username, password=req.password)
+
+            if executed_by:
+                unauthorized = []
+                for responder_id in req.responderIds:
+                    responder_name = responder_id
+                    if api_for_lookup is not None:
+                        responder_name = responder_manager._get_responder_name(
+                            responder_id,
+                            api_for_lookup
+                        ) or responder_id
+                    if not _is_responder_allowed_for_user(responder_id, responder_name, executed_by):
+                        unauthorized.append(responder_name or responder_id)
+                if unauthorized:
+                    return error_response(
+                        f"Responder not allowed for this user: {', '.join(unauthorized)}",
+                        403
+                    )
 
             bulk_statuses = {}
             for action in actions:
@@ -520,6 +577,7 @@ def register_responder_routes(app):
             auth_manager = getattr(current_app, 'auth_manager', None)
             if auth_manager and auth_manager.is_authenticated():
                 api_key = auth_manager.get_api_key()
+                username = auth_manager.get_username()
             elif not (username and password):
                 return error_response("Authentication required", 401)
 
@@ -530,6 +588,12 @@ def register_responder_routes(app):
                 api_key=api_key
             )
             
+            if username:
+                responders = [
+                    r for r in responders
+                    if _is_responder_allowed_for_user(r.get('id'), r.get('name'), username)
+                ]
+
             return jsonify({
                 'success': True,
                 'dataType': data_type,

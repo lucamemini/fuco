@@ -141,9 +141,12 @@ def notify_responder_bulk(actions, executed_by: str, statuses: dict) -> None:
 
         status_counts = {}
         lines = []
+        has_success = False
         for action in actions:
             key = action.job_id or f"{action.observable}:{action.responder_name}"
             status = statuses.get(key) or getattr(action, 'status', 'Unknown')
+            if status in {"Success", "Completed"}:
+                has_success = True
             status_counts[status] = status_counts.get(status, 0) + 1
 
             lines.append(
@@ -155,6 +158,9 @@ def notify_responder_bulk(actions, executed_by: str, statuses: dict) -> None:
                     f"Status: {status}",
                 ])
             )
+
+        if not has_success:
+            return
 
         subject = f"FUCO Bulk Responder Summary ({len(actions)} actions)"
         summary = "\n".join([f"{k}: {v}" for k, v in sorted(status_counts.items())])
