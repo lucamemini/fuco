@@ -295,7 +295,7 @@
 
                     <!-- Execute Button -->
                     <div class="mt-4 text-center">
-                        <button type="submit" class="btn btn-danger btn-lg">
+                        <button type="submit" class="btn btn-danger btn-lg" id="bulkExecuteBtn">
                             <i class="fas fa-rocket"></i> Execute Bulk Actions
                         </button>
                     </div>
@@ -567,6 +567,15 @@
         }
 
         // Execute bulk
+        function setBulkExecuteBusy(isBusy) {
+            const btn = document.getElementById('bulkExecuteBtn');
+            if (!btn) return;
+            btn.disabled = isBusy;
+            btn.innerHTML = isBusy
+                ? '<i class="fas fa-spinner fa-spin"></i> Executing...'
+                : '<i class="fas fa-rocket"></i> Execute Bulk Actions';
+        }
+
         document.getElementById('bulkExecuteForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
@@ -596,6 +605,7 @@
             };
 
             showResultsLoading(observableQueue.length, selectedResponders.length);
+            setBulkExecuteBusy(true);
             
             try {
                 const response = await fetch('/api/responder/bulk', {
@@ -639,13 +649,15 @@
                 const result = await response.json();
                 if (result.success) {
                     displayResults(result);
-                    pollBulkResults(result.results || []);
+                    await pollBulkResults(result.results || []);
                 } else {
                     alert('Error: ' + result.error);
                 }
             } catch (error) {
                 console.error('Bulk execution error:', error);
                 alert('Execution failed: ' + error.message);
+            } finally {
+                setBulkExecuteBusy(false);
             }
         });
 

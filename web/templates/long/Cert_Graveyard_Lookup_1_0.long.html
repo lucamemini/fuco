@@ -1,0 +1,135 @@
+{% if artifact.status == "Success" %}
+{% set content = artifact.report.full if artifact.report.full is defined else {} %}
+{% set records = content.records if content.records is defined else [] %}
+{% set query = content.query if content.query is defined else {} %}
+{% set cache = content.cache if content.cache is defined else {} %}
+
+<div class="card border-success report-CertGraveyard">
+  <div class="card-header">
+    <ul class="nav nav-tabs card-header-tabs">
+      <li class="nav-item">
+        <a class="nav-link active" id="summary-tab_{{ artifact.id }}" data-bs-toggle="tab" data-bs-target="#summary_{{ artifact.id }}" role="tab" aria-controls="summary_{{ artifact.id }}" aria-selected="true">Summary</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" id="records-tab_{{ artifact.id }}" data-bs-toggle="tab" data-bs-target="#records_{{ artifact.id }}" role="tab" aria-controls="records_{{ artifact.id }}" aria-selected="false">Records</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" id="json-tab_{{ artifact.id }}" data-bs-toggle="tab" data-bs-target="#json_{{ artifact.id }}" role="tab" aria-controls="json_{{ artifact.id }}" aria-selected="false">Json</a>
+      </li>
+    </ul>
+  </div>
+
+  <div class="card-body">
+    <div class="tab-content" id="myTabContent">
+      <div class="tab-pane fade show active" id="summary_{{ artifact.id }}" role="tabpanel" aria-labelledby="summary-tab_{{ artifact.id }}">
+        <div class="panel panel-info">
+          <div class="panel-heading"><strong>Cert Graveyard Summary</strong></div>
+          <div class="panel-body">
+            <dl class="dl-horizontal">
+              <dt>Query</dt>
+              <dd>
+                {{ (query.parameters | join(', ')) if query.parameters is defined else (query.parameter | default('-')) }}
+                = <code>{{ query.term | default('-') }}</code>
+              </dd>
+              <dt>Source</dt>
+              <dd>{{ content.source | default('-') }}</dd>
+              <dt>Matches</dt>
+              <dd>{{ content.count | default(0) }}</dd>
+              {% if content.source == 'local' %}
+              <dt>Cache Path</dt>
+              <dd><code>{{ cache.path | default('-') }}</code></dd>
+              <dt>Cache Age (hours)</dt>
+              <dd>{{ cache.age_hours | default('-') }}</dd>
+              <dt>Cache Refreshed</dt>
+              <dd>{{ cache.refreshed | default(false) }}</dd>
+              {% if cache.stale is defined and cache.stale %}
+              <dt>Cache Warning</dt>
+              <dd><span class="badge badge-warning">Local DB is older than max age</span></dd>
+              {% endif %}
+              {% endif %}
+            </dl>
+          </div>
+        </div>
+
+        {% if records | length == 0 %}
+        <div class="panel panel-warning">
+          <div class="panel-heading"><strong>No Match</strong></div>
+          <div class="panel-body">No records found in The Cert Graveyard database.</div>
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="tab-pane fade" id="records_{{ artifact.id }}" role="tabpanel" aria-labelledby="records-tab_{{ artifact.id }}">
+        {% if records | length > 0 %}
+        <div class="table-responsive">
+          <table class="table table-bordered table-sm">
+            <thead>
+              <tr>
+                <th>Hash</th>
+                <th>Malware</th>
+                <th>Malware Type</th>
+                <th>Signer</th>
+                <th>Issuer</th>
+                <th>Serial</th>
+                <th>Thumbprint</th>
+                <th>Valid From</th>
+                <th>Valid To</th>
+                <th>Country</th>
+                <th>State</th>
+                <th>Locality</th>
+                <th>Email</th>
+                <th>RDN Serial</th>
+                <th>TBS MD5</th>
+                <th>TBS SHA1</th>
+                <th>TBS SHA256</th>
+                <th>TBS SHA384</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for record in records %}
+              <tr>
+                <td><code>{{ record.hash | default('-') }}</code></td>
+                <td>{{ record.malware | default('-') }}</td>
+                <td>{{ record.malware_type | default('-') }}</td>
+                <td>{{ record.signer | default('-') }}</td>
+                <td>{{ record.issuer | default('-') }}</td>
+                <td>{{ record.serial | default('-') }}</td>
+                <td><code>{{ record.thumbprint | default('-') }}</code></td>
+                <td>{{ record.valid_from | default('-') }}</td>
+                <td>{{ record.valid_to | default('-') }}</td>
+                <td>{{ record.country | default('-') }}</td>
+                <td>{{ record.state | default('-') }}</td>
+                <td>{{ record.locality | default('-') }}</td>
+                <td>{{ record.email | default('-') }}</td>
+                <td>{{ record.rdn_serial_number | default('-') }}</td>
+                <td><code>{{ record.tbs_md5 | default('-') }}</code></td>
+                <td><code>{{ record.tbs_sha1 | default('-') }}</code></td>
+                <td><code>{{ record.tbs_sha256 | default('-') }}</code></td>
+                <td><code>{{ record.tbs_sha384 | default('-') }}</code></td>
+              </tr>
+              {% if record.malware_notes %}
+              <tr>
+                <td colspan="18">
+                  <strong>Malware Notes:</strong> {{ record.malware_notes }}
+                </td>
+              </tr>
+              {% endif %}
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="panel panel-info">
+          <div class="panel-heading"><strong>No Records</strong></div>
+          <div class="panel-body">No records available to display.</div>
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="tab-pane fade" id="json_{{ artifact.id }}" role="tabpanel" aria-labelledby="json-tab_{{ artifact.id }}">
+        <pre>{{ content | tojson(indent=2) }}</pre>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}

@@ -1,0 +1,10 @@
+{
+  "data": "113290aaa5c0b0793d50de6819f2b2eead5e321e9300d91b9a36d62ba8e5bbc1",
+  "dataType": "hash",
+  "tlp": 2,
+  "config": {
+    "mode": "local",
+    "cache_max_hours": 24,
+    "local_db_path": "cert_graveyard_database.csv"
+  }
+}

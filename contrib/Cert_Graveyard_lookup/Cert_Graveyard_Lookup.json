@@ -1,0 +1,85 @@
+{
+  "name": "Cert_Graveyard_Lookup",
+  "version": "1.0",
+  "author": "Luca Memini",
+  "url": "https://certgraveyard.org/",
+  "license": "AGPL-V3",
+  "description": "Search revoked or malicious code-signing certificates from The Cert Graveyard",
+  "dataTypeList": ["hash", "file", "mail", "certificate_hash", "other"],
+  "baseConfig": "CertGraveyard",
+  "config": {
+    "service": "query",
+    "max_tlp": 1,
+    "check_tlp": true
+  },
+  "command": "Cert_Graveyard_lookup/cert_graveyard_lookup.py",
+  "configurationItems": [
+    {
+      "name": "mode",
+      "description": "Use 'online' for API queries or 'local' to use the downloaded CSV",
+      "type": "string",
+      "required": false,
+      "defaultValue": "online",
+      "multi": false
+    },
+    {
+      "name": "api_key",
+      "description": "API key for Cert Graveyard (required for online mode)",
+      "type": "string",
+      "required": false,
+      "multi": false
+    },
+    {
+      "name": "query_url",
+      "description": "Query API endpoint",
+      "type": "string",
+      "required": true,
+      "defaultValue": "https://certgraveyard.org/api/query_database",
+      "multi": false
+    },
+    {
+      "name": "download_url",
+      "description": "CSV download endpoint",
+      "type": "string",
+      "required": true,
+      "defaultValue": "https://certgraveyard.org/api/download_csv",
+      "multi": false
+    },
+    {
+      "name": "local_db_path",
+      "description": "Local CSV path (relative to analyzer folder if not absolute)",
+      "type": "string",
+      "required": true,
+      "defaultValue": "cert_graveyard_database.csv",
+      "multi": false
+    },
+    {
+      "name": "cache_max_hours",
+      "description": "Max age of local CSV before refresh",
+      "type": "number",
+      "required": false,
+      "defaultValue": 24,
+      "multi": false
+    },
+    {
+      "name": "other_search_parameter",
+      "description": "When dataType is other (online mode), choose: signer, issuer-short, issuer, serial",
+      "type": "string",
+      "required": false,
+      "defaultValue": "signer",
+      "multi": false
+    },
+    {
+      "name": "verifyssl",
+      "description": "Verify server SSL certificate",
+      "type": "boolean",
+      "defaultValue": true,
+      "required": false,
+      "multi": false
+    }
+  ],
+  "registration_required": true,
+  "subscription_required": false,
+  "free_subscription": true,
+  "service_homepage": "https://certgraveyard.org/"
+}

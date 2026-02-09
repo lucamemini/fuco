@@ -1105,6 +1105,16 @@ legend {
   cursor: not-allowed;
 }
 
+/* Responder execute buttons (disabled) */
+#executeResponderBtn:disabled,
+#bulkExecuteBtn:disabled {
+  background-color: #f4b3b3;
+  border-color: #f0a1a1;
+  color: #6c3b3b;
+  opacity: 0.85;
+  cursor: not-allowed;
+}
+
 .user-initial {
   background: #000;
   color: #ffd700;

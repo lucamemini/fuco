@@ -226,74 +226,79 @@ class ResponderModal {
         executeBtn.disabled = true;
         executeBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Executing...';
 
-        // Execute for each selected responder
         const results = [];
-        for (const option of selectedOptions) {
-            const responderId = option.value;
-            const responderName = option.textContent;
 
-            try {
-                this.showInfo(`Executing ${responderName}...`);
-
-                // ============ MODIFICATO: NO username/password! ============
-                const result = await this.executeResponder({
-                    observable: this.currentObservable,
-                    dataType: this.currentDataType,
-                    responderId: responderId,
-                    tlp: tlp,
-                    pap: pap,
-                    message: message || undefined
-                });
-
-                results.push({ name: responderName, success: true, data: result });
-                this.showSuccess(`✓ ${responderName}: Job ${result.job_id} started`);
+        try {
+            // Execute for each selected responder
+            for (const option of selectedOptions) {
+                const responderId = option.value;
+                const responderName = option.textContent;
 
                 try {
-                    const jobResult = await this.pollResponderJob(result.job_id);
-                    if (jobResult && jobResult.status) {
-                        if (jobResult.status === 'Success') {
-                            this.showSuccess(`✓ ${responderName}: Completed (Job ${result.job_id})`);
-                        } else if (jobResult.status === 'Failure') {
-                            this.showError(`✗ ${responderName}: Failed (Job ${result.job_id})`);
-                        } else {
-                            this.showWarning(`• ${responderName}: ${jobResult.status} (Job ${result.job_id})`);
+                    this.showInfo(`Executing ${responderName}...`);
+
+                    // ============ MODIFICATO: NO username/password! ============
+                    const result = await this.executeResponder({
+                        observable: this.currentObservable,
+                        dataType: this.currentDataType,
+                        responderId: responderId,
+                        tlp: tlp,
+                        pap: pap,
+                        message: message || undefined
+                    });
+
+                    results.push({ name: responderName, success: true, data: result });
+                    this.showSuccess(`✓ ${responderName}: Job ${result.job_id} started`);
+
+                    try {
+                        const jobResult = await this.pollResponderJob(result.job_id);
+                        if (jobResult && jobResult.status) {
+                            if (jobResult.status === 'Success') {
+                                this.showSuccess(`✓ ${responderName}: Completed (Job ${result.job_id})`);
+                            } else if (jobResult.status === 'Failure') {
+                                this.showError(`✗ ${responderName}: Failed (Job ${result.job_id})`);
+                            } else {
+                                this.showWarning(`• ${responderName}: ${jobResult.status} (Job ${result.job_id})`);
+                            }
                         }
+                    } catch (pollError) {
+                        this.showWarning(`• ${responderName}: Status check failed (${pollError.message})`);
                     }
-                } catch (pollError) {
-                    this.showWarning(`• ${responderName}: Status check failed (${pollError.message})`);
-                }
 
-            } catch (error) {
-                console.error(`Error executing ${responderName}:`, error);
-                
-                // If 401 error, show login message
-                if (error.message.includes('Authentication required')) {
-                    this.showError('Session expired. Please login again.');
-                    setTimeout(() => location.reload(), 2000);
-                    break;
+                } catch (error) {
+                    console.error(`Error executing ${responderName}:`, error);
+                    
+                    // If 401 error, show login message
+                    if (error.message.includes('Authentication required')) {
+                        this.showError('Session expired. Please login again.');
+                        setTimeout(() => location.reload(), 2000);
+                        break;
+                    }
+                    
+                    results.push({ name: responderName, success: false, error: error.message });
+                    this.showError(`✗ ${responderName}: ${error.message}`);
                 }
-                
-                results.push({ name: responderName, success: false, error: error.message });
-                this.showError(`✗ ${responderName}: ${error.message}`);
             }
-        }
 
-        // Re-enable button
-        executeBtn.disabled = false;
-        executeBtn.innerHTML = '<i class="fas fa-bolt"></i> Execute Action';
-        const closeBtn = document.getElementById('closeResponderBtn');
-        if (closeBtn) {
-            closeBtn.style.display = 'inline-block';
-        }
+            // Show summary
+            const successful = results.filter(r => r.success).length;
+            const total = results.length;
 
-        // Show summary
-        const successful = results.filter(r => r.success).length;
-        const total = results.length;
-
-        if (successful === total) {
-            this.showSuccess(`All ${total} responder(s) executed successfully!`);
-        } else {
-            this.showWarning(`${successful}/${total} responder(s) executed successfully`);
+            if (total > 0) {
+                if (successful === total) {
+                    this.showSuccess(`All ${total} responder(s) executed successfully!`);
+                } else {
+                    this.showWarning(`${successful}/${total} responder(s) executed successfully`);
+                }
+            }
+        } finally {
+            // Re-enable button
+            executeBtn.disabled = false;
+            executeBtn.innerHTML = '<i class="fas fa-bolt"></i> Execute Action';
+            const closeBtn = document.getElementById('closeResponderBtn');
+            if (closeBtn) {
+                closeBtn.style.display = 'inline-block';
+            }
         }
     }
 
