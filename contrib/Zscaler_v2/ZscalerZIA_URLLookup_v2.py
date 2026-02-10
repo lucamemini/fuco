@@ -8,7 +8,7 @@ import requests
 from cortexutils.analyzer import Analyzer
 
 
-class ZscalerZIA_URLLookup(Analyzer):
+class ZscalerZIA_URLLookupV2(Analyzer):
 
     def __init__(self):
         Analyzer.__init__(self)
@@ -132,7 +132,6 @@ class ZscalerZIA_URLLookup(Analyzer):
         level = 'safe'
         matched_categories = []
 
-        # Security alerts have highest priority
         if security_classifications:
             level = 'suspicious'
             matched_categories = security_classifications
@@ -230,4 +229,4 @@ class ZscalerZIA_URLLookup(Analyzer):
 
 
 if __name__ == '__main__':
-    ZscalerZIA_URLLookup().run()
+    ZscalerZIA_URLLookupV2().run()

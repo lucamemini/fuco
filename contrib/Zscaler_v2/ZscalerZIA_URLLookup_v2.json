@@ -1,12 +1,12 @@
 {
-  "name": "ZscalerZIA_URLLookup",
-  "version": "1.0",
+  "name": "ZscalerZIA_URLLookup_v2",
+  "version": "2.0",
   "author": "Fabien Bloume, StrangeBee",
   "url": "https://github.com/TheHive-Project/Cortex-Analyzers",
   "license": "AGPL-V3",
   "description": "Query Zscaler Internet Access for URL categorization and security classification (OneAPI OAuth2).",
   "dataTypeList": ["domain", "fqdn", "url", "ip"],
-  "command": "Zscaler/ZscalerZIA_URLLookup.py",
+  "command": "Zscaler_v2/ZscalerZIA_URLLookup_v2.py",
   "baseConfig": "ZscalerZIA",
   "config": {
     "check_tlp": true,
@@ -17,28 +17,28 @@
   "configurationItems": [
     {
       "name": "zia_vanity_domain",
-      "description": "[OneAPI only] ZIdentity vanity domain for your org (eg, 'acme' from acme.zslogin.net)",
+      "description": "ZIdentity vanity domain for your org (eg, 'acme' from acme.zslogin.net)",
       "type": "string",
       "multi": false,
       "required": false
     },
     {
       "name": "zia_client_id",
-      "description": "[OneAPI only] Zscaler OneAPI OAuth Client ID created in ZIdentity Admin Portal",
+      "description": "ZIdentity OAuth Client ID",
       "type": "string",
       "multi": false,
       "required": false
     },
     {
       "name": "zia_client_secret",
-      "description": "[OneAPI only] ZIdentity OAuth Client Secret",
+      "description": "ZIdentity OAuth Client Secret",
       "type": "string",
       "multi": false,
       "required": false
     },
     {
       "name": "oneapi_audience",
-      "description": "[OneAPI only] OAuth audience (default: https://api.zscaler.com)",
+      "description": "OAuth audience (default: https://api.zscaler.com)",
       "type": "string",
       "multi": false,
       "required": false,
@@ -46,7 +46,7 @@
     },
     {
       "name": "api_base_url",
-      "description": "[OneAPI only] Base API URL (default: https://api.zsapi.net)",
+      "description": "Base API URL (default: https://api.zsapi.net)",
       "type": "string",
       "multi": false,
       "required": false,

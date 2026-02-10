@@ -1,0 +1,169 @@
+{% if artifact.status == "Success" %}
+{% set content = artifact.report.full if artifact.report.full is defined else {} %}
+{% set query = content.query if content.query is defined else {} %}
+{% set assessment = content.assessment if content.assessment is defined else {} %}
+{% set categorization = content.categorization if content.categorization is defined else {} %}
+
+<div class="card border-success">
+  <div class="card-header">
+    <ul class="nav nav-tabs card-header-tabs">
+      <li class="nav-item">
+        <a class="nav-link active"
+           id="home-tab_{{ artifact.id }}"
+           data-bs-toggle="tab"
+           data-bs-target="#home_{{ artifact.id }}"
+           role="tab">
+          Results
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link"
+           id="json-tab_{{ artifact.id }}"
+           data-bs-toggle="tab"
+           data-bs-target="#json_{{ artifact.id }}"
+           role="tab">
+          JSON
+        </a>
+      </li>
+    </ul>
+  </div>
+
+  <div class="card-body">
+    <div class="tab-content">
+
+      {# TAB RESULTS #}
+      <div class="tab-pane fade show active"
+           id="home_{{ artifact.id }}"
+           role="tabpanel">
+
+        <div class="panel panel-info">
+          <div class="panel-heading">
+            <h5>
+              <i class="fas fa-shield-alt"></i>
+              Zscaler URL Categorisation of <strong>{{ query.original if query.original is defined else artifact.data }}</strong>
+            </h5>
+          </div>
+
+          <div class="panel-body">
+
+            {% if assessment.risk_level is defined %}
+            <div class="alert {% if assessment.is_malicious %}alert-danger{% elif assessment.is_suspicious %}alert-warning{% else %}alert-success{% endif %}">
+              <strong>Risk Level:</strong> {{ assessment.risk_level | upper }}
+              {% if assessment.matched_threat_categories is defined and assessment.matched_threat_categories | length > 0 %}
+              <br>
+              <strong>Matched Categories:</strong> {{ assessment.matched_threat_categories | join(', ') }}
+              {% endif %}
+            </div>
+            {% endif %}
+
+            <div class="table-responsive">
+              <table class="table table-hover table-bordered">
+                <thead class="table-light">
+                  <tr>
+                    <th style="width: 40%;">Field</th>
+                    <th style="width: 60%;">Value</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><strong>Analyzed URL</strong></td>
+                    <td><code class="text-break">{{ query.normalized if query.normalized is defined else (query.original if query.original is defined else artifact.data) }}</code></td>
+                  </tr>
+
+                  {% if categorization.url_classifications is defined and categorization.url_classifications | length > 0 %}
+                  <tr>
+                    <td><strong>URL Classifications</strong></td>
+                    <td>
+                      {% for classification in categorization.url_classifications %}
+                      <span class="badge bg-primary me-1 mb-1">{{ classification }}</span>
+                      {% endfor %}
+                    </td>
+                  </tr>
+                  {% endif %}
+
+                  {% if categorization.security_alerts is defined and categorization.security_alerts | length > 0 %}
+                  <tr>
+                    <td><strong>Security Alerts</strong></td>
+                    <td>
+                      {% for alert in categorization.security_alerts %}
+                      <span class="badge bg-danger me-1 mb-1">
+                        <i class="fas fa-exclamation-triangle"></i> {{ alert }}
+                      </span>
+                      {% endfor %}
+                    </td>
+                  </tr>
+                  {% endif %}
+
+                  {% if categorization.custom_categories is defined and categorization.custom_categories | length > 0 %}
+                  <tr>
+                    <td><strong>Custom Categories</strong></td>
+                    <td>
+                      {% for custom in categorization.custom_categories %}
+                      <span class="badge bg-info me-1 mb-1">{{ custom }}</span>
+                      {% endfor %}
+                    </td>
+                  </tr>
+                  {% endif %}
+
+                  {% if categorization.db_categorized_urls is defined and categorization.db_categorized_urls | length > 0 %}
+                  <tr>
+                    <td><strong>Database URLs</strong></td>
+                    <td>
+                      {% for url in categorization.db_categorized_urls %}
+                      <div><code class="text-break">{{ url }}</code></div>
+                      {% endfor %}
+                    </td>
+                  </tr>
+                  {% endif %}
+
+                  {% if (not categorization.url_classifications or categorization.url_classifications | length == 0) and
+                        (not categorization.security_alerts or categorization.security_alerts | length == 0) and
+                        (not categorization.custom_categories or categorization.custom_categories | length == 0) and
+                        (not categorization.db_categorized_urls or categorization.db_categorized_urls | length == 0) %}
+                  <tr>
+                    <td colspan="2" class="text-muted text-center">
+                      <em>No categories found.</em>
+                    </td>
+                  </tr>
+                  {% endif %}
+                </tbody>
+              </table>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+
+      {# TAB JSON #}
+      <div class="tab-pane fade"
+           id="json_{{ artifact.id }}"
+           role="tabpanel">
+        {% if artifact.json is defined %}
+          {% set json_data = artifact.json() %}
+        {% else %}
+          {% set json_data = artifact %}
+        {% endif %}
+        <pre><code class="language-json">{{ json_data | tojson(indent=2) }}</code></pre>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+{% else %}
+<div class="card border-danger">
+  <div class="card-header bg-danger text-white">
+    <i class="fas fa-exclamation-triangle"></i> <strong>Analysis Error</strong>
+  </div>
+  <div class="card-body">
+    <h5>Observable: <code>{{ artifact.data }}</code></h5>
+    <div class="alert alert-danger mt-3">
+      {{ artifact.report.errorMessage if artifact.report and artifact.report.errorMessage is defined else 'Unknown error occurred' }}
+    </div>
+    {% if artifact.status %}
+    <p class="text-muted">Status: <strong>{{ artifact.status }}</strong></p>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
