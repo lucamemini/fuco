@@ -22,8 +22,65 @@
   <div class="card-body">
     <div class="tab-content" id="myTabContent">
       <div class="tab-pane fade show active" id="summary_{{ artifact.id }}" role="tabpanel" aria-labelledby="summary-tab_{{ artifact.id }}">
+        {% if records | length == 0 %}
+        <div class="panel panel-warning">
+          <div class="panel-heading"><strong>No Match</strong></div>
+          <div class="panel-body">No records found in The Cert Graveyard database.</div>
+        </div>
+        {% else %}
+        {% for record in records %}
         <div class="panel panel-info">
-          <div class="panel-heading"><strong>Cert Graveyard Summary</strong></div>
+          <div class="panel-heading"><strong>Matched Certificate</strong></div>
+          <div class="panel-body">
+            <dl class="dl-horizontal">
+              <dt>Malware</dt>
+              <dd>{{ record.malware | default('-') }}</dd>
+              <dt>Malware Type</dt>
+              <dd>{{ record.malware_type | default('-') }}</dd>
+              <dt>Signer</dt>
+              <dd>{{ record.signer | default('-') }}</dd>
+              <dt>Serial</dt>
+              <dd>{{ record.serial | default('-') }}</dd>
+              <dt>Thumbprint</dt>
+              <dd><code>{{ record.thumbprint | default('-') }}</code></dd>
+              <dt>Validity</dt>
+              <dd>{{ record.valid_from | default('-') }} &rarr; {{ record.valid_to | default('-') }}</dd>
+              <dt>Country</dt>
+              <dd>{{ record.country | default('-') }}</dd>
+              <dt>State</dt>
+              <dd>{{ record.state | default('-') }}</dd>
+              <dt>Locality</dt>
+              <dd>{{ record.locality | default('-') }}</dd>
+              <dt>Email</dt>
+              <dd>{{ record.email | default('-') }}</dd>
+              <dt>RDN Serial</dt>
+              <dd>{{ record.rdn_serial_number | default('-') }}</dd>
+              <dt>TBS MD5</dt>
+              <dd><code>{{ record.tbs_md5 | default('-') }}</code></dd>
+              <dt>TBS SHA1</dt>
+              <dd><code>{{ record.tbs_sha1 | default('-') }}</code></dd>
+              <dt>TBS SHA256</dt>
+              <dd><code>{{ record.tbs_sha256 | default('-') }}</code></dd>
+              <dt>TBS SHA384</dt>
+              <dd><code>{{ record.tbs_sha384 | default('-') }}</code></dd>
+            </dl>
+
+            {% if record.malware_notes %}
+            <div class="alert alert-warning mt-2">
+              <strong>Malware Notes</strong><br>
+              {{ record.malware_notes }}
+            </div>
+            {% endif %}
+          </div>
+        </div>
+        {% if not loop.last %}<hr>{% endif %}
+        {% endfor %}
+        {% endif %}
+      </div>
+
+      <div class="tab-pane fade" id="records_{{ artifact.id }}" role="tabpanel" aria-labelledby="records-tab_{{ artifact.id }}">
+        <div class="panel panel-info">
+          <div class="panel-heading"><strong>Query Details</strong></div>
           <div class="panel-body">
             <dl class="dl-horizontal">
               <dt>Query</dt>
@@ -51,15 +108,6 @@
           </div>
         </div>
 
-        {% if records | length == 0 %}
-        <div class="panel panel-warning">
-          <div class="panel-heading"><strong>No Match</strong></div>
-          <div class="panel-body">No records found in The Cert Graveyard database.</div>
-        </div>
-        {% endif %}
-      </div>
-
-      <div class="tab-pane fade" id="records_{{ artifact.id }}" role="tabpanel" aria-labelledby="records-tab_{{ artifact.id }}">
         {% if records | length > 0 %}
         <div class="table-responsive">
           <table class="table table-bordered table-sm">
