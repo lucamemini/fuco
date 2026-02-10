@@ -1,0 +1,114 @@
+{
+  "name": "ZscalerZIA_URLLookup",
+  "version": "1.0",
+  "author": "Fabien Bloume, StrangeBee",
+  "url": "https://github.com/TheHive-Project/Cortex-Analyzers",
+  "license": "AGPL-V3",
+  "description": "Query Zscaler Internet Access for URL categorization and security classification (OneAPI OAuth2).",
+  "dataTypeList": ["domain", "fqdn", "url", "ip"],
+  "command": "Zscaler/ZscalerZIA_URLLookup.py",
+  "baseConfig": "ZscalerZIA",
+  "config": {
+    "check_tlp": true,
+    "max_tlp": 2,
+    "check_pap": true,
+    "max_pap": 2
+  },
+  "configurationItems": [
+    {
+      "name": "zia_vanity_domain",
+      "description": "[OneAPI only] ZIdentity vanity domain for your org (eg, 'acme' from acme.zslogin.net)",
+      "type": "string",
+      "multi": false,
+      "required": false
+    },
+    {
+      "name": "zia_client_id",
+      "description": "[OneAPI only] Zscaler OneAPI OAuth Client ID created in ZIdentity Admin Portal",
+      "type": "string",
+      "multi": false,
+      "required": false
+    },
+    {
+      "name": "zia_client_secret",
+      "description": "[OneAPI only] ZIdentity OAuth Client Secret",
+      "type": "string",
+      "multi": false,
+      "required": false
+    },
+    {
+      "name": "oneapi_audience",
+      "description": "[OneAPI only] OAuth audience (default: https://api.zscaler.com)",
+      "type": "string",
+      "multi": false,
+      "required": false,
+      "defaultValue": "https://api.zscaler.com"
+    },
+    {
+      "name": "api_base_url",
+      "description": "[OneAPI only] Base API URL (default: https://api.zsapi.net)",
+      "type": "string",
+      "multi": false,
+      "required": false,
+      "defaultValue": "https://api.zsapi.net"
+    },
+    {
+      "name": "verifyssl",
+      "description": "Verify server SSL certificate",
+      "type": "boolean",
+      "multi": false,
+      "required": false,
+      "defaultValue": true
+    },
+    {
+      "name": "malicious_categories",
+      "description": "List of Zscaler categories to be considered as malicious",
+      "type": "string",
+      "multi": true,
+      "required": false,
+      "defaultValue": [
+        "PHISHING",
+        "MALWARE_SITE",
+        "BOTNET",
+        "SPYWARE_OR_ADWARE",
+        "ADSPYWARE_SITES",
+        "ADWARE_OR_SPYWARE",
+        "CRYPTOMINING",
+        "WEB_SPAM",
+        "MALICIOUS_TLD",
+        "MALICIOUS_SITES",
+        "COMMAND_AND_CONTROL"
+      ]
+    },
+    {
+      "name": "suspicious_categories",
+      "description": "List of Zscaler categories to be considered as suspicious",
+      "type": "string",
+      "multi": true,
+      "required": false,
+      "defaultValue": [
+        "SHAREWARE_DOWNLOAD",
+        "REMOTE_ACCESS",
+        "MISCELLANEOUS_OR_UNKNOWN",
+        "NEWLY_REG_DOMAINS",
+        "OTHER_ILLEGAL_OR_QUESTIONABLE",
+        "COPYRIGHT_INFRINGEMENT",
+        "GAMBLING",
+        "COMPUTER_HACKING",
+        "ANONYMIZER",
+        "DNS_OVER_HTTPS",
+        "ENCR_WEB_CONTENT",
+        "PROXY_AVOIDANCE",
+        "SUSPICIOUS"
+      ]
+    }
+  ],
+  "registration_required": true,
+  "subscription_required": true,
+  "free_subscription": false,
+  "service_homepage": "https://www.zscaler.com/products/zscaler-internet-access",
+  "service_logo": {
+    "path": "assets/zscaler_logo.png",
+    "caption": "logo"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "data": "viruses.org",
+  "dataType": "url",
+  "tlp": 2,
+  "config": {
+    "zia_vanity_domain": "your-vanity-domain",
+    "zia_client_id": "your-client-id",
+    "zia_client_secret": "your-client-secret",
+    "oneapi_audience": "https://api.zscaler.com",
+    "api_base_url": "https://api.zsapi.net",
+    "verifyssl": true
+  }
+}
