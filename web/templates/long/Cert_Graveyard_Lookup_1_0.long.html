@@ -32,38 +32,50 @@
         <div class="panel panel-info">
           <div class="panel-heading"><strong>Matched Certificate</strong></div>
           <div class="panel-body">
-            <dl class="dl-horizontal">
-              <dt>Malware</dt>
-              <dd>{{ record.malware | default('-') }}</dd>
-              <dt>Malware Type</dt>
-              <dd>{{ record.malware_type | default('-') }}</dd>
-              <dt>Signer</dt>
-              <dd>{{ record.signer | default('-') }}</dd>
-              <dt>Serial</dt>
-              <dd>{{ record.serial | default('-') }}</dd>
-              <dt>Thumbprint</dt>
-              <dd><code>{{ record.thumbprint | default('-') }}</code></dd>
-              <dt>Validity</dt>
-              <dd>{{ record.valid_from | default('-') }} &rarr; {{ record.valid_to | default('-') }}</dd>
-              <dt>Country</dt>
-              <dd>{{ record.country | default('-') }}</dd>
-              <dt>State</dt>
-              <dd>{{ record.state | default('-') }}</dd>
-              <dt>Locality</dt>
-              <dd>{{ record.locality | default('-') }}</dd>
-              <dt>Email</dt>
-              <dd>{{ record.email | default('-') }}</dd>
-              <dt>RDN Serial</dt>
-              <dd>{{ record.rdn_serial_number | default('-') }}</dd>
-              <dt>TBS MD5</dt>
-              <dd><code>{{ record.tbs_md5 | default('-') }}</code></dd>
-              <dt>TBS SHA1</dt>
-              <dd><code>{{ record.tbs_sha1 | default('-') }}</code></dd>
-              <dt>TBS SHA256</dt>
-              <dd><code>{{ record.tbs_sha256 | default('-') }}</code></dd>
-              <dt>TBS SHA384</dt>
-              <dd><code>{{ record.tbs_sha384 | default('-') }}</code></dd>
-            </dl>
+            <div class="row">
+              <div class="col-md-6">
+                <dl class="dl-horizontal">
+                  <dt>Malware</dt>
+                  <dd>{{ record.malware | default('-') }}</dd>
+                  <dt>Malware Type</dt>
+                  <dd>{{ record.malware_type | default('-') }}</dd>
+                  <dt>Signer</dt>
+                  <dd>{{ record.signer | default('-') }}</dd>
+                  <dt>Issuer Short</dt>
+                  <dd>{{ record.issuer_short | default('-') }}</dd>
+                  <dt>Issuer</dt>
+                  <dd>{{ record.issuer | default('-') }}</dd>
+                  <dt>Serial</dt>
+                  <dd>{{ record.serial | default('-') }}</dd>
+                  <dt>Thumbprint</dt>
+                  <dd><code>{{ record.thumbprint | default('-') }}</code></dd>
+                  <dt>Validity</dt>
+                  <dd>{{ record.valid_from | default('-') }} &rarr; {{ record.valid_to | default('-') }}</dd>
+                  <dt>Email</dt>
+                  <dd>{{ record.email | default('-') }}</dd>
+                </dl>
+              </div>
+              <div class="col-md-6">
+                <dl class="dl-horizontal">
+                  <dt>Country</dt>
+                  <dd>{{ record.country | default('-') }}</dd>
+                  <dt>State</dt>
+                  <dd>{{ record.state | default('-') }}</dd>
+                  <dt>Locality</dt>
+                  <dd>{{ record.locality | default('-') }}</dd>
+                  <dt>RDN Serial</dt>
+                  <dd>{{ record.rdn_serial_number | default('-') }}</dd>
+                  <dt>TBS MD5</dt>
+                  <dd><code>{{ record.tbs_md5 | default('-') }}</code></dd>
+                  <dt>TBS SHA1</dt>
+                  <dd><code>{{ record.tbs_sha1 | default('-') }}</code></dd>
+                  <dt>TBS SHA256</dt>
+                  <dd><code>{{ record.tbs_sha256 | default('-') }}</code></dd>
+                  <dt>TBS SHA384</dt>
+                  <dd><code>{{ record.tbs_sha384 | default('-') }}</code></dd>
+                </dl>
+              </div>
+            </div>
 
             {% if record.malware_notes %}
             <div class="alert alert-warning mt-2">

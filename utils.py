@@ -152,9 +152,18 @@ class InputValidator:
             if not re.match(config.URL_REGEX, data):
                 raise ValueError("Invalid URL")
             return
-        if datatype in ('hash', 'certificate_hash'):
+        if datatype == 'hash':
             if not (re.match(config.MD5_REGEX, data) or re.match(config.SHA256_REGEX, data)):
                 raise ValueError("Invalid hash")
+            return
+        if datatype == 'certificate_hash':
+            if not (
+                re.match(config.MD5_REGEX, data)
+                or re.match(config.SHA1_REGEX, data)
+                or re.match(config.SHA256_REGEX, data)
+                or re.match(config.SHA384_REGEX, data)
+            ):
+                raise ValueError("Invalid certificate hash")
             return
         if datatype == 'mail':
             if not re.match(config.EMAIL_REGEX, data):

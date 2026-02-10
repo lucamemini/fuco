@@ -92,6 +92,8 @@ class CertGraveyardLookupAnalyzer(Analyzer):
             if term is None or not parameters:
                 return
 
+            search_term = self.normalize_search_term(term)
+
             query = {
                 'parameters': parameters,
                 'term': term,
@@ -99,7 +101,7 @@ class CertGraveyardLookupAnalyzer(Analyzer):
             }
 
             if self.is_local_mode():
-                records, cache_info = self.query_local(term, parameters)
+                records, cache_info = self.query_local(search_term, parameters)
                 report = {
                     'query': query,
                     'source': 'local',
@@ -108,7 +110,7 @@ class CertGraveyardLookupAnalyzer(Analyzer):
                     'cache': cache_info
                 }
             else:
-                records = self.query_api(parameters[0], term)
+                records = self.query_api(parameters[0], search_term)
                 report = {
                     'query': query,
                     'source': 'api',
@@ -127,6 +129,14 @@ class CertGraveyardLookupAnalyzer(Analyzer):
 
     def is_local_mode(self):
         return self.mode.lower() in ('local', 'download', 'offline')
+
+    def normalize_search_term(self, term):
+        if term is None:
+            return None
+        term_value = str(term).strip()
+        if not term_value:
+            return term_value
+        return term_value.lower()
 
     def resolve_query(self):
         if self.data_type == 'file':

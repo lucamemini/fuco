@@ -104,6 +104,8 @@ DOMAIN_REGEX = r'^(?!\-)([A-Za-z0-9\-]{1,63}(?<!\-)\.)+[A-Za-z]{2,6}$'
 URL_REGEX = r'^https?:\/\/[^\s\/$.?#].[^\s]*$'
 SHA256_REGEX = r'^[A-Fa-f0-9]{64}$'
 MD5_REGEX = r'^[a-fA-F0-9]{32}$'
+SHA1_REGEX = r'^[A-Fa-f0-9]{40}$'
+SHA384_REGEX = r'^[A-Fa-f0-9]{96}$'
 EMAIL_REGEX = r'^[^@]+@[^@]+\.[^@]+$'
 
 # Logging configuration
