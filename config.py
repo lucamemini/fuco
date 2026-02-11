@@ -45,6 +45,9 @@ LAST_ANALYSIS_RANGE = '0-150'
 
 SECRET_KEY = None  # Auto-generated if None (dev only!)
 
+# Session lifetime in seconds (default: 1800 = 30 minutes)
+PERMANENT_SESSION_LIFETIME = 1800
+
 # ============ CACHE CONFIGURATION ============
 
 # Cache type: "memory" or "redis"
