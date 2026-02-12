@@ -152,6 +152,7 @@ app.config['WTF_CSRF_SECRET_KEY'] = SECRET_KEY
 app.config['SESSION_TYPE'] = 'redis' if validated_config['cache_type'] == 'redis' else 'filesystem'
 app.config['SESSION_PERMANENT'] = False
 app.config['PERMANENT_SESSION_LIFETIME'] = config.PERMANENT_SESSION_LIFETIME
+app.config['CSRF_WHITELIST'] = config.CSRF_WHITELIST
 app.config['SESSION_COOKIE_SECURE'] = False  # Set True if you use HTTPS
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'

@@ -30,7 +30,13 @@ API_SHORT_INITIAL_DELAY = 5
 GET_SHORT_MAX_ATTEMPTS = 10
 GET_SHORT_INITIAL_DELAY = 3
 
-# CSRF allowlist (client IPs). If empty, CSRF is enforced for all.
+# ============ CSRF PROTECTION ============
+
+# CSRF allowlist: List of IPs that bypass CSRF checks.
+# Intended for trusted automation/API clients.
+# Format: list of IP strings or comma/semicolon-separated string
+# Example: ['127.0.0.1', '192.168.1.100'] or '127.0.0.1;192.168.1.100'
+# If empty [], CSRF protection is enforced for all requests.
 CSRF_WHITELIST = []
 # Job range query
 JOB_SEARCH_RANGE = '0-50'
