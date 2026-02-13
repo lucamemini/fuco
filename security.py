@@ -19,7 +19,7 @@ def _get_client_ip() -> str:
 
 
 class CSRFProtectWithAllowlist(CSRFProtect):
-    def protect(self):
+    def _protect(self):
         allowlist = current_app.config.get('CSRF_WHITELIST', [])
         if isinstance(allowlist, str):
             allowlist = [ip.strip() for ip in allowlist.replace(',', ';').split(';') if ip.strip()]
@@ -27,7 +27,7 @@ class CSRFProtectWithAllowlist(CSRFProtect):
             client_ip = _get_client_ip()
             if client_ip in allowlist:
                 return
-        return super().protect()
+        return super()._protect()
 
 
 csrf = CSRFProtectWithAllowlist()
