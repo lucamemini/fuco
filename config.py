@@ -30,6 +30,11 @@ API_SHORT_INITIAL_DELAY = 5
 GET_SHORT_MAX_ATTEMPTS = 10
 GET_SHORT_INITIAL_DELAY = 3
 
+# Job range query
+JOB_SEARCH_RANGE = '0-50'
+JOB_RECENT_LIMIT = 10
+LAST_ANALYSIS_RANGE = '0-150'
+
 # ============ CSRF PROTECTION ============
 
 # CSRF allowlist: List of IPs that bypass CSRF checks.
@@ -38,20 +43,12 @@ GET_SHORT_INITIAL_DELAY = 3
 # Example: ['127.0.0.1', '192.168.1.100'] or '127.0.0.1;192.168.1.100'
 # If empty [], CSRF protection is enforced for all requests.
 #
-# IMPORTANTE: Se usi nginx/apache come reverse proxy:
-# - L'IP reale del client viene rilevato da X-Forwarded-For o X-Real-IP
-# - Aggiungi gli IP dei CLIENT reali, NON 127.0.0.1 (a meno che il client sia localhost)
-# - Per debug, visita: http://your-server/debug/ip-info
-#
-# Esempi comuni:
-# - Client API da rete locale: ['192.168.1.50', '10.0.0.100']
-# - Script locali sulla stessa macchina: ['127.0.0.1', '::1']
-# - Tutti i client (NON SICURO!): CSRF_WHITELIST = ['0.0.0.0/0']
+# - for debug: /debug/ip-info to see which IP is detected
+# Examples:
+# - Local network API client: ['192.168.1.50', '10.0.0.100']
+# - Local scripts on the same machine: ['127.0.0.1', '::1']
+# - All clients (NOT SECURE!): CSRF_WHITELIST = ['0.0.0.0/0']
 CSRF_WHITELIST = []
-# Job range query
-JOB_SEARCH_RANGE = '0-50'
-JOB_RECENT_LIMIT = 10
-LAST_ANALYSIS_RANGE = '0-150'
 
 # ============ SECRET KEY FOR SESSIONS ============
 
@@ -162,20 +159,17 @@ NOTIFY_TO = ''
 # List of IPs allowed to access cache management APIs:
 # - /api/cache/stats (GET)
 # - /api/cache/clear (POST)
+# 
+# - for debug: /debug/ip-info to see which IP is detected
 #
-# IMPORTANTE con nginx/apache reverse proxy:
-# - L'IP reale del client viene rilevato da X-Forwarded-For/X-Real-IP
-# - Aggiungi l'IP REALE del client, NON 127.0.0.1 (a meno che il client sia sulla stessa macchina)
-# - Per debug: visita /debug/ip-info per vedere quale IP viene rilevato
-#
-# Esempi:
-# - Admin da rete locale: ['192.168.1.10', '10.0.0.5']
-# - Script locale (stesso server): ['127.0.0.1', '::1']
-# - Admin remoto: ['203.0.113.42']
+# Examples:
+# - Local network admin: ['192.168.1.10', '10.0.0.5']
+# - Local script (same server): ['127.0.0.1', '::1']
+# - Remote admin: ['203.0.113.42']
 #
 ALLOWED_IPS = [
-    '127.0.0.1',      # Localhost IPv4 (funziona solo se NON c'è nginx!)
-    '::1',            # Localhost IPv6 (funziona solo se NON c'è nginx!)
-    # TODO: Se usi nginx, aggiungi gli IP REALI dei client autorizzati qui
-    # '192.168.1.10',  # Esempio: IP admin
+    '127.0.0.1',      # Localhost IPv4 (works only if there's NO nginx!)
+    '::1',            # Localhost IPv6 (works only if there's NO nginx!)
+    # TODO: If you use nginx, add the REAL IPs of authorized clients here
+    # '192.168.1.10',  # Example: IP admin
 ]
