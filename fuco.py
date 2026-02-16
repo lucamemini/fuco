@@ -4,7 +4,7 @@ Flask application entry point
 """
 import logging
 import sys
-from flask import Flask
+from flask import Flask, jsonify, request
 from urllib.parse import quote
 
 import config
@@ -262,6 +262,36 @@ def fang(s):
 def urlencode_filter(s):
     """Custom filter: URL encode a string"""
     return quote(str(s))
+
+
+# ============ Error Handlers ============
+
+from werkzeug.exceptions import BadRequest
+from flask_wtf.csrf import CSRFError
+
+@app.errorhandler(CSRFError)
+def handle_csrf_error(e):
+    """Handle CSRF validation errors with logging"""
+    from security import _get_client_ip
+    client_ip = _get_client_ip()
+    
+    logger.warning(
+        f"CSRF validation failed: {e.description} | "
+        f"IP: {client_ip} | "
+        f"Path: {request.path} | "
+        f"Method: {request.method} | "
+        f"Referrer: {request.referrer or 'none'}"
+    )
+    
+    # Return JSON for API requests, HTML for regular requests
+    if request.path.startswith('/api/') or request.is_json:
+        return jsonify({
+            'success': False,
+            'error': 'CSRF validation failed',
+            'message': e.description
+        }), 400
+    else:
+        return f"<h1>400 Bad Request</h1><p>{e.description}</p>", 400
 
 
 # ============ Application Entry Point ============

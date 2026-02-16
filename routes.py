@@ -97,38 +97,42 @@ def ip_whitelist_required(allowed_ips=None):
         allowed_ips: List of allowed IPs. If None, uses config.ALLOWED_IPS
     
     Usage:
-        @ip_whitelist_required(['127.0.0.1', '192.168.1.100'])
+        @ip_whitelist_required(['192.168.1.100', '10.0.0.5'])
         def my_route():
             ...
+    
+    Note:
+        If behind nginx/apache, this correctly detects the real client IP
+        from X-Forwarded-For or X-Real-IP headers.
     """
     def decorator(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
+            from security import _get_client_ip
+            
             # Use IPs from parameter or config
             whitelist = allowed_ips or getattr(config, 'ALLOWED_IPS', ['127.0.0.1', '::1'])
             
-            # Get client IP
-            if request.headers.get('X-Forwarded-For'):
-                # Behind reverse proxy (nginx, apache)
-                client_ip = request.headers.get('X-Forwarded-For').split(',')[0].strip()
-            elif request.headers.get('X-Real-IP'):
-                # Alternate header for reverse proxy
-                client_ip = request.headers.get('X-Real-IP')
-            else:
-                # Direct connection
-                client_ip = request.remote_addr
+            # Get client IP (handles proxy headers correctly)
+            client_ip = _get_client_ip()
             
-            logger.debug(f"Detected client IP: {client_ip}")
+            logger.debug(
+                f"IP whitelist check: {client_ip} vs {whitelist} | "
+                f"Path: {request.path}"
+            )
             
             # Check if IP is in the whitelist
             if client_ip not in whitelist:
-                logger.warning(f"Access denied for unauthorized IP: {client_ip}")
+                logger.warning(
+                    f"IP whitelist: Access denied for {client_ip} | "
+                    f"Path: {request.path} | Allowed: {whitelist}"
+                )
                 return jsonify({
                     'error': 'Access denied',
                     'message': 'Your IP address is not authorized to access this resource'
                 }), 403
             
-            logger.debug(f"IP {client_ip} authorized")
+            logger.debug(f"IP whitelist: {client_ip} authorized for {request.path}")
             return f(*args, **kwargs)
         
         return decorated_function
@@ -940,3 +944,37 @@ def _get_cortex_host() -> str:
         return host.rstrip('/') if host else ''
     except Exception:
         return ''
+
+
+# ============ DEBUG ENDPOINT (rimuovere in produzione!) ============
+
+@routes_bp.route('/debug/ip-info', methods=['GET', 'POST'])
+def debug_ip_info():
+    """
+    Endpoint di debug per verificare quale IP viene rilevato.
+    ATTENZIONE: Rimuovere o proteggere in produzione!
+    """
+    from security import _get_client_ip
+    
+    client_ip = _get_client_ip()
+    csrf_whitelist = current_app.config.get('CSRF_WHITELIST', [])
+    
+    info = {
+        'detected_client_ip': client_ip,
+        'is_whitelisted': client_ip in csrf_whitelist,
+        'csrf_whitelist': csrf_whitelist,
+        'raw_data': {
+            'remote_addr': request.remote_addr,
+            'x_forwarded_for': request.headers.get('X-Forwarded-For'),
+            'x_real_ip': request.headers.get('X-Real-IP'),
+        },
+        'request_info': {
+            'method': request.method,
+            'path': request.path,
+            'referrer': request.referrer,
+            'user_agent': request.headers.get('User-Agent')
+        },
+        'all_headers': dict(request.headers)
+    }
+    
+    return jsonify(info)
