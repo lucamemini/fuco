@@ -10,8 +10,8 @@
     <link href="/css/main.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/css/all.min.css">
     <script>
-      window.FUCO_DEFAULT_TLP = {{ config.DEFAULT_TLP }};
-      window.FUCO_DEFAULT_PAP = {{ config.DEFAULT_PAP }};
+      window.FUCO_DEFAULT_TLP = {{ config.get('DEFAULT_TLP', 1) | tojson }};
+      window.FUCO_DEFAULT_PAP = {{ config.get('DEFAULT_PAP', 1) | tojson }};
     </script>
     <script src="/js/responder_actions.js"></script>
     

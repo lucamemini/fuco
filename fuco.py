@@ -123,6 +123,9 @@ app = Flask(__name__,
             static_folder='web/static',
             template_folder=config.TEMPLATE_FOLDER)
 
+# Load uppercase settings from config.py into Flask config for templates/routes.
+app.config.from_object(config)
+
 # ============ CSRF + Rate Limiting ============
 csrf.init_app(app)
 limiter.init_app(app)

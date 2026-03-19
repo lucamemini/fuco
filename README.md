@@ -284,6 +284,31 @@ NOTIFY_TO = 'soc@example.com;secops@example.com'
 ```python
 # WHITE: 0, GREEN: 1, AMBER: 2, RED: 3
 ```
+lòa 
+### AI Assessment (Gemini)
+
+FUCO supports optional AI assessment on results pages via the `Analisi IA` button.
+
+Configuration files:
+
+- `config_ai.py`: non-secret AI settings (provider, model, timeout, cache TTL)
+- `secretai.py`: API key file (excluded from git)
+
+Setup:
+
+```bash
+cp secretai.py.template secretai.py
+# edit secretai.py and set AI_API_KEY
+```
+
+Main endpoint:
+
+- `POST /api/ai/analyze` (cache-aware; returns `source=cache|fresh`)
+
+Notes:
+
+- Button is enabled when results are loaded/completed.
+- If the same normalized input was already evaluated, FUCO returns the cached AI assessment.
 
 ### Cache Configuration
 
@@ -855,6 +880,7 @@ curl http://localhost:5000/api/getAnalyzer
 | `/api/short` | POST | Quick taxonomy-only API |
 | `/api/analysis` | POST | Full analysis API |
 | `/api/getAnalyzer` | GET | List available analyzers |
+| `/api/ai/analyze` | POST | AI assessment (Gemini, cache-aware) |
 | `/api/submit_job` | POST | Submit single job (AJAX) |
 | `/api/poll_job/<job_id>` | GET | Poll job status |
 | `/api/cache/stats` | GET | Cache statistics (IP-restricted) |

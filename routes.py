@@ -17,6 +17,8 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import utils
 import config
+import config_ai
+import ai_manager
 import config_responder as responder_cfg
 from security import login_required_json, optional_limit
 
@@ -45,18 +47,19 @@ def _render_generic_fallback(report):
     - Success: show JSON
     - Failure/None: show error message
     """
+    artifact = _report_to_template_payload(report)
+
     try:
-        rendered = render_template("long/generic.long.html", artifact=report)
+        rendered = render_template("long/generic.long.html", artifact=artifact)
         return utils.sanitize_html(rendered)
     except Exception:
         pass
 
-    status = getattr(report, "status", None) if report else None
+    status = artifact.get("status") if artifact else None
     if status == "Success":
-        payload = getattr(report, "report", None)
+        payload = artifact.get("report")
         if payload is None:
-            json_method = getattr(report, "json", None)
-            payload = json_method() if callable(json_method) else report
+            payload = artifact
         try:
             json_text = json.dumps(payload, indent=2, default=str)
         except Exception:
@@ -70,12 +73,10 @@ def _render_generic_fallback(report):
             "</code></pre></div></div>"
         )
 
-    error_message = None
-    if report is not None:
-        error_message = getattr(report, "errorMessage", None)
-        report_body = getattr(report, "report", None)
-        if not error_message and isinstance(report_body, dict):
-            error_message = report_body.get("errorMessage")
+    error_message = artifact.get("errorMessage") if artifact else None
+    report_body = artifact.get("report") if artifact else None
+    if not error_message and isinstance(report_body, dict):
+        error_message = report_body.get("errorMessage")
 
     if not error_message:
         error_message = "Unknown error occurred"
@@ -161,12 +162,86 @@ class AnalysisRequest(BaseModel):
     analyzer_list: List[str] = Field(..., min_items=1)
 
 
+class AiAnalyzeRequest(BaseModel):
+    """Validation model for /api/ai/analyze"""
+    observable: str = Field(..., min_length=1, max_length=500)
+    datatype: str = Field(..., min_length=1, max_length=100)
+    jobs: List[str] = Field(..., min_items=1)
+    force_refresh: Optional[bool] = False
+
+
 # ============ Helper functions ============
 
 def error_response(message: str, code: int = 500):
     """Helper to generate JSON error responses."""
     logger.error(f"Error ({code}): {message}")
     return jsonify({"error": message}), code
+
+
+def _report_to_template_payload(report) -> dict:
+    """Normalize a Cortex report object into a dict for Jinja templates."""
+    if report is None:
+        return {}
+
+    if isinstance(report, dict):
+        return report
+
+    report_json = {}
+    report_json_method = getattr(report, 'json', None)
+    if callable(report_json_method):
+        try:
+            report_json = report_json_method()
+        except Exception:
+            report_json = {}
+
+    if isinstance(report_json, dict) and report_json:
+        return report_json
+
+    report_body = getattr(report, 'report', None)
+    if not isinstance(report_body, dict):
+        report_body = {}
+
+    return {
+        'id': getattr(report, 'id', None),
+        'status': getattr(report, 'status', None),
+        'analyzerName': getattr(report, 'analyzerName', None),
+        'data': getattr(report, 'data', None),
+        'errorMessage': getattr(report, 'errorMessage', None),
+        'report': report_body,
+    }
+
+
+def _report_to_ai_payload(report, job_id: str) -> dict:
+    """Normalize a Cortex report object into a compact AI payload."""
+    status = getattr(report, 'status', None)
+    analyzer_name = getattr(report, 'analyzerName', None)
+
+    report_json = {}
+    report_json_method = getattr(report, 'json', None)
+    if callable(report_json_method):
+        try:
+            report_json = report_json_method()
+        except Exception:
+            report_json = {}
+
+    report_body = getattr(report, 'report', None)
+    if report_body is None and isinstance(report_json, dict):
+        report_body = report_json.get('report')
+
+    taxonomies = []
+    try:
+        taxonomies = utils.extract_taxonomies(report)
+    except Exception:
+        taxonomies = []
+
+    return {
+        "job_id": job_id,
+        "analyzer": analyzer_name,
+        "status": status,
+        "taxonomies": taxonomies,
+        "summary": report_json.get('summary') if isinstance(report_json, dict) else None,
+        "report": report_body if isinstance(report_body, dict) else {},
+    }
 
 # ============ HTML routes ============
 
@@ -628,6 +703,85 @@ def api_analysis():
         return error_response(str(e), 500)
 
 
+@routes_bp.route('/api/ai/analyze', methods=['POST'])
+@optional_limit(getattr(config, 'RATE_LIMIT_API_AI_ANALYSIS', None))
+def api_ai_analyze():
+    """AI assessment endpoint (cache-aware)."""
+    if not config_ai.AI_ENABLED:
+        return error_response("AI feature disabled", 503)
+
+    if not ai_manager.is_enabled():
+        return error_response("AI not configured (missing provider/key)", 503)
+
+    try:
+        request_data = request.get_json()
+        if not request_data:
+            return error_response("No JSON data provided", 400)
+
+        try:
+            ai_req = AiAnalyzeRequest(**request_data)
+        except ValueError as e:
+            return error_response(f"Invalid data: {str(e)}", 400)
+
+        observable = utils.InputValidator.sanitize_observable(ai_req.observable)
+        datatype = utils.InputValidator.validate_datatype(ai_req.datatype)
+
+        jobs = [str(job_id).strip() for job_id in ai_req.jobs if str(job_id).strip()]
+        if not jobs:
+            return error_response("No valid job ids provided", 400)
+
+        max_jobs = int(getattr(config_ai, 'AI_MAX_JOBS', 100))
+        if len(jobs) > max_jobs:
+            return error_response(f"Too many jobs (max {max_jobs})", 400)
+
+        reports_payload = []
+        final_statuses = ("Success", "Failure", "Deleted")
+
+        for job_id in jobs:
+            report = utils.get_cached_report(job_id)
+            if not report:
+                continue
+
+            status = getattr(report, 'status', None)
+            if getattr(config_ai, 'AI_REQUIRE_FINAL_RESULTS', True) and status not in final_statuses:
+                return error_response(f"Job {job_id} not completed yet", 409)
+
+            reports_payload.append(_report_to_ai_payload(report, job_id))
+
+        if not reports_payload:
+            return error_response("No reports available for AI analysis", 404)
+
+        bundle = ai_manager.build_bundle(observable, datatype, reports_payload)
+        result = ai_manager.get_or_generate_assessment(
+            current_app.cache_manager,
+            bundle,
+            force_refresh=bool(ai_req.force_refresh),
+        )
+
+        return jsonify(result)
+
+    except ValueError as e:
+        return error_response(str(e), 400)
+    except ai_manager.AIProviderError as e:
+        status_code = int(getattr(e, 'status_code', 502) or 502)
+        retry_after = getattr(e, 'retry_after_seconds', None)
+        message = str(e)
+
+        body = {"error": message}
+        if retry_after is not None:
+            body["retry_after_seconds"] = retry_after
+
+        response = jsonify(body)
+        if retry_after is not None:
+            response.headers['Retry-After'] = str(retry_after)
+
+        logger.warning("AI provider error (%s): %s", status_code, message)
+        return response, status_code
+    except Exception as e:
+        logger.error(f"Error in api_ai_analyze(): {str(e)}", exc_info=True)
+        return error_response(str(e), 500)
+
+
 @routes_bp.route('/api/getAnalyzer', methods=['GET'])
 def api_get_analyzer():
     """API to retrieve the list of all available analyzers."""
@@ -694,8 +848,10 @@ def get_analysis():
     else:
         logger.info("Report status not successful, using generic template")
 
+    artifact = _report_to_template_payload(report)
+
     try:
-        rendered = render_template(template_name, artifact=report)
+        rendered = render_template(template_name, artifact=artifact)
         return utils.sanitize_html(rendered)
 
     except Exception:

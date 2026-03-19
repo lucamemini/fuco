@@ -8,9 +8,15 @@ User=fuco
 Group=fuco
 WorkingDirectory=/opt/fuco
 Environment="PATH=/opt/fuco/venv/bin"
-Environment="GUNICORN_WORKERS=4"
+Environment="GUNICORN_WORKERS=5"
+Environment="GUNICORN_WORKER_CLASS=gthread"
+Environment="GUNICORN_THREADS=3"
 Environment="GUNICORN_BIND=0.0.0.0:8000"
-Environment="GUNICORN_TIMEOUT=120"
+Environment="GUNICORN_TIMEOUT=240"
+Environment="GUNICORN_GRACEFUL_TIMEOUT=30"
+Environment="GUNICORN_KEEPALIVE=5"
+Environment="GUNICORN_MAX_REQUESTS=1000"
+Environment="GUNICORN_MAX_REQUESTS_JITTER=100"
 Environment="GUNICORN_LOG_DIR=/opt/fuco/logs"
 ExecStart=/opt/fuco/run_gunicorn.sh
 Restart=always

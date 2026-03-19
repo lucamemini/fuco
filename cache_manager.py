@@ -10,6 +10,7 @@ from datetime import timedelta
 from typing import Optional, Any
 
 import config
+import config_ai
 from cache_backend import CacheBackend, MemoryCacheBackend, RedisCacheBackend
 
 logger = logging.getLogger(__name__)
@@ -30,6 +31,7 @@ class CacheManager:
         self.backend: CacheBackend = self._initialize_backend(redis_url)
         self.ttl = timedelta(minutes=config.CACHE_TTL_MINUTES)
         self.ttl_seconds = config.CACHE_TTL_MINUTES * 60
+        self.ai_ttl_seconds = config_ai.AI_CACHE_TTL_MINUTES * 60
         
         logger.info(
             f"CacheManager initialized: "
@@ -99,6 +101,16 @@ class CacheManager:
         """Remove a report from cache."""
         key = self._make_key('report', job_id)
         return self.backend.delete(key)
+
+    def get_ai_assessment(self, cache_key: str) -> Optional[Any]:
+        """Retrieve an AI assessment payload from cache."""
+        key = self._make_key('ai_assessment', cache_key)
+        return self.backend.get(key)
+
+    def set_ai_assessment(self, cache_key: str, payload: Any) -> bool:
+        """Store an AI assessment payload in cache."""
+        key = self._make_key('ai_assessment', cache_key)
+        return self.backend.set(key, payload, self.ai_ttl_seconds)
     
     def clear_all(self) -> bool:
         """Clear all cache entries."""

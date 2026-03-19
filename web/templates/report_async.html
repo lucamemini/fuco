@@ -10,8 +10,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/css/all.min.css">
     <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
     <script>
-      window.FUCO_DEFAULT_TLP = {{ config.DEFAULT_TLP }};
-      window.FUCO_DEFAULT_PAP = {{ config.DEFAULT_PAP }};
+      window.FUCO_DEFAULT_TLP = {{ config.get('DEFAULT_TLP', 1) | tojson }};
+      window.FUCO_DEFAULT_PAP = {{ config.get('DEFAULT_PAP', 1) | tojson }};
     </script>
     <script src="{{ url_for('static', filename='js/responder_actions.js') }}"></script>
     <script>
@@ -246,7 +246,17 @@ body {
     <button id="export-pdf-btn" class="action-btn-header btn-export" onclick="exportToPDF()" disabled>
       <i class="fas fa-file-pdf"></i> Export PDF
     </button>
+    <button id="ai-analysis-btn" class="action-btn-header btn-export" onclick="runAiAnalysis()" disabled>
+      <i class="fas fa-brain"></i> Analisi IA
+    </button>
     <div id="responder-actions-{{ data.fuco.id }}"></div>
+  </div>
+</div>
+
+<div id="ai-assessment-panel" class="card mb-3 d-none">
+  <div class="card-body">
+    <h5 class="card-title"><i class="fas fa-brain"></i> AI Assessment</h5>
+    <div id="ai-assessment-content"></div>
   </div>
 </div>
 
@@ -514,6 +524,71 @@ function markJobError(analyzerId, errorMsg) {
 function checkExportReady() {
     if (completedCount === totalCount) {
         $('#export-pdf-btn').prop('disabled', false);
+        $('#ai-analysis-btn').prop('disabled', false);
+    }
+}
+
+function renderAiAssessment(result) {
+    const content = document.getElementById('ai-assessment-content');
+    const panel = document.getElementById('ai-assessment-panel');
+    if (!content || !panel) return;
+
+    const assessment = (result && result.assessment) ? result.assessment : {};
+    const findings = Array.isArray(assessment.key_findings) ? assessment.key_findings : [];
+    const actions = Array.isArray(assessment.recommended_actions) ? assessment.recommended_actions : [];
+
+    panel.classList.remove('d-none');
+    content.innerHTML = `
+      <div class="mb-2">
+        <span class="badge bg-dark">Risk: ${assessment.risk_level || 'unknown'} (${assessment.risk_score ?? 0}/100)</span>
+        <span class="badge bg-secondary">Confidence: ${assessment.confidence ?? 0}</span>
+        <span class="badge ${result.source === 'cache' ? 'bg-info text-dark' : 'bg-success'}">${result.source === 'cache' ? 'From cache' : 'Fresh'}</span>
+      </div>
+      <p>${assessment.summary || 'No summary provided.'}</p>
+      <div><strong>Findings</strong><ul>${findings.map(x => `<li>${x}</li>`).join('')}</ul></div>
+      <div><strong>Recommended actions</strong><ul>${actions.map(x => `<li>${x}</li>`).join('')}</ul></div>
+    `;
+}
+
+async function runAiAnalysis(forceRefresh = false) {
+    const btn = $('#ai-analysis-btn');
+    btn.prop('disabled', true);
+    btn.html('<i class="fas fa-spinner fa-spin"></i> Analisi IA...');
+
+    try {
+        const jobs = analyzers
+          .map(analyzer => jobsMap[analyzer])
+          .filter(Boolean);
+
+        if (!jobs.length) {
+            throw new Error('Nessun job disponibile per l\'analisi IA');
+        }
+
+        const response = await fetch('/api/ai/analyze', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCsrfToken()
+          },
+          body: JSON.stringify({
+            observable: observable,
+            datatype: datatype,
+            jobs: jobs,
+            force_refresh: forceRefresh
+          })
+        });
+
+        const result = await response.json();
+        if (!response.ok) {
+            throw new Error(result.error || 'Errore API Analisi IA');
+        }
+
+        renderAiAssessment(result);
+    } catch (error) {
+        alert(`Analisi IA non disponibile: ${error.message}`);
+    } finally {
+        btn.prop('disabled', completedCount !== totalCount);
+        btn.html('<i class="fas fa-brain"></i> Analisi IA');
     }
 }
 

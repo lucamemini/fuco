@@ -11,8 +11,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/css/all.min.css">
     <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
         <script>
-            window.FUCO_DEFAULT_TLP = {{ config.DEFAULT_TLP }};
-            window.FUCO_DEFAULT_PAP = {{ config.DEFAULT_PAP }};
+            window.FUCO_DEFAULT_TLP = {{ config.get('DEFAULT_TLP', 1) | tojson }};
+            window.FUCO_DEFAULT_PAP = {{ config.get('DEFAULT_PAP', 1) | tojson }};
         </script>
     <script src="/js/responder_actions.js"></script>
     <script>
@@ -269,19 +269,19 @@
                         <div class="col-md-6">
                             <label>TLP Level:</label>
                             <select class="form-control" id="bulkTLP">
-                                <option value="0" {% if config.DEFAULT_TLP == 0 %}selected{% endif %}>WHITE (0)</option>
-                                <option value="1" {% if config.DEFAULT_TLP == 1 %}selected{% endif %}>GREEN (1)</option>
-                                <option value="2" {% if config.DEFAULT_TLP == 2 %}selected{% endif %}>AMBER (2)</option>
-                                <option value="3" {% if config.DEFAULT_TLP == 3 %}selected{% endif %}>RED (3)</option>
+                                <option value="0" {% if config.get('DEFAULT_TLP', 1) == 0 %}selected{% endif %}>WHITE (0)</option>
+                                <option value="1" {% if config.get('DEFAULT_TLP', 1) == 1 %}selected{% endif %}>GREEN (1)</option>
+                                <option value="2" {% if config.get('DEFAULT_TLP', 1) == 2 %}selected{% endif %}>AMBER (2)</option>
+                                <option value="3" {% if config.get('DEFAULT_TLP', 1) == 3 %}selected{% endif %}>RED (3)</option>
                             </select>
                         </div>
                         <div class="col-md-6">
                             <label>PAP Level:</label>
                             <select class="form-control" id="bulkPAP">
-                                <option value="0" {% if config.DEFAULT_PAP == 0 %}selected{% endif %}>WHITE (0)</option>
-                                <option value="1" {% if config.DEFAULT_PAP == 1 %}selected{% endif %}>GREEN (1)</option>
-                                <option value="2" {% if config.DEFAULT_PAP == 2 %}selected{% endif %}>AMBER (2)</option>
-                                <option value="3" {% if config.DEFAULT_PAP == 3 %}selected{% endif %}>RED (3)</option>
+                                <option value="0" {% if config.get('DEFAULT_PAP', 1) == 0 %}selected{% endif %}>WHITE (0)</option>
+                                <option value="1" {% if config.get('DEFAULT_PAP', 1) == 1 %}selected{% endif %}>GREEN (1)</option>
+                                <option value="2" {% if config.get('DEFAULT_PAP', 1) == 2 %}selected{% endif %}>AMBER (2)</option>
+                                <option value="3" {% if config.get('DEFAULT_PAP', 1) == 3 %}selected{% endif %}>RED (3)</option>
                             </select>
                         </div>
                     </div>

@@ -1,5 +1,5 @@
 /opt/fuco/logs/*.log {
-    daily
+    size 10M
     rotate 14
     compress
     delaycompress

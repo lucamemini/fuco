@@ -31,12 +31,18 @@ class ResponderModal {
 
     getDefaultTlp() {
         const value = Number(window.FUCO_DEFAULT_TLP);
-        return Number.isInteger(value) ? value : 2;
+        if (!Number.isInteger(value) || value < 0 || value > 3) {
+            return 1;
+        }
+        return value;
     }
 
     getDefaultPap() {
         const value = Number(window.FUCO_DEFAULT_PAP);
-        return Number.isInteger(value) ? value : 2;
+        if (!Number.isInteger(value) || value < 0 || value > 3) {
+            return 1;
+        }
+        return value;
     }
 
     init() {
@@ -80,7 +86,7 @@ class ResponderModal {
                                 <select id="tlpSelect" class="form-control">
                                     <option value="0">WHITE (0)</option>
                                     <option value="1">GREEN (1)</option>
-                                    <option value="2" selected>AMBER (2)</option>
+                                    <option value="2">AMBER (2)</option>
                                     <option value="3">RED (3)</option>
                                 </select>
                             </div>
@@ -89,7 +95,7 @@ class ResponderModal {
                                 <select id="papSelect" class="form-control">
                                     <option value="0">WHITE (0)</option>
                                     <option value="1">GREEN (1)</option>
-                                    <option value="2" selected>AMBER (2)</option>
+                                    <option value="2">AMBER (2)</option>
                                     <option value="3">RED (3)</option>
                                 </select>
                             </div>

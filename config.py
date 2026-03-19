@@ -97,6 +97,7 @@ RATE_LIMIT_EXPORT_PDF = "10/minute"  # Suggested "5-10/minute"
 RATE_LIMIT_SUBMIT_JOB = None  # Suggested "120-180/minute"
 RATE_LIMIT_API_SHORT = None  # Suggested "60-120/minute"
 RATE_LIMIT_API_ANALYSIS = None  # Suggested "30-60/minute"
+RATE_LIMIT_API_AI_ANALYSIS = None  # Suggested "10-30/minute"
 RATE_LIMIT_GET_ANALYSIS = None  # Suggested "120-240/minute"
 RATE_LIMIT_GET_SHORT = None  # Suggested "240-360/minute"
 
