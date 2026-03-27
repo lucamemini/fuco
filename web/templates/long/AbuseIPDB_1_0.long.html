@@ -1,68 +1,136 @@
 {% if artifact.status == "Success" %}
-{% set content = artifact.report.full or {} %}
-
-{% for key, entries in content.items() %}
-  {% set entry = entries[0] if entries and entries|length > 0 else None %}
-  {% if entry and entry.data.totalReports > 0 %}
-
-  <div class="card border-danger mb-3">
-    <div class="card-header">
-      AbuseIPDB – {{ entry.data.ipAddress }}
-    </div>
-
-    <div class="card-body">
-      <dl class="dl-horizontal">
-        <dt>Country</dt>
-        <dd>{{ entry.data.countryName }} ({{ entry.data.countryCode }})</dd>
-
-        <dt>ISP</dt>
-        <dd>{{ entry.data.isp }}</dd>
-
-        <dt>Domain</dt>
-        <dd>{{ entry.data.domain }}</dd>
-
-        <dt>Hostnames</dt>
-        <dd>{{ entry.data.hostnames | join(', ') }}</dd>
-      </dl>
-
-      <table class="table table-striped mt-3">
-        <thead>
-          <tr>
-            <th>Reported Date</th>
-            <th>Score</th>
-            <th>Country</th>
-            <th>Categories</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for r in entry.data.reports %}
-          <tr>
-            <td>{{ r.reportedAt }}</td>
-            <td>{{ entry.data.abuseConfidenceScore }}</td>
-            <td>{{ r.reporterCountryName }}</td>
-            <td>
-              {% for c in r.categories_strings %}
-                <span class="badge bg-secondary">{{ c }}</span>
-              {% endfor %}
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </div>
-
+{% set content = artifact.report.full if artifact.report is defined and artifact.report.full is defined and artifact.report.full is mapping else {} %}
+{% set ns = namespace(entry=None) %}
+{% for _key, _entries in content.items() %}
+  {% if ns.entry is none and _entries is sequence and _entries|length > 0 and _entries[0] is mapping %}
+    {% set ns.entry = _entries[0] %}
   {% endif %}
 {% endfor %}
+{% set data = ns.entry.data if ns.entry and ns.entry.data is defined and ns.entry.data is mapping else {} %}
+{% set reports = data.reports if data.reports is defined and data.reports is sequence else [] %}
 
-<div class="mt-3">
-  <h6>Raw JSON</h6>
-  <pre><code>{{ artifact.report | tojson(indent=2) }}</code></pre>
+<div class="card border-danger mb-3">
+  <div class="card-header">
+    <ul class="nav nav-tabs card-header-tabs">
+      <li class="nav-item">
+        <a class="nav-link active" id="result-tab_{{ artifact.id }}" data-bs-toggle="tab" data-bs-target="#result_{{ artifact.id }}" role="tab" aria-controls="result_{{ artifact.id }}" aria-selected="true">Result</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" id="json-tab_{{ artifact.id }}" data-bs-toggle="tab" data-bs-target="#json_{{ artifact.id }}" role="tab" aria-controls="json_{{ artifact.id }}" aria-selected="false">JSON</a>
+      </li>
+    </ul>
+  </div>
+
+  <div class="card-body">
+    <div class="tab-content">
+      <div class="tab-pane fade show active" id="result_{{ artifact.id }}" role="tabpanel" aria-labelledby="result-tab_{{ artifact.id }}">
+        {% if ns.entry %}
+        <div class="panel panel-info">
+          <div class="panel-heading">
+            <strong>AbuseIPDB - {{ data.ipAddress if data.ipAddress is defined else (artifact.data if artifact.data is defined else 'N/A') }}</strong>
+          </div>
+          <div class="panel-body">
+            <dl class="dl-horizontal">
+              <dt>Total Reports</dt>
+              <dd>{{ data.totalReports if data.totalReports is defined else 0 }}</dd>
+
+              <dt>Abuse Confidence Score</dt>
+              <dd>{{ data.abuseConfidenceScore if data.abuseConfidenceScore is defined else 'N/A' }}</dd>
+
+              <dt>Country</dt>
+              <dd>{{ data.countryName if data.countryName is defined else 'N/A' }}{% if data.countryCode is defined %} ({{ data.countryCode }}){% endif %}</dd>
+
+              <dt>ISP</dt>
+              <dd>{{ data.isp if data.isp is defined and data.isp else 'N/A' }}</dd>
+
+              <dt>Domain</dt>
+              <dd>{{ data.domain if data.domain is defined and data.domain else 'N/A' }}</dd>
+
+              <dt>Hostnames</dt>
+              <dd>
+                {% if data.hostnames is defined and data.hostnames %}
+                  {% if data.hostnames is string %}
+                    {{ data.hostnames }}
+                  {% else %}
+                    {{ data.hostnames | join(', ') }}
+                  {% endif %}
+                {% else %}
+                  N/A
+                {% endif %}
+              </dd>
+            </dl>
+
+            {% if reports|length > 0 %}
+            <table class="table table-striped mt-3">
+              <thead>
+                <tr>
+                  <th>Reported Date</th>
+                  <th>Score</th>
+                  <th>Country</th>
+                  <th>Categories</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for r in reports %}
+                {% set categories = r.categories_strings if r.categories_strings is defined and r.categories_strings is sequence else (r.categories if r.categories is defined and r.categories is sequence else []) %}
+                <tr>
+                  <td>{{ r.reportedAt if r.reportedAt is defined else 'N/A' }}</td>
+                  <td>{{ data.abuseConfidenceScore if data.abuseConfidenceScore is defined else 'N/A' }}</td>
+                  <td>{{ r.reporterCountryName if r.reporterCountryName is defined else 'N/A' }}</td>
+                  <td>
+                    {% if categories|length > 0 %}
+                      {% for c in categories %}
+                        <span class="badge bg-secondary">{{ c }}</span>
+                      {% endfor %}
+                    {% else %}
+                      <span class="text-muted">N/A</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            {% else %}
+            <div class="alert alert-warning mb-0">No detailed abuse reports available for this IP.</div>
+            {% endif %}
+          </div>
+        </div>
+        {% else %}
+        <div class="alert alert-warning mb-0">AbuseIPDB data structure not available in this report.</div>
+        {% endif %}
+      </div>
+
+      <div class="tab-pane fade" id="json_{{ artifact.id }}" role="tabpanel" aria-labelledby="json-tab_{{ artifact.id }}">
+        <pre><code>{{ artifact.report | tojson(indent=2) }}</code></pre>
+      </div>
+    </div>
+  </div>
 </div>
 
 {% else %}
-<div class="alert alert-danger">
-  <strong>{{ artifact.data }}</strong><br>
-  {{ artifact.report.errorMessage }}
+<div class="card border-danger mb-3">
+  <div class="card-header">
+    <ul class="nav nav-tabs card-header-tabs">
+      <li class="nav-item">
+        <a class="nav-link active" id="error-tab_{{ artifact.id }}" data-bs-toggle="tab" data-bs-target="#error_{{ artifact.id }}" role="tab" aria-controls="error_{{ artifact.id }}" aria-selected="true">Error</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" id="json-error-tab_{{ artifact.id }}" data-bs-toggle="tab" data-bs-target="#json-error_{{ artifact.id }}" role="tab" aria-controls="json-error_{{ artifact.id }}" aria-selected="false">JSON</a>
+      </li>
+    </ul>
+  </div>
+  <div class="card-body">
+    <div class="tab-content">
+      <div class="tab-pane fade show active" id="error_{{ artifact.id }}" role="tabpanel" aria-labelledby="error-tab_{{ artifact.id }}">
+        <div class="alert alert-danger">
+          <strong>{{ artifact.data if artifact.data is defined else 'AbuseIPDB' }}</strong><br>
+          {{ artifact.report.errorMessage if artifact.report is defined and artifact.report.errorMessage is defined else 'Analyzer execution failed.' }}
+        </div>
+      </div>
+      <div class="tab-pane fade" id="json-error_{{ artifact.id }}" role="tabpanel" aria-labelledby="json-error-tab_{{ artifact.id }}">
+        <pre><code>{{ artifact | string }}</code></pre>
+      </div>
+    </div>
+  </div>
 </div>
 {% endif %}

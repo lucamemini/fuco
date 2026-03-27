@@ -58,6 +58,24 @@ def _extract_retry_after_seconds(detail: str):
     return None
 
 
+def _extract_provider_error_message(detail: str):
+    if not detail:
+        return None
+    try:
+        parsed = json.loads(detail)
+    except Exception:
+        return None
+
+    error_obj = parsed.get("error") if isinstance(parsed, dict) else None
+    if not isinstance(error_obj, dict):
+        return None
+
+    message = error_obj.get("message")
+    if isinstance(message, str) and message.strip():
+        return message.strip()
+    return None
+
+
 def _is_timeout_error(exc: Exception) -> bool:
     if isinstance(exc, (TimeoutError, socket.timeout)):
         return True
@@ -429,6 +447,7 @@ def call_gemini(bundle: dict) -> Tuple[dict, dict]:
         except url_error.HTTPError as e:
             detail = e.read().decode("utf-8", errors="ignore") if hasattr(e, "read") else str(e)
             status_code = int(getattr(e, "code", 502) or 502)
+            provider_message = _extract_provider_error_message(detail)
             if bool(getattr(ai_cfg, "AI_LOG_REQUEST_RESPONSE", True)):
                 max_chars = _get_log_max_chars()
                 logger.warning(
@@ -447,15 +466,17 @@ def call_gemini(bundle: dict) -> Tuple[dict, dict]:
             if status_code == 429:
                 retry_after = _extract_retry_after_seconds(detail)
                 raise AIProviderError(
-                    "Gemini quota/rate limit exceeded",
+                    provider_message or "Gemini quota/rate limit exceeded",
                     status_code=429,
                     retry_after_seconds=retry_after,
                 )
             if status_code == 400 and "API_KEY_INVALID" in detail:
                 raise AIProviderError(
-                    "Gemini API key invalid. Check FUCO_AI_API_KEY/GEMINI_API_KEY or secretai.AI_API_KEY",
+                    provider_message or "Gemini API key invalid. Check FUCO_AI_API_KEY/GEMINI_API_KEY or secretai.AI_API_KEY",
                     status_code=401,
                 )
+            if provider_message:
+                raise AIProviderError(provider_message, status_code=status_code)
             raise AIProviderError(f"Gemini HTTP error: {status_code}", status_code=status_code)
         except Exception as e:
             if _is_timeout_error(e):
