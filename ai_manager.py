@@ -98,6 +98,15 @@ def _strip_nulls(obj):
     return obj
 
 
+def _normalize_api_key(value) -> str:
+    if value is None:
+        return ""
+    key = str(value).strip()
+    if len(key) >= 2 and ((key[0] == '"' and key[-1] == '"') or (key[0] == "'" and key[-1] == "'")):
+        key = key[1:-1].strip()
+    return key
+
+
 def _redact_sensitive_value(value):
     if not isinstance(value, str):
         return value
@@ -118,15 +127,16 @@ def _apply_redaction(obj):
 
 def get_api_key() -> str:
     env_key = os.getenv("FUCO_AI_API_KEY") or os.getenv("GEMINI_API_KEY")
+    env_key = _normalize_api_key(env_key)
     if env_key:
         return env_key
 
     if secretai is not None:
-        key = getattr(secretai, "AI_API_KEY", None)
+        key = _normalize_api_key(getattr(secretai, "AI_API_KEY", None))
         if key:
             return key
 
-    cfg_key = getattr(ai_cfg, "AI_API_KEY", None)
+    cfg_key = _normalize_api_key(getattr(ai_cfg, "AI_API_KEY", None))
     return cfg_key if cfg_key else ""
 
 
@@ -440,6 +450,11 @@ def call_gemini(bundle: dict) -> Tuple[dict, dict]:
                     "Gemini quota/rate limit exceeded",
                     status_code=429,
                     retry_after_seconds=retry_after,
+                )
+            if status_code == 400 and "API_KEY_INVALID" in detail:
+                raise AIProviderError(
+                    "Gemini API key invalid. Check FUCO_AI_API_KEY/GEMINI_API_KEY or secretai.AI_API_KEY",
+                    status_code=401,
                 )
             raise AIProviderError(f"Gemini HTTP error: {status_code}", status_code=status_code)
         except Exception as e:
