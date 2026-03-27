@@ -24,14 +24,26 @@ from security import csrf, limiter
 
 # Logging configuration
 def configure_logging():
-    logging.basicConfig(
-        level=config.LOG_LEVEL,
-        format=config.LOG_FORMAT,
-        handlers=[
-            logging.StreamHandler(sys.stdout),
-        ],
-        force=True,
-    )
+    handlers = [logging.StreamHandler(sys.stdout)]
+
+    # Python < 3.8 does not support basicConfig(force=...).
+    # Emulate force behavior by removing existing root handlers first.
+    if sys.version_info < (3, 8):
+        root = logging.getLogger()
+        for h in list(root.handlers):
+            root.removeHandler(h)
+        logging.basicConfig(
+            level=config.LOG_LEVEL,
+            format=config.LOG_FORMAT,
+            handlers=handlers,
+        )
+    else:
+        logging.basicConfig(
+            level=config.LOG_LEVEL,
+            format=config.LOG_FORMAT,
+            handlers=handlers,
+            force=True,
+        )
 
 
 configure_logging()
