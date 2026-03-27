@@ -194,6 +194,28 @@ def build_bundle(observable: str, datatype: str, reports: list) -> dict:
     raw = _json_dumps(bundle).encode("utf-8")
     max_size = int(getattr(ai_cfg, "AI_MAX_INPUT_BYTES", 250000))
     if len(raw) > max_size:
+        # Fallback: remove heavy premium full_report blobs but keep compact evidence/tags/signals.
+        trimmed_reports = []
+        removed_full_reports = 0
+        for r in clean_reports:
+            if isinstance(r, dict) and "full_report" in r:
+                r = dict(r)
+                r.pop("full_report", None)
+                r["full_report_removed_due_to_size"] = True
+                removed_full_reports += 1
+            trimmed_reports.append(r)
+
+        if removed_full_reports > 0:
+            bundle["reports"] = trimmed_reports
+            raw = _json_dumps(bundle).encode("utf-8")
+            logger.warning(
+                "AI_INPUT_SHRINK removed_full_reports=%s payload_bytes_after=%s max_bytes=%s",
+                removed_full_reports,
+                len(raw),
+                max_size,
+            )
+
+    if len(raw) > max_size:
         raise ValueError(f"AI input too large ({len(raw)} bytes > {max_size})")
     return bundle
 
@@ -282,7 +304,7 @@ def _build_prompt(bundle: dict) -> str:
         "Input fields: observable, datatype, signals (aggregate hits/max_level), "
         "reports (each includes analyzer, status ok|error, importance high|normal, risk_level, "
         "suspicious_hits, tags as predicate:value strings, compact evidence lines; "
-        "high-importance reports also include full_report with the complete analyzer JSON output). "
+        "high-importance reports also include full_report (complete when small, compacted/truncated when large). "
         "Give more weight to consistent malicious/suspicious signals and high-importance analyzers. "
         "You may also correlate the data with your training knowledge of known threats, "
         "malware families, threat actors, IoC databases, and CVEs to enrich the assessment. "

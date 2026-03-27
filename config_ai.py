@@ -26,6 +26,7 @@ AI_MAX_TAGS_PER_REPORT = 5        # max taxonomy tags per analyzer sent to AI
 AI_MAX_TAG_VALUE_LEN = 80         # max chars for a single tag string
 AI_MAX_EVIDENCE_PER_REPORT = 3    # max summary-derived evidence lines per analyzer
 AI_MAX_EVIDENCE_VALUE_LEN = 120   # max chars for a single evidence line
+AI_MAX_FULL_REPORT_BYTES_PER_REPORT = 100000  # cap per premium full_report to avoid bundle overflow
 AI_PREMIUM_ANALYZERS = [
     'virustotal',
     'abuseipdb',

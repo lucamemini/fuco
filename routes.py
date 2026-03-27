@@ -290,6 +290,42 @@ def _report_to_ai_payload(report, job_id: str) -> dict:
             elif isinstance(item, (str, int, float, bool)):
                 evidence.append(str(item)[:max_evidence_len])
 
+    def _compact_full_report(full_obj):
+        max_full_report_bytes = int(getattr(config_ai, 'AI_MAX_FULL_REPORT_BYTES_PER_REPORT', 60000) or 60000)
+        try:
+            raw = json.dumps(full_obj, ensure_ascii=False, separators=(',', ':')).encode('utf-8')
+            if len(raw) <= max_full_report_bytes:
+                return full_obj
+        except Exception:
+            return None
+
+        if isinstance(full_obj, dict):
+            compact = {'_truncated': True}
+            for key in ('summary', 'taxonomies', 'level', 'score', 'report'):
+                if key in full_obj:
+                    compact[key] = full_obj.get(key)
+
+            try:
+                raw_compact = json.dumps(compact, ensure_ascii=False, separators=(',', ':')).encode('utf-8')
+                if len(raw_compact) <= max_full_report_bytes:
+                    return compact
+            except Exception:
+                pass
+
+            # Last-resort compact skeleton to preserve useful hints without overflow.
+            return {
+                '_truncated': True,
+                'summary': full_obj.get('summary') if isinstance(full_obj.get('summary'), (dict, list, str, int, float, bool)) else None,
+                'keys': list(full_obj.keys())[:40],
+            }
+
+        # Non-dict payload: keep a bounded textual excerpt.
+        text = str(full_obj)
+        return {
+            '_truncated': True,
+            'excerpt': text[: min(len(text), 4000)],
+        }
+
     entry = {
         "analyzer": analyzer_name,
         "status": "ok" if is_ok else "error",
@@ -300,7 +336,7 @@ def _report_to_ai_payload(report, job_id: str) -> dict:
         "evidence": evidence[:max_evidence],
     }
     if is_premium and report_json:
-        entry["full_report"] = report_json
+        entry["full_report"] = _compact_full_report(report_json)
     if not is_ok:
         err = getattr(report, 'errorMessage', None)
         if err:
