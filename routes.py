@@ -5,6 +5,7 @@ from io import BytesIO
 import json
 import logging
 import sys
+import time
 from typing import List, Optional
 from urllib.parse import quote
 from functools import wraps
@@ -212,9 +213,16 @@ def _report_to_template_payload(report) -> dict:
 
 
 def _report_to_ai_payload(report, job_id: str) -> dict:
-    """Normalize a Cortex report object into a compact AI payload."""
-    status = getattr(report, 'status', None)
+    """Build a compact AI short-report with premium-source context and summary evidence."""
+    _LEVEL_RANK = {'malicious': 4, 'suspicious': 3, 'info': 2, 'safe': 1, 'undef': 0}
+
+    status_raw = getattr(report, 'status', None)
     analyzer_name = getattr(report, 'analyzerName', None)
+    analyzer_lc = str(analyzer_name or '').lower()
+    is_ok = status_raw == 'Success'
+
+    premium_analyzers = [str(x).lower() for x in (getattr(config_ai, 'AI_PREMIUM_ANALYZERS', []) or [])]
+    is_premium = any(token and token in analyzer_lc for token in premium_analyzers)
 
     report_json = {}
     report_json_method = getattr(report, 'json', None)
@@ -224,24 +232,80 @@ def _report_to_ai_payload(report, job_id: str) -> dict:
         except Exception:
             report_json = {}
 
-    report_body = getattr(report, 'report', None)
-    if report_body is None and isinstance(report_json, dict):
-        report_body = report_json.get('report')
-
     taxonomies = []
     try:
         taxonomies = utils.extract_taxonomies(report)
     except Exception:
         taxonomies = []
 
-    return {
-        "job_id": job_id,
+    # Derive top risk level from highest-ranked taxonomy level
+    top_level = None
+    top_rank = -1
+    suspicious_hits = 0
+    for t in taxonomies:
+        lvl = (t.get('level') or '').lower()
+        r = _LEVEL_RANK.get(lvl, -1)
+        if r > top_rank:
+            top_rank = r
+            top_level = lvl if lvl and lvl != 'undef' else None
+        if lvl in ('suspicious', 'malicious'):
+            suspicious_hits += 1
+
+    # Compact tag strings: "predicate:value", capped in count and length
+    max_tags = int(getattr(config_ai, 'AI_MAX_TAGS_PER_REPORT', 5) or 5)
+    max_tag_len = int(getattr(config_ai, 'AI_MAX_TAG_VALUE_LEN', 80) or 80)
+    tags = []
+    for t in taxonomies[:max_tags]:
+        pred = str(t.get('predicate') or '').strip()
+        val = str(t.get('value') or '').strip()
+        tag = f"{pred}:{val}" if pred else val
+        tag = tag[:max_tag_len]
+        if tag:
+            tags.append(tag)
+
+    # Add a few summary-derived evidence lines for richer context without raw JSON dump.
+    max_evidence = int(getattr(config_ai, 'AI_MAX_EVIDENCE_PER_REPORT', 3) or 3)
+    max_evidence_len = int(getattr(config_ai, 'AI_MAX_EVIDENCE_VALUE_LEN', 120) or 120)
+    evidence = []
+    summary_obj = report_json.get('summary') if isinstance(report_json, dict) else None
+    if isinstance(summary_obj, dict):
+        for k, v in summary_obj.items():
+            if len(evidence) >= max_evidence:
+                break
+            if isinstance(v, (str, int, float, bool)):
+                line = f"{k}:{v}"[:max_evidence_len]
+                if line:
+                    evidence.append(line)
+    elif isinstance(summary_obj, list):
+        for item in summary_obj:
+            if len(evidence) >= max_evidence:
+                break
+            if isinstance(item, dict):
+                for k, v in item.items():
+                    if isinstance(v, (str, int, float, bool)):
+                        line = f"{k}:{v}"[:max_evidence_len]
+                        if line:
+                            evidence.append(line)
+                            break
+            elif isinstance(item, (str, int, float, bool)):
+                evidence.append(str(item)[:max_evidence_len])
+
+    entry = {
         "analyzer": analyzer_name,
-        "status": status,
-        "taxonomies": taxonomies,
-        "summary": report_json.get('summary') if isinstance(report_json, dict) else None,
-        "report": report_body if isinstance(report_body, dict) else {},
+        "status": "ok" if is_ok else "error",
+        "importance": "high" if is_premium else "normal",
+        "risk_level": top_level,
+        "suspicious_hits": suspicious_hits,
+        "tags": tags,
+        "evidence": evidence[:max_evidence],
     }
+    if is_premium and report_json:
+        entry["full_report"] = report_json
+    if not is_ok:
+        err = getattr(report, 'errorMessage', None)
+        if err:
+            entry["error"] = str(err)[:200]
+    return entry
 
 # ============ HTML routes ============
 
@@ -355,11 +419,23 @@ def home():
            type_param = '_default'
            
         if q_param and type_param:
-            return render_template('index.html', q=q_param, t=type_param, cortex_host=_get_cortex_host())
+            return render_template(
+                'index.html',
+                q=q_param,
+                t=type_param,
+                cortex_host=_get_cortex_host(),
+                ai_enabled=bool(getattr(config_ai, 'AI_ENABLED', False)),
+            )
         else:
             result = utils.get_analyzer_by_type("_default")
             recent = utils.get_recent_searches()
-            return render_template('index.html', t=result, recent=recent, cortex_host=_get_cortex_host())
+            return render_template(
+                'index.html',
+                t=result,
+                recent=recent,
+                cortex_host=_get_cortex_host(),
+                ai_enabled=bool(getattr(config_ai, 'AI_ENABLED', False)),
+            )
     except Exception as e:
         logger.error(f"Error in home(): {str(e)}")
         return error_response(str(e))
@@ -714,6 +790,102 @@ def api_ai_analyze():
         return error_response("AI not configured (missing provider/key)", 503)
 
     try:
+        endpoint_started = time.time()
+        request_data = request.get_json()
+        if not request_data:
+            return error_response("No JSON data provided", 400)
+
+        try:
+            ai_req = AiAnalyzeRequest(**request_data)
+        except ValueError as e:
+            return error_response(f"Invalid data: {str(e)}", 400)
+
+        observable = utils.InputValidator.sanitize_observable(ai_req.observable)
+        datatype = utils.InputValidator.validate_datatype(ai_req.datatype)
+
+        jobs = [str(job_id).strip() for job_id in ai_req.jobs if str(job_id).strip()]
+        if not jobs:
+            return error_response("No valid job ids provided", 400)
+
+        max_jobs = int(getattr(config_ai, 'AI_MAX_JOBS', 100))
+        if len(jobs) > max_jobs:
+            return error_response(f"Too many jobs (max {max_jobs})", 400)
+
+        reports_payload = []
+        final_statuses = ("Success", "Failure", "Deleted")
+        reports_collection_started = time.time()
+
+        for job_id in jobs:
+            report = utils.get_cached_report(job_id)
+            if not report:
+                continue
+
+            status = getattr(report, 'status', None)
+            if getattr(config_ai, 'AI_REQUIRE_FINAL_RESULTS', True) and status not in final_statuses:
+                return error_response(f"Job {job_id} not completed yet", 409)
+
+            reports_payload.append(_report_to_ai_payload(report, job_id))
+
+        reports_collection_ms = int((time.time() - reports_collection_started) * 1000)
+
+        if not reports_payload:
+            return error_response("No reports available for AI analysis", 404)
+
+        bundle_build_started = time.time()
+        bundle = ai_manager.build_bundle(observable, datatype, reports_payload)
+        bundle_build_ms = int((time.time() - bundle_build_started) * 1000)
+
+        ai_step_started = time.time()
+        result = ai_manager.get_or_generate_assessment(
+            current_app.cache_manager,
+            bundle,
+            force_refresh=bool(ai_req.force_refresh),
+        )
+        ai_step_ms = int((time.time() - ai_step_started) * 1000)
+
+        logger.info(
+            "AI_ANALYZE_TIMING jobs=%s reports=%s source=%s reports_collection_ms=%s bundle_build_ms=%s ai_step_ms=%s total_ms=%s",
+            len(jobs),
+            len(reports_payload),
+            result.get('source', 'unknown'),
+            reports_collection_ms,
+            bundle_build_ms,
+            ai_step_ms,
+            int((time.time() - endpoint_started) * 1000),
+        )
+
+        return jsonify(result)
+
+    except ValueError as e:
+        return error_response(str(e), 400)
+    except ai_manager.AIProviderError as e:
+        status_code = int(getattr(e, 'status_code', 502) or 502)
+        retry_after = getattr(e, 'retry_after_seconds', None)
+        message = str(e)
+
+        body = {"error": message}
+        if retry_after is not None:
+            body["retry_after_seconds"] = retry_after
+
+        response = jsonify(body)
+        if retry_after is not None:
+            response.headers['Retry-After'] = str(retry_after)
+
+        logger.warning("AI provider error (%s): %s", status_code, message)
+        return response, status_code
+    except Exception as e:
+        logger.error(f"Error in api_ai_analyze(): {str(e)}", exc_info=True)
+        return error_response(str(e), 500)
+
+
+@routes_bp.route('/api/ai/cache-assessment', methods=['POST'])
+@optional_limit(getattr(config, 'RATE_LIMIT_API_AI_ANALYSIS', None))
+def api_ai_cache_assessment():
+    """Return cached AI assessment only (does not call AI provider)."""
+    if not config_ai.AI_ENABLED:
+        return error_response("AI feature disabled", 503)
+
+    try:
         request_data = request.get_json()
         if not request_data:
             return error_response("No JSON data provided", 400)
@@ -752,33 +924,27 @@ def api_ai_analyze():
             return error_response("No reports available for AI analysis", 404)
 
         bundle = ai_manager.build_bundle(observable, datatype, reports_payload)
-        result = ai_manager.get_or_generate_assessment(
-            current_app.cache_manager,
-            bundle,
-            force_refresh=bool(ai_req.force_refresh),
-        )
+        cache_key = ai_manager.make_cache_key(bundle)
+        cached = current_app.cache_manager.get_ai_assessment(cache_key)
 
-        return jsonify(result)
+        if not cached:
+            latest_index_key = ai_manager.make_latest_index_key(observable, datatype)
+            latest_ptr = current_app.cache_manager.get_ai_assessment(latest_index_key)
+            latest_cache_key = (latest_ptr or {}).get('cache_key') if isinstance(latest_ptr, dict) else None
+            if latest_cache_key:
+                cached = current_app.cache_manager.get_ai_assessment(latest_cache_key)
+
+        if not cached:
+            return error_response("No AI assessment in cache.", 404)
+
+        response = dict(cached)
+        response['source'] = 'cache'
+        return jsonify(response)
 
     except ValueError as e:
         return error_response(str(e), 400)
-    except ai_manager.AIProviderError as e:
-        status_code = int(getattr(e, 'status_code', 502) or 502)
-        retry_after = getattr(e, 'retry_after_seconds', None)
-        message = str(e)
-
-        body = {"error": message}
-        if retry_after is not None:
-            body["retry_after_seconds"] = retry_after
-
-        response = jsonify(body)
-        if retry_after is not None:
-            response.headers['Retry-After'] = str(retry_after)
-
-        logger.warning("AI provider error (%s): %s", status_code, message)
-        return response, status_code
     except Exception as e:
-        logger.error(f"Error in api_ai_analyze(): {str(e)}", exc_info=True)
+        logger.error(f"Error in api_ai_cache_assessment(): {str(e)}", exc_info=True)
         return error_response(str(e), 500)
 
 

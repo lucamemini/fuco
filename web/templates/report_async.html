@@ -534,26 +534,102 @@ function renderAiAssessment(result) {
     if (!content || !panel) return;
 
     const assessment = (result && result.assessment) ? result.assessment : {};
+    const facts = Array.isArray(assessment.facts) ? assessment.facts : [];
+    const deductions = Array.isArray(assessment.deductions) ? assessment.deductions : [];
     const findings = Array.isArray(assessment.key_findings) ? assessment.key_findings : [];
     const actions = Array.isArray(assessment.recommended_actions) ? assessment.recommended_actions : [];
 
+    const clampText = (v, max = 500) => { const s = String(v ?? ''); return s.length > max ? s.slice(0, max) + '...' : s; };
+    const appendBadge = (c, text, cls) => { const b = document.createElement('span'); b.className = cls; b.textContent = text; c.appendChild(b); };
+    const renderList = (items, max = 5) => {
+        const ul = document.createElement('ul');
+        (items || []).slice(0, max).forEach(item => { const li = document.createElement('li'); li.textContent = clampText(item, 300); ul.appendChild(li); });
+        return ul;
+    };
+    const formatAiTimestamp = (isoValue) => {
+      if (!isoValue) return '';
+      const d = new Date(isoValue);
+      if (Number.isNaN(d.getTime())) return '';
+      return d.toLocaleString('it-IT', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      });
+    };
+    const makeSection = (label, items) => {
+        const wrap = document.createElement('div');
+        const title = document.createElement('strong');
+        title.textContent = label;
+        wrap.appendChild(title);
+        wrap.appendChild(renderList(items));
+        return wrap;
+    };
+
     panel.classList.remove('d-none');
-    content.innerHTML = `
-      <div class="mb-2">
-        <span class="badge bg-dark">Risk: ${assessment.risk_level || 'unknown'} (${assessment.risk_score ?? 0}/100)</span>
-        <span class="badge bg-secondary">Confidence: ${assessment.confidence ?? 0}</span>
-        <span class="badge ${result.source === 'cache' ? 'bg-info text-dark' : 'bg-success'}">${result.source === 'cache' ? 'From cache' : 'Fresh'}</span>
-      </div>
-      <p>${assessment.summary || 'No summary provided.'}</p>
-      <div><strong>Findings</strong><ul>${findings.map(x => `<li>${x}</li>`).join('')}</ul></div>
-      <div><strong>Recommended actions</strong><ul>${actions.map(x => `<li>${x}</li>`).join('')}</ul></div>
-    `;
+    content.replaceChildren();
+
+    const badges = document.createElement('div');
+    badges.className = 'mb-2';
+    appendBadge(badges, `Risk: ${clampText(assessment.risk_level || 'unknown', 30)} (${assessment.risk_score ?? 0}/100)`, 'badge bg-dark');
+    badges.appendChild(document.createTextNode(' '));
+    appendBadge(badges, `Confidence: ${assessment.confidence ?? 0}`, 'badge bg-secondary');
+    badges.appendChild(document.createTextNode(' '));
+    appendBadge(badges, result.source === 'cache' ? 'From cache' : 'Fresh', result.source === 'cache' ? 'badge bg-info text-dark' : 'badge bg-success');
+
+    const generatedAt = formatAiTimestamp(result && result.created_at ? result.created_at : null);
+    if (generatedAt) {
+      const ts = document.createElement('div');
+      ts.className = 'small text-muted mt-1';
+      ts.textContent = `Generato il ${generatedAt}`;
+      badges.appendChild(document.createElement('br'));
+      badges.appendChild(ts);
+    }
+
+    const summary = document.createElement('p');
+    summary.textContent = clampText(assessment.summary || 'No summary provided.', 1500);
+
+    content.appendChild(badges);
+    content.appendChild(summary);
+    if (facts.length)       content.appendChild(makeSection('Fatti (dai dati)', facts));
+    if (deductions.length)  content.appendChild(makeSection('Deduzioni (da training)', deductions));
+    if (findings.length)    content.appendChild(makeSection('Findings', findings));
+    content.appendChild(makeSection('Azioni consigliate', actions));
 }
+
+  function renderAiStatus(message, level = 'info', guidance = '') {
+    const content = document.getElementById('ai-assessment-content');
+    const panel = document.getElementById('ai-assessment-panel');
+    if (!content || !panel) return;
+
+    panel.classList.remove('d-none');
+    content.replaceChildren();
+
+    const alert = document.createElement('div');
+    alert.className = `alert alert-${level}`;
+    alert.setAttribute('role', 'alert');
+
+    const title = document.createElement('strong');
+    title.textContent = message;
+    alert.appendChild(title);
+
+    if (guidance) {
+      const hint = document.createElement('div');
+      hint.className = 'mt-1 small';
+      hint.textContent = guidance;
+      alert.appendChild(hint);
+    }
+
+    content.appendChild(alert);
+  }
 
 async function runAiAnalysis(forceRefresh = false) {
     const btn = $('#ai-analysis-btn');
     btn.prop('disabled', true);
     btn.html('<i class="fas fa-spinner fa-spin"></i> Analisi IA...');
+    renderAiStatus('AI analysis in progress...', 'info', 'Please wait while correlation across reports is completed.');
 
     try {
         const jobs = analyzers
@@ -580,12 +656,33 @@ async function runAiAnalysis(forceRefresh = false) {
 
         const result = await response.json();
         if (!response.ok) {
-            throw new Error(result.error || 'Errore API Analisi IA');
+          if (response.status === 409) {
+            const msg409 = result.error || 'Alcuni analyzer non hanno ancora completato il job.';
+            renderAiStatus(
+              'Analisi IA non disponibile: job non completati',
+              'warning',
+              `${msg409} Attendi il completamento dei report e poi riprova.`
+            );
+            return;
+          }
+          if (response.status === 429 && result.retry_after_seconds) {
+            renderAiStatus(
+              'Quota/rate limit Gemini',
+              'warning',
+              `Riprova tra ${result.retry_after_seconds} secondi.`
+            );
+            return;
+          }
+          throw new Error(result.error || 'Errore API Analisi IA');
         }
 
         renderAiAssessment(result);
     } catch (error) {
-        alert(`Analisi IA non disponibile: ${error.message}`);
+        renderAiStatus(
+          'Analisi IA non disponibile',
+          'danger',
+          error && error.message ? error.message : 'Errore inatteso durante la richiesta.'
+        );
     } finally {
         btn.prop('disabled', completedCount !== totalCount);
         btn.html('<i class="fas fa-brain"></i> Analisi IA');

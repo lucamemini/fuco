@@ -23,10 +23,18 @@ from routes_auth import register_auth_routes
 from security import csrf, limiter
 
 # Logging configuration
-logging.basicConfig(
-    level=config.LOG_LEVEL,
-    format=config.LOG_FORMAT
-)
+def configure_logging():
+    logging.basicConfig(
+        level=config.LOG_LEVEL,
+        format=config.LOG_FORMAT,
+        handlers=[
+            logging.StreamHandler(sys.stdout),
+        ],
+        force=True,
+    )
+
+
+configure_logging()
 logger = logging.getLogger(__name__)
 
 # ============ Configuration Validation & Setup ============

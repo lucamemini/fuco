@@ -52,22 +52,39 @@ class MemoryCacheBackend(CacheBackend):
     """In-memory cache backend (Python dictionary)."""
     
     def __init__(self):
-        self._cache: Dict[str, tuple] = {}  # key -> (timestamp, value)
+        self._cache: Dict[str, tuple] = {}  # key -> (expires_at, cached_time, value)
         logger.info("MemoryCacheBackend initialized")
     
     def get(self, key: str) -> Optional[Any]:
         """Retrieve a value from the in-memory cache."""
-        if key not in self._cache:
+        entry = self._cache.get(key)
+        if entry is None:
             return None
-        
-        cached_time, value = self._cache[key]
+
+        now = datetime.now()
+
+        # Backward compatibility: old format was (cached_time, value)
+        if len(entry) == 2:
+            _, value = entry
+            logger.debug(f"Cache hit (memory/legacy): {key}")
+            return value
+
+        expires_at, _, value = entry
+        if expires_at is not None and now >= expires_at:
+            del self._cache[key]
+            logger.debug(f"Cache expired (memory): {key}")
+            return None
+
         logger.debug(f"Cache hit (memory): {key}")
         return value
     
     def set(self, key: str, value: Any, ttl_seconds: int) -> bool:
         """Store a value in the in-memory cache."""
         try:
-            self._cache[key] = (datetime.now(), value)
+            now = datetime.now()
+            ttl = int(ttl_seconds) if ttl_seconds is not None else 0
+            expires_at = now + timedelta(seconds=ttl) if ttl > 0 else None
+            self._cache[key] = (expires_at, now, value)
             logger.debug(f"Cache set (memory): {key}, TTL: {ttl_seconds}s")
             return True
         except Exception as e:
@@ -112,7 +129,13 @@ class MemoryCacheBackend(CacheBackend):
         
         if total > 0:
             timestamps = []
-            for key, (cached_time, value) in self._cache.items():
+            for key, entry in self._cache.items():
+                # Support legacy entries (cached_time, value)
+                if len(entry) == 2:
+                    cached_time, value = entry
+                else:
+                    _, cached_time, value = entry
+
                 # Group by prefix (e.g., "report:", "analyzer:")
                 prefix = key.split(':', 1)[0] if ':' in key else 'other'
                 stats['by_prefix'][prefix] = stats['by_prefix'].get(prefix, 0) + 1
@@ -133,13 +156,21 @@ class MemoryCacheBackend(CacheBackend):
         """Memory cache is always available."""
         return True
     
-    def cleanup_expired(self, ttl: timedelta):
+    def cleanup_expired(self, ttl: Optional[timedelta] = None):
         """Remove expired entries (periodic call)."""
         now = datetime.now()
         expired_keys = []
-        
-        for key, (cached_time, _) in self._cache.items():
-            if now - cached_time > ttl:
+
+        for key, entry in self._cache.items():
+            # Legacy entries fallback (no per-item expiry stored)
+            if len(entry) == 2:
+                cached_time, _ = entry
+                if ttl is not None and now - cached_time > ttl:
+                    expired_keys.append(key)
+                continue
+
+            expires_at, _, _ = entry
+            if expires_at is not None and now >= expires_at:
                 expired_keys.append(key)
         
         for key in expired_keys:

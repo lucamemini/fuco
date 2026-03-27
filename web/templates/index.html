@@ -67,7 +67,10 @@
 .recent-actions {
   display: inline-flex;
   align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 6px;
+  max-width: 100%;
 }
 
 .recent-action-btn {
@@ -79,12 +82,67 @@
   font-size: 12px;
   line-height: 1;
   margin: 0;
+  white-space: nowrap;
 }
 
 .recent-action-btn--icon {
   width: 32px;
   padding: 0;
   justify-content: center;
+}
+
+.recent-action-btn--ai {
+  background-color: transparent;
+  border: 1px solid #28a745;
+  color: #28a745;
+}
+
+.recent-action-btn--ai:hover {
+  background-color: rgba(40, 167, 69, 0.08);
+  border-color: #218838;
+  color: #218838;
+}
+
+.recent-action-btn--ai::before {
+  font-family: "Font Awesome 6 Free";
+  font-weight: 900;
+  content: "\f5dc";
+  font-size: 14px;
+  line-height: 1;
+  color: currentColor;
+}
+
+.recent-action-btn--ai.loading::before {
+  content: "\f110";
+  animation: fuco-spin 1s linear infinite;
+}
+
+@keyframes fuco-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.recent-item-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.recent-item-link {
+  text-decoration: none;
+  color: inherit;
+  flex: 1 1 360px;
+  min-width: 0;
+}
+
+.recent-item-link strong {
+  display: block;
+  padding: 8px 4px;
+  font-size: 1.05em;
+  color: #333;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 /* TLP/PAP Badge Selector - Stile Google minimalista */
@@ -763,10 +821,9 @@
   <ul class="list-unstyled">
     {% for data, jobids in datas.items() %}
     <li style="margin-bottom: 15px;">
-      <div style="display: flex; align-items: center; gap: 8px;">
-        <a href="/allReports?observable={{ data|urlencode }}&datatype={{ dtype }}" 
-           style="text-decoration: none; color: inherit; flex: 1;">
-          <strong style="display: block; padding: 8px 4px; font-size: 1.05em; color: #333;">{{ data }}</strong>
+      <div class="recent-item-row">
+        <a href="/allReports?observable={{ data|urlencode }}&datatype={{ dtype }}" class="recent-item-link">
+          <strong>{{ data }}</strong>
         </a>
         <div class="recent-actions">
           <button type="button" class="btn btn-sm btn-outline-info load-badges-btn recent-action-btn"
@@ -780,6 +837,16 @@
                   title="Copia negli appunti">
             <i class="fas fa-copy"></i>
           </button>
+          {% if ai_enabled %}
+          <button type="button"
+                  class="btn btn-sm recent-action-btn recent-action-btn--icon recent-action-btn--ai load-ai-cache-btn"
+                  data-observable="{{ data }}"
+                  data-datatype="{{ dtype }}"
+                  data-jobids='{{ jobids | tojson | safe }}'
+                  title="Show cached AI assessment"
+                  aria-label="Show cached AI assessment">
+          </button>
+          {% endif %}
             <button class="btn btn-sm btn-outline-danger recent-action-btn recent-action-btn--icon requires-auth"
               data-requires-auth="true"
               onclick="quickRespond('{{ data }}', '{{ dtype }}')"
@@ -796,6 +863,20 @@
     {% endfor %}
   </ul>
   {% endfor %}
+</div>
+{% endif %}
+
+{% if ai_enabled %}
+<div class="modal fade" id="aiCacheModal" tabindex="-1" aria-labelledby="aiCacheModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="aiCacheModalLabel"><i class="fas fa-brain"></i> Cached AI Assessment</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" id="ai-cache-modal-content"></div>
+    </div>
+  </div>
 </div>
 {% endif %}
 
@@ -839,6 +920,174 @@ $(document).on('click', '.load-badges-btn', function () {
     }
     loadBadges(observableId, jobIds);
 });
+
+  {% if ai_enabled %}
+  function openAiCacheModal() {
+    const modalEl = document.getElementById('aiCacheModal');
+    if (!modalEl || typeof bootstrap === 'undefined') return;
+    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+    modal.show();
+  }
+
+  function formatAiTimestamp(isoValue) {
+    if (!isoValue) return '';
+    const d = new Date(isoValue);
+    if (Number.isNaN(d.getTime())) return '';
+    return d.toLocaleString('it-IT', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    });
+  }
+
+  function renderAiModalMessage(message, level = 'info') {
+    const container = document.getElementById('ai-cache-modal-content');
+    if (!container) return;
+    container.replaceChildren();
+
+    const alert = document.createElement('div');
+    alert.className = `alert alert-${level}`;
+    alert.setAttribute('role', 'alert');
+    alert.textContent = message;
+    container.appendChild(alert);
+  }
+
+  function renderAiModalAssessment(result) {
+    const container = document.getElementById('ai-cache-modal-content');
+    if (!container) return;
+    container.replaceChildren();
+
+    const assessment = (result && result.assessment) ? result.assessment : {};
+    const facts = Array.isArray(assessment.facts) ? assessment.facts : [];
+    const deductions = Array.isArray(assessment.deductions) ? assessment.deductions : [];
+    const findings = Array.isArray(assessment.key_findings) ? assessment.key_findings : [];
+    const actions = Array.isArray(assessment.recommended_actions) ? assessment.recommended_actions : [];
+
+    const clamp = (value, max = 800) => {
+      const s = String(value ?? '');
+      return s.length > max ? s.slice(0, max) + '...' : s;
+    };
+    const section = (title, items) => {
+      const wrap = document.createElement('div');
+      const strong = document.createElement('strong');
+      strong.textContent = title;
+      wrap.appendChild(strong);
+      const ul = document.createElement('ul');
+      (items || []).slice(0, 5).forEach(item => {
+        const li = document.createElement('li');
+        li.textContent = clamp(item, 300);
+        ul.appendChild(li);
+      });
+      wrap.appendChild(ul);
+      return wrap;
+    };
+
+    const badges = document.createElement('div');
+    badges.className = 'mb-2';
+    badges.innerHTML = '';
+
+    const risk = document.createElement('span');
+    risk.className = 'badge bg-dark';
+    risk.textContent = `Risk: ${clamp(assessment.risk_level || 'unknown', 30)} (${assessment.risk_score ?? 0}/100)`;
+    badges.appendChild(risk);
+
+    badges.appendChild(document.createTextNode(' '));
+    const conf = document.createElement('span');
+    conf.className = 'badge bg-secondary';
+    conf.textContent = `Confidence: ${assessment.confidence ?? 0}`;
+    badges.appendChild(conf);
+
+    badges.appendChild(document.createTextNode(' '));
+    const src = document.createElement('span');
+    src.className = 'badge bg-info text-dark';
+    src.textContent = 'From cache';
+    badges.appendChild(src);
+
+    const generatedAt = formatAiTimestamp(result && result.created_at ? result.created_at : null);
+    if (generatedAt) {
+      const ts = document.createElement('div');
+      ts.className = 'small text-muted mt-1';
+      ts.textContent = `Generated at ${generatedAt}`;
+      badges.appendChild(document.createElement('br'));
+      badges.appendChild(ts);
+    }
+
+    const summary = document.createElement('p');
+    summary.textContent = clamp(assessment.summary || 'No summary provided.', 1500);
+
+    container.appendChild(badges);
+    container.appendChild(summary);
+    if (facts.length) container.appendChild(section('Facts (from data)', facts));
+    if (deductions.length) container.appendChild(section('Deductions (from training)', deductions));
+    if (findings.length) container.appendChild(section('Findings', findings));
+    if (actions.length) container.appendChild(section('Recommended actions', actions));
+  }
+
+  async function loadAiAssessmentFromCache(button) {
+    if (!button) return;
+
+    const observable = button.getAttribute('data-observable') || '';
+    const datatype = button.getAttribute('data-datatype') || '';
+    let jobs = [];
+
+    try {
+      jobs = JSON.parse(button.getAttribute('data-jobids') || '[]');
+    } catch (e) {
+      jobs = [];
+    }
+
+    openAiCacheModal();
+
+    if (!observable || !datatype || !Array.isArray(jobs) || !jobs.length) {
+      renderAiModalMessage('No AI assessment in cache.', 'warning');
+      return;
+    }
+
+    button.classList.add('loading');
+    button.disabled = true;
+    renderAiModalMessage('Loading cached AI assessment...', 'info');
+
+    try {
+      const response = await fetch('/api/ai/cache-assessment', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': (typeof getCsrfToken === 'function' ? getCsrfToken() : '')
+        },
+        body: JSON.stringify({
+          observable: observable,
+          datatype: datatype,
+          jobs: jobs,
+          force_refresh: false
+        })
+      });
+
+      const result = await response.json();
+      if (!response.ok) {
+        if (response.status === 404) {
+          renderAiModalMessage('No AI assessment in cache.', 'warning');
+          return;
+        }
+        renderAiModalMessage(result.error || 'Unable to load cached AI assessment.', 'danger');
+        return;
+      }
+
+      renderAiModalAssessment(result);
+    } catch (error) {
+      renderAiModalMessage('Unable to load cached AI assessment.', 'danger');
+    } finally {
+      button.classList.remove('loading');
+      button.disabled = false;
+    }
+  }
+
+  $(document).on('click', '.load-ai-cache-btn', function () {
+    loadAiAssessmentFromCache(this);
+  });
+  {% endif %}
 </script>
 
     <script>

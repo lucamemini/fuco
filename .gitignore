@@ -22,3 +22,6 @@ __pycache__/
 venv/
 env/
 
+# Runtime logs
+logs/*.log
+

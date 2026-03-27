@@ -133,5 +133,5 @@ class CacheManager:
         Redis handles TTL automatically.
         """
         if isinstance(self.backend, MemoryCacheBackend):
-            return self.backend.cleanup_expired(self.ttl)
+            return self.backend.cleanup_expired()
         return 0
