@@ -32,6 +32,7 @@ AI_PREMIUM_ANALYZERS = [
     'abuseipdb',
     'misp',
     'maltiverse',
+    'scorpion',
 ]
 AI_TEMPERATURE = 0.1
 AI_MAX_OUTPUT_TOKENS = 4096  # Gemini Flash max is 8192; 4096 fits full JSON schema (facts/deductions/findings/actions)

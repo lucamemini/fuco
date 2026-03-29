@@ -1,0 +1,52 @@
+{
+  "name": "CrowdStrike_Intel_Indicator",
+  "version": "1.0",
+  "author": "Luca Memini",
+  "url": "https://www.crowdstrike.com/",
+  "license": "AGPL-V3",
+  "description": "Query CrowdStrike Falcon Intelligence for IoC indicators (IP, Domain, Hash). Returns threat intel including actors, labels, kill chains, and malicious confidence scores.",
+  "dataTypeList": ["ip", "domain", "fqdn", "hash"],
+  "baseConfig": "CrowdStrike",
+  "command": "CrowdStrike_Intel/crowdstrike_intel.py",
+  "config": {
+    "service": "intel_indicator",
+    "check_tlp": true,
+    "max_tlp": 2
+  },
+  "configurationItems": [
+    {
+      "name": "client_id",
+      "description": "CrowdStrike Falcon OAuth2 Client ID",
+      "type": "string",
+      "required": true,
+      "multi": false
+    },
+    {
+      "name": "client_secret",
+      "description": "CrowdStrike Falcon OAuth2 Client Secret",
+      "type": "string",
+      "required": true,
+      "multi": false
+    },
+    {
+      "name": "base_url",
+      "description": "CrowdStrike API Base URL (e.g., https://api.eu-2.crowdstrike.com for EU region)",
+      "type": "string",
+      "required": true,
+      "defaultValue": "https://api.eu-2.crowdstrike.com",
+      "multi": false
+    },
+    {
+      "name": "verifyssl",
+      "description": "Verify server SSL certificate",
+      "type": "boolean",
+      "required": false,
+      "defaultValue": true,
+      "multi": false
+    }
+  ],
+  "registration_required": true,
+  "subscription_required": true,
+  "free_subscription": false,
+  "service_homepage": "https://www.crowdstrike.com/products/threat-intelligence/"
+}

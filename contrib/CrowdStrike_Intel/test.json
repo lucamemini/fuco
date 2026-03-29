@@ -1,0 +1,36 @@
+{
+  "dataTypeList": ["ip", "domain", "fqdn", "hash", "freetext"],
+  "data": {
+    "ip": "1.2.3.4",
+    "domain": "evil.com",
+    "fqdn": "malware.evil.com",
+    "hash": "5d41402abc4b2a76b9719d911017c592",
+    "freetext": "FANCY BEAR"
+  },
+  "tlp": 2,
+  "pap": 2,
+  "services": [
+    {
+      "name": "CrowdStrike_Intel_Indicator",
+      "config": {
+        "client_id": "YOUR_CLIENT_ID",
+        "client_secret": "YOUR_CLIENT_SECRET",
+        "base_url": "https://api.eu-2.crowdstrike.com",
+        "verifyssl": true
+      },
+      "dataType": "ip",
+      "data": "1.2.3.4"
+    },
+    {
+      "name": "CrowdStrike_Intel_Actor",
+      "config": {
+        "client_id": "YOUR_CLIENT_ID",
+        "client_secret": "YOUR_CLIENT_SECRET",
+        "base_url": "https://api.eu-2.crowdstrike.com",
+        "verifyssl": true
+      },
+      "dataType": "freetext",
+      "data": "FANCY BEAR"
+    }
+  ]
+}
