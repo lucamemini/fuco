@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
 # encoding: utf-8
 
-import time
-import hashlib
+import ipaddress
 import json
 import re
-import ipaddress
-from urllib.parse import quote
+import time
 
 import requests
 from cortexutils.analyzer import Analyzer
@@ -20,7 +18,6 @@ class CrowdStrikeIntelAnalyzer(Analyzer):
         self.client_id = self.get_param('config.client_id', None, 'CrowdStrike Client ID is missing')
         self.client_secret = self.get_param('config.client_secret', None, 'CrowdStrike Client Secret is missing')
         self.base_url = self.get_param('config.base_url', 'https://api.eu-2.crowdstrike.com')
-        self.service = self.get_param('config.service', None, 'Service parameter is missing')
         self.verify = self.get_param('config.verifyssl', True)
 
         self.access_token = None
@@ -32,7 +29,6 @@ class CrowdStrikeIntelAnalyzer(Analyzer):
 
     def _get_access_token(self):
         """Get or refresh OAuth2 access token from CrowdStrike."""
-        # Return cached token if still valid (with 60s buffer)
         if self.access_token and time.time() < (self.token_expires_at - 60):
             return self.access_token
 
@@ -67,52 +63,18 @@ class CrowdStrikeIntelAnalyzer(Analyzer):
             self.token_expires_at = time.time() + int(expires_in)
             return access_token
 
-        except Exception as e:
-            self.error(f'Failed to obtain access token: {str(e)}')
+        except Exception as exc:
+            self.error(f'Failed to obtain access token: {str(exc)}')
 
     def _get_headers(self):
-        """Build authorization headers with bearer token."""
         token = self._get_access_token()
         return {
             'Authorization': f'Bearer {token}',
             'Content-Type': 'application/json'
         }
 
-    def _detect_hash_type(self, hash_value):
-        """Detect hash type based on length."""
-        hash_value = hash_value.strip().lower()
-        length = len(hash_value)
-
-        if length == 32:
-            return 'md5'
-        elif length == 40:
-            return 'sha1'
-        elif length == 64:
-            return 'sha256'
-        else:
-            return None
-
-    def _build_indicator_filter(self, ioc_type, ioc_value):
-        """Build FQL filter for indicator search based on IoC type."""
-        # Escape quotes in value for FQL
-        escaped_value = ioc_value.replace('"', '\\"')
-
-        if ioc_type == 'hash':
-            hash_type = self._detect_hash_type(ioc_value)
-            if not hash_type:
-                return None
-            return f'type:\'hash_{hash_type}\'+indicator:\'{escaped_value}\''
-
-        elif ioc_type == 'ip':
-            return f'type:\'ip_address\'+indicator:\'{escaped_value}\''
-
-        elif ioc_type in ['domain', 'fqdn', 'url']:
-            return f'type:\'domain\'+indicator:\'{escaped_value}\''
-
-        return None
-
     def _get_input_data(self):
-        """Return observable data from Cortex input, with fallbacks for local tests."""
+        """Return observable data from Cortex input, with local-test fallbacks."""
         try:
             value = self.get_data()
         except Exception:
@@ -132,8 +94,20 @@ class CrowdStrikeIntelAnalyzer(Analyzer):
 
         return value
 
+    def _detect_hash_type(self, hash_value):
+        hash_value = hash_value.strip().lower()
+        length = len(hash_value)
+
+        if length == 32:
+            return 'md5'
+        if length == 40:
+            return 'sha1'
+        if length == 64:
+            return 'sha256'
+        return None
+
     def _detect_ioc_type(self, value):
-        """Infer data type when the input payload does not expose dataType."""
+        """Infer data type when payload does not expose dataType."""
         candidate = str(value).strip()
         if not candidate:
             return None
@@ -156,7 +130,7 @@ class CrowdStrikeIntelAnalyzer(Analyzer):
         return None
 
     def _get_input_data_type(self, data_value=None):
-        """Resolve input datatype from Cortex payload or infer it when omitted."""
+        """Resolve datatype from payload, else infer from data."""
         data_type = getattr(self, 'data_type', None)
 
         if not data_type:
@@ -166,13 +140,7 @@ class CrowdStrikeIntelAnalyzer(Analyzer):
                     break
 
         if data_type:
-            normalized_type = str(data_type).strip().lower()
-            if self.service == 'intel_actor' and normalized_type in ('freetext', 'other'):
-                return 'other'
-            return normalized_type
-
-        if self.service == 'intel_actor':
-            return 'other'
+            return str(data_type).strip().lower()
 
         if data_value is None:
             data_value = self._get_input_data()
@@ -181,10 +149,41 @@ class CrowdStrikeIntelAnalyzer(Analyzer):
         if inferred_type:
             return inferred_type
 
-        self.error('Missing datatype field and unable to infer it from input data')
+        return 'other'
+
+    def _build_indicator_params(self, ioc_type, ioc_value):
+        """Build API query params for indicator search based on input type."""
+        escaped_value = ioc_value.replace('"', '\\"')
+        params = {'limit': 10}
+
+        if ioc_type == 'hash':
+            hash_type = self._detect_hash_type(ioc_value)
+            if not hash_type:
+                return None
+            params['filter'] = f"type:'hash_{hash_type}'+indicator:'{escaped_value}'"
+            return params
+
+        if ioc_type == 'ip':
+            params['filter'] = f"type:'ip_address'+indicator:'{escaped_value}'"
+            return params
+
+        if ioc_type in ('domain', 'fqdn', 'url'):
+            params['filter'] = f"type:'domain'+indicator:'{escaped_value}'"
+            return params
+
+        if ioc_type == 'mail':
+            params['filter'] = f"indicator:'{escaped_value}'"
+            return params
+
+        if ioc_type in ('other', 'filename', 'uri_path', 'user-agent', 'mail_subject', 'regexp'):
+            params['q'] = ioc_value
+            return params
+
+        params['q'] = ioc_value
+        return params
 
     def _to_summary_value(self, item, preferred_keys):
-        """Convert API fields that may be dict/list/string to a comparable summary string."""
+        """Convert API fields that may be dict/list/string to a summary string."""
         if item is None:
             return None
 
@@ -197,8 +196,6 @@ class CrowdStrikeIntelAnalyzer(Analyzer):
                 candidate = item.get(key)
                 if isinstance(candidate, str) and candidate.strip():
                     return candidate.strip()
-
-            # Stable fallback when no expected key is present
             return json.dumps(item, sort_keys=True)
 
         if isinstance(item, (list, tuple, set)):
@@ -207,31 +204,22 @@ class CrowdStrikeIntelAnalyzer(Analyzer):
                 sub_value = self._to_summary_value(sub_item, preferred_keys)
                 if sub_value:
                     values.append(sub_value)
-            if values:
-                return ', '.join(values)
-            return None
+            return ', '.join(values) if values else None
 
         return str(item)
 
     def _search_indicators(self, ioc_type, ioc_value):
-        """Search CrowdStrike Intel for indicators."""
-        fql_filter = self._build_indicator_filter(ioc_type, ioc_value)
-
-        if not fql_filter:
+        query_params = self._build_indicator_params(ioc_type, ioc_value)
+        if not query_params:
             return {'error': f'Unsupported IoC type or invalid hash format: {ioc_type}'}
 
         headers = self._get_headers()
         url = f"{self.base_url}/intel/combined/indicators/v1"
 
-        params = {
-            'filter': fql_filter,
-            'limit': 10
-        }
-
         try:
             response = requests.get(
                 url,
-                params=params,
+                params=query_params,
                 headers=headers,
                 verify=self.verify,
                 timeout=30
@@ -239,56 +227,17 @@ class CrowdStrikeIntelAnalyzer(Analyzer):
 
             if response.status_code == 200:
                 return response.json()
-            elif response.status_code == 404:
+            if response.status_code == 404:
                 return {'resources': []}
-            else:
-                self.error(f'Indicator search failed (HTTP {response.status_code}): {response.text}')
 
-        except Exception as e:
-            self.error(f'Exception during indicator search: {str(e)}')
+            self.error(f'Indicator search failed (HTTP {response.status_code}): {response.text}')
 
-    def _search_actors(self, freetext_query):
-        """Search CrowdStrike Intel for threat actors."""
-        headers = self._get_headers()
-        url = f"{self.base_url}/intel/combined/actors/v1"
-
-        params = {
-            'q': freetext_query,
-            'limit': 5
-        }
-
-        try:
-            response = requests.get(
-                url,
-                params=params,
-                headers=headers,
-                verify=self.verify,
-                timeout=30
-            )
-
-            if response.status_code == 200:
-                return response.json()
-            elif response.status_code == 404:
-                return {'resources': []}
-            else:
-                self.error(f'Actor search failed (HTTP {response.status_code}): {response.text}')
-
-        except Exception as e:
-            self.error(f'Exception during actor search: {str(e)}')
+        except Exception as exc:
+            self.error(f'Exception during indicator search: {str(exc)}')
 
     def run(self):
-        """Main analyzer execution."""
         Analyzer.run(self)
 
-        if self.service == 'intel_indicator':
-            self._run_intel_indicator()
-        elif self.service == 'intel_actor':
-            self._run_intel_actor()
-        else:
-            self.error(f'Unknown service: {self.service}. Use "intel_indicator" or "intel_actor"')
-
-    def _run_intel_indicator(self):
-        """Process indicator lookup."""
         ioc_value = self._get_input_data()
         ioc_type = self._get_input_data_type(ioc_value)
 
@@ -302,7 +251,6 @@ class CrowdStrikeIntelAnalyzer(Analyzer):
             return
 
         indicators = result.get('resources', [])
-
         report = {
             'ioc': ioc_value,
             'ioc_type': ioc_type,
@@ -311,36 +259,26 @@ class CrowdStrikeIntelAnalyzer(Analyzer):
             'indicator_count': len(indicators)
         }
 
-        # Extract unique actors and labels for summary
         all_actors = set()
         all_labels = set()
         max_confidence = 'unverified'
 
         for indicator in indicators:
-            # Track confidence level
             confidence = indicator.get('malicious_confidence', 'unverified')
             if confidence == 'high':
                 max_confidence = 'high'
             elif confidence == 'medium' and max_confidence != 'high':
                 max_confidence = 'medium'
-            elif confidence == 'low' and max_confidence not in ['high', 'medium']:
+            elif confidence == 'low' and max_confidence not in ('high', 'medium'):
                 max_confidence = 'low'
 
-            # Collect actors
             for actor in indicator.get('actors', []):
-                actor_value = self._to_summary_value(
-                    actor,
-                    ['name', 'slug', 'short_name', 'value', 'label']
-                )
+                actor_value = self._to_summary_value(actor, ['name', 'slug', 'short_name', 'value', 'label'])
                 if actor_value:
                     all_actors.add(actor_value)
 
-            # Collect labels
             for label in indicator.get('labels', []):
-                label_value = self._to_summary_value(
-                    label,
-                    ['name', 'label', 'value', 'slug']
-                )
+                label_value = self._to_summary_value(label, ['name', 'label', 'value', 'slug'])
                 if label_value:
                     all_labels.add(label_value)
 
@@ -350,44 +288,13 @@ class CrowdStrikeIntelAnalyzer(Analyzer):
 
         self.report(report)
 
-    def _run_intel_actor(self):
-        """Process actor lookup."""
-        query = self._get_input_data()
-        self._get_input_data_type(query)
-
-        result = self._search_actors(query)
-        if result is None:
-            self.error('Actor search returned no data from API')
-            return
-
-        actors = result.get('resources', [])
-
-        report = {
-            'query': query,
-            'found': len(actors) > 0,
-            'actors': actors,
-            'actor_count': len(actors)
-        }
-
-        self.report(report)
-
     def summary(self, raw):
-        """Build taxonomy summary from raw report."""
         taxonomies = []
-        namespace = "CrowdStrike"
+        namespace = 'CrowdStrike'
 
-        if self.service == 'intel_indicator':
-            return self._summary_indicator(raw, taxonomies, namespace)
-        elif self.service == 'intel_actor':
-            return self._summary_actor(raw, taxonomies, namespace)
-
-        return {"taxonomies": taxonomies}
-
-    def _summary_indicator(self, raw, taxonomies, namespace):
-        """Summarize indicator results."""
         if not raw.get('found'):
-            taxonomies.append(self.build_taxonomy("info", namespace, "Status", "Not Found"))
-            return {"taxonomies": taxonomies}
+            taxonomies.append(self.build_taxonomy('info', namespace, 'Status', 'Not Found'))
+            return {'taxonomies': taxonomies}
 
         max_confidence = raw.get('max_confidence', 'unverified')
         confidence_level_map = {
@@ -398,45 +305,24 @@ class CrowdStrikeIntelAnalyzer(Analyzer):
         }
 
         level = confidence_level_map.get(max_confidence, 'info')
-        taxonomies.append(self.build_taxonomy(level, namespace, "Confidence", max_confidence.title()))
+        taxonomies.append(self.build_taxonomy(level, namespace, 'Confidence', max_confidence.title()))
 
-        # Add actor info if available
         actors = raw.get('summary_actors', [])
         if actors:
-            actor_str = ', '.join(actors[:3])  # limit to 3 for readability
+            actor_str = ', '.join(actors[:3])
             actor_level = 'malicious' if max_confidence == 'high' else 'suspicious'
-            taxonomies.append(self.build_taxonomy(actor_level, namespace, "Actors", actor_str))
+            taxonomies.append(self.build_taxonomy(actor_level, namespace, 'Actors', actor_str))
 
-        # Add label info if available
         labels = raw.get('summary_labels', [])
         if labels:
             label_str = ', '.join(labels[:3])
-            taxonomies.append(self.build_taxonomy('suspicious', namespace, "Labels", label_str))
+            taxonomies.append(self.build_taxonomy('suspicious', namespace, 'Labels', label_str))
 
-        # Add count
         count = raw.get('indicator_count', 0)
         count_level = 'malicious' if count > 0 and max_confidence == 'high' else 'info'
-        taxonomies.append(self.build_taxonomy(count_level, namespace, "Indicators", str(count)))
+        taxonomies.append(self.build_taxonomy(count_level, namespace, 'Indicators', str(count)))
 
-        return {"taxonomies": taxonomies}
-
-    def _summary_actor(self, raw, taxonomies, namespace):
-        """Summarize actor results."""
-        if not raw.get('found'):
-            taxonomies.append(self.build_taxonomy("info", namespace, "Status", "No Actors Found"))
-            return {"taxonomies": taxonomies}
-
-        count = raw.get('actor_count', 0)
-        taxonomies.append(self.build_taxonomy("info", namespace, "Actors Found", str(count)))
-
-        # Add first actor name if available
-        actors = raw.get('actors', [])
-        if actors and len(actors) > 0:
-            first_actor = actors[0]
-            actor_name = first_actor.get('name', 'Unknown')
-            taxonomies.append(self.build_taxonomy("suspicious", namespace, "Actor", actor_name))
-
-        return {"taxonomies": taxonomies}
+        return {'taxonomies': taxonomies}
 
 
 if __name__ == '__main__':

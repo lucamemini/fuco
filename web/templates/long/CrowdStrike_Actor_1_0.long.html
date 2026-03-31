@@ -1,0 +1,174 @@
+{% if artifact.status == "Success" %}
+{% set content = artifact.report.full if artifact.report.full is defined else {} %}
+{% set actors = content.actors if content.actors is defined else [] %}
+
+<div class="card border-success report-CrowdStrike-Actor">
+  <div class="card-header">
+    <ul class="nav nav-tabs card-header-tabs">
+      <li class="nav-item">
+        <a class="nav-link active" id="summary-tab_{{ artifact.id }}" data-bs-toggle="tab" data-bs-target="#summary_{{ artifact.id }}" role="tab" aria-controls="summary_{{ artifact.id }}" aria-selected="true">Summary</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" id="actors-tab_{{ artifact.id }}" data-bs-toggle="tab" data-bs-target="#actors_{{ artifact.id }}" role="tab" aria-controls="actors_{{ artifact.id }}" aria-selected="false">Actors</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" id="json-tab_{{ artifact.id }}" data-bs-toggle="tab" data-bs-target="#json_{{ artifact.id }}" role="tab" aria-controls="json_{{ artifact.id }}" aria-selected="false">Json</a>
+      </li>
+    </ul>
+  </div>
+
+  <div class="card-body">
+    <div class="tab-content" id="crowdstrikeActorTabContent_{{ artifact.id }}">
+      <div class="tab-pane fade show active" id="summary_{{ artifact.id }}" role="tabpanel" aria-labelledby="summary-tab_{{ artifact.id }}">
+        <div class="panel panel-info">
+          <div class="panel-heading"><strong>Actor Search Overview</strong></div>
+          <div class="panel-body">
+            <dl class="dl-horizontal">
+              <dt>Query</dt>
+              <dd><code>{{ content.query if content.query is defined else '-' }}</code></dd>
+
+              <dt>Found</dt>
+              <dd>
+                {% if content.found is defined and content.found %}
+                <span class="badge bg-success">Yes</span>
+                {% else %}
+                <span class="badge bg-secondary">No</span>
+                {% endif %}
+              </dd>
+
+              <dt>Actors Found</dt>
+              <dd>{{ content.actor_count if content.actor_count is defined else (actors | length) }}</dd>
+
+              {% if actors | length > 0 %}
+              <dt>Top Match</dt>
+              <dd><strong>{{ actors[0].name if actors[0].name is defined else '-' }}</strong></dd>
+              {% endif %}
+            </dl>
+          </div>
+        </div>
+
+        {% if actors | length > 0 %}
+        <div class="panel panel-warning">
+          <div class="panel-heading"><strong>Quick Matches</strong></div>
+          <div class="panel-body">
+            {% for actor in actors %}
+            <span class="badge bg-warning text-dark" style="margin:2px;">{{ actor.name if actor.name is defined else actor.slug }}</span>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="tab-pane fade" id="actors_{{ artifact.id }}" role="tabpanel" aria-labelledby="actors-tab_{{ artifact.id }}">
+        {% if actors | length == 0 %}
+        <div class="alert alert-info">No actor results returned by CrowdStrike.</div>
+        {% else %}
+
+        {% for actor in actors %}
+        <div class="panel panel-default" style="margin-bottom: 16px;">
+          <div class="panel-heading">
+            <strong>{{ actor.name if actor.name is defined else 'Unknown Actor' }}</strong>
+            {% if actor.status is defined %}
+            <span class="badge {{ 'bg-success' if actor.status|lower == 'active' else 'bg-secondary' }}" style="margin-left:8px;">{{ actor.status }}</span>
+            {% endif %}
+            {% if actor.capability is defined and actor.capability.value is defined %}
+            <span class="badge bg-info text-dark" style="margin-left:8px;">{{ actor.capability.value }}</span>
+            {% endif %}
+          </div>
+          <div class="panel-body">
+            <dl class="dl-horizontal">
+              <dt>Slug</dt>
+              <dd><code>{{ actor.slug if actor.slug is defined else '-' }}</code></dd>
+
+              <dt>URL</dt>
+              <dd>
+                {% if actor.url is defined %}
+                <a href="{{ actor.url }}" target="_blank" rel="noopener noreferrer">{{ actor.url }}</a>
+                {% else %}
+                -
+                {% endif %}
+              </dd>
+
+              <dt>Animal Classifier</dt>
+              <dd>{{ actor.animal_classifier if actor.animal_classifier is defined else '-' }}</dd>
+
+              <dt>Active</dt>
+              <dd>{{ actor.active if actor.active is defined else '-' }}</dd>
+
+              <dt>Known As</dt>
+              <dd>{{ actor.known_as if actor.known_as is defined and actor.known_as else '-' }}</dd>
+            </dl>
+
+            {% if actor.short_description is defined and actor.short_description %}
+            <p><strong>Description:</strong> {{ actor.short_description }}</p>
+            {% endif %}
+
+            {% if actor.origins is defined and actor.origins | length > 0 %}
+            <p><strong>Origins:</strong>
+              {% for origin in actor.origins[:8] %}
+              <span class="badge bg-secondary" style="margin:2px;">{{ origin.value if origin.value is defined else origin.slug }}</span>
+              {% endfor %}
+            </p>
+            {% endif %}
+
+            {% if actor.target_regions is defined and actor.target_regions | length > 0 %}
+            <p><strong>Target Regions:</strong>
+              {% for region in actor.target_regions[:10] %}
+              <span class="badge bg-light text-dark" style="margin:2px;">{{ region.value if region.value is defined else region.slug }}</span>
+              {% endfor %}
+            </p>
+            {% endif %}
+
+            {% if actor.target_countries is defined and actor.target_countries | length > 0 %}
+            <p><strong>Target Countries:</strong>
+              {% for country in actor.target_countries[:15] %}
+              <span class="badge bg-light text-dark" style="margin:2px;">{{ country.value if country.value is defined else country.slug }}</span>
+              {% endfor %}
+              {% if actor.target_countries | length > 15 %}
+              <span class="text-muted">(+{{ actor.target_countries | length - 15 }} more)</span>
+              {% endif %}
+            </p>
+            {% endif %}
+
+            {% if actor.target_industries is defined and actor.target_industries | length > 0 %}
+            <p><strong>Target Industries:</strong>
+              {% for industry in actor.target_industries[:12] %}
+              <span class="badge bg-warning text-dark" style="margin:2px;">{{ industry.value if industry.value is defined else industry.slug }}</span>
+              {% endfor %}
+            </p>
+            {% endif %}
+
+            {% if actor.uses_threats is defined and actor.uses_threats | length > 0 %}
+            <p><strong>Uses Threats:</strong>
+              {% for threat in actor.uses_threats[:20] %}
+              <span class="badge bg-danger" style="margin:2px;">{{ threat.family_name if threat.family_name is defined else threat }}</span>
+              {% endfor %}
+              {% if actor.uses_threats | length > 20 %}
+              <span class="text-muted">(+{{ actor.uses_threats | length - 20 }} more)</span>
+              {% endif %}
+            </p>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+
+        {% endif %}
+      </div>
+
+      <div class="tab-pane fade" id="json_{{ artifact.id }}" role="tabpanel" aria-labelledby="json-tab_{{ artifact.id }}">
+        <pre><code>{{ artifact.report | tojson(indent=2) }}</code></pre>
+      </div>
+    </div>
+  </div>
+</div>
+{% else %}
+<div class="card border-danger">
+  <div class="card-header alert alert-danger">
+    <strong>Error</strong>
+  </div>
+  <div class="card-body">
+    <strong>{{ artifact.data }}</strong><br>
+    {{ artifact.report.errorMessage if artifact.report and artifact.report.errorMessage is defined else 'Unknown error' }}
+  </div>
+</div>
+{% endif %}

@@ -1,15 +1,14 @@
 {
-  "name": "CrowdStrike_Intel_Indicator",
+  "name": "CrowdStrike_Intel",
   "version": "1.0",
   "author": "Luca Memini",
   "url": "https://www.crowdstrike.com/",
   "license": "AGPL-V3",
-  "description": "Query CrowdStrike Falcon Intelligence for IoC indicators (IP, Domain, Hash). Returns threat intel including actors, labels, kill chains, and malicious confidence scores.",
-  "dataTypeList": ["ip", "domain", "fqdn", "hash"],
+  "description": "Query CrowdStrike Falcon Intelligence for generic intel indicators (IP, Domain, Hash, URL, Mail and free-text other). Returns labels, kill chains, malware families and confidence scores.",
+  "dataTypeList": ["ip", "domain", "fqdn", "hash", "url", "mail", "other"],
   "baseConfig": "CrowdStrike",
   "command": "CrowdStrike_Intel/crowdstrike_intel.py",
   "config": {
-    "service": "intel_indicator",
     "check_tlp": true,
     "max_tlp": 2
   },
@@ -30,10 +29,10 @@
     },
     {
       "name": "base_url",
-      "description": "CrowdStrike API Base URL (e.g., https://api.eu-2.crowdstrike.com for EU region)",
+      "description": "CrowdStrike API Base URL (e.g., https://api.eu-1.crowdstrike.com for EU region)",
       "type": "string",
       "required": true,
-      "defaultValue": "https://api.eu-2.crowdstrike.com",
+      "defaultValue": "https://api.eu-1.crowdstrike.com",
       "multi": false
     },
     {

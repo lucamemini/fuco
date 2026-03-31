@@ -1,15 +1,14 @@
 {
-  "name": "CrowdStrike_Intel_Actor",
+  "name": "CrowdStrike_Actor",
   "version": "1.0",
   "author": "Luca Memini",
   "url": "https://www.crowdstrike.com/",
   "license": "AGPL-V3",
-  "description": "Query CrowdStrike Falcon Intelligence for threat actor information by name or free-text search. Returns actor profiles including origins, target industries, motivations, and known attack techniques.",
+  "description": "Query CrowdStrike Falcon Intelligence for threat actor information by name (other datatype). Returns actor profiles, targeting details and known malware usage.",
   "dataTypeList": ["other"],
   "baseConfig": "CrowdStrike",
-  "command": "CrowdStrike_Intel/crowdstrike_intel.py",
+  "command": "CrowdStrike_Actor/crowdstrike_actor.py",
   "config": {
-    "service": "intel_actor",
     "check_tlp": true,
     "max_tlp": 2
   },
@@ -30,10 +29,10 @@
     },
     {
       "name": "base_url",
-      "description": "CrowdStrike API Base URL (e.g., https://api.eu-2.crowdstrike.com for EU region)",
+      "description": "CrowdStrike API Base URL (e.g., https://api.eu-1.crowdstrike.com for EU region)",
       "type": "string",
       "required": true,
-      "defaultValue": "https://api.eu-2.crowdstrike.com",
+      "defaultValue": "https://api.eu-1.crowdstrike.com",
       "multi": false
     },
     {

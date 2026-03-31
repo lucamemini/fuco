@@ -1,0 +1,178 @@
+{% if artifact.status == "Success" %}
+{% set content = artifact.report.full if artifact.report.full is defined else {} %}
+{% set indicators = content.indicators if content.indicators is defined else [] %}
+{% set max_conf = content.max_confidence if content.max_confidence is defined else 'unverified' %}
+
+<div class="card border-success report-CrowdStrike">
+  <div class="card-header">
+    <ul class="nav nav-tabs card-header-tabs">
+      <li class="nav-item">
+        <a class="nav-link active" id="summary-tab_{{ artifact.id }}" data-bs-toggle="tab" data-bs-target="#summary_{{ artifact.id }}" role="tab" aria-controls="summary_{{ artifact.id }}" aria-selected="true">Summary</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" id="indicators-tab_{{ artifact.id }}" data-bs-toggle="tab" data-bs-target="#indicators_{{ artifact.id }}" role="tab" aria-controls="indicators_{{ artifact.id }}" aria-selected="false">Indicators</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" id="json-tab_{{ artifact.id }}" data-bs-toggle="tab" data-bs-target="#json_{{ artifact.id }}" role="tab" aria-controls="json_{{ artifact.id }}" aria-selected="false">Json</a>
+      </li>
+    </ul>
+  </div>
+
+  <div class="card-body">
+    <div class="tab-content" id="crowdstrikeTabContent_{{ artifact.id }}">
+      <div class="tab-pane fade show active" id="summary_{{ artifact.id }}" role="tabpanel" aria-labelledby="summary-tab_{{ artifact.id }}">
+
+        <div class="panel panel-info">
+          <div class="panel-heading"><strong>Lookup Overview</strong></div>
+          <div class="panel-body">
+            <dl class="dl-horizontal">
+              <dt>Observable</dt>
+              <dd><code>{{ content.ioc if content.ioc is defined else '-' }}</code></dd>
+
+              <dt>Type</dt>
+              <dd>{{ content.ioc_type | upper if content.ioc_type is defined else '-' }}</dd>
+
+              <dt>Found</dt>
+              <dd>
+                {% if content.found is defined and content.found %}
+                <span class="badge bg-success">Yes</span>
+                {% else %}
+                <span class="badge bg-secondary">No</span>
+                {% endif %}
+              </dd>
+
+              <dt>Indicators</dt>
+              <dd>{{ content.indicator_count if content.indicator_count is defined else 0 }}</dd>
+
+              <dt>Max Confidence</dt>
+              <dd>
+                {% if max_conf == 'high' %}
+                <span class="badge bg-danger">High</span>
+                {% elif max_conf == 'medium' %}
+                <span class="badge bg-warning text-dark">Medium</span>
+                {% elif max_conf == 'low' %}
+                <span class="badge bg-info text-dark">Low</span>
+                {% else %}
+                <span class="badge bg-secondary">{{ max_conf | title }}</span>
+                {% endif %}
+              </dd>
+            </dl>
+          </div>
+        </div>
+
+        {% if content.summary_labels is defined and content.summary_labels | length > 0 %}
+        <div class="panel panel-warning">
+          <div class="panel-heading"><strong>Top Labels</strong></div>
+          <div class="panel-body">
+            {% for label in content.summary_labels[:8] %}
+            <span class="badge bg-warning text-dark" style="margin: 2px;">{{ label }}</span>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+
+      </div>
+
+      <div class="tab-pane fade" id="indicators_{{ artifact.id }}" role="tabpanel" aria-labelledby="indicators-tab_{{ artifact.id }}">
+        {% if indicators | length == 0 %}
+        <div class="alert alert-info">No indicators returned by CrowdStrike.</div>
+        {% else %}
+
+        {% for indicator in indicators %}
+        <div class="panel panel-default" style="margin-bottom: 16px;">
+          <div class="panel-heading">
+            <strong>{{ indicator.type if indicator.type is defined else 'indicator' }}</strong>
+            {% if indicator.indicator is defined %}
+            <code style="margin-left: 8px;">{{ indicator.indicator }}</code>
+            {% endif %}
+          </div>
+          <div class="panel-body">
+            <dl class="dl-horizontal">
+              <dt>ID</dt>
+              <dd><code>{{ indicator.id if indicator.id is defined else '-' }}</code></dd>
+
+              <dt>Confidence</dt>
+              <dd>{{ indicator.malicious_confidence | title if indicator.malicious_confidence is defined else '-' }}</dd>
+
+              <dt>Published</dt>
+              <dd>{{ indicator.published_date if indicator.published_date is defined else '-' }}</dd>
+
+              <dt>Last Updated</dt>
+              <dd>{{ indicator.last_updated if indicator.last_updated is defined else '-' }}</dd>
+
+              <dt>Deleted</dt>
+              <dd>{{ indicator.deleted if indicator.deleted is defined else '-' }}</dd>
+            </dl>
+
+            {% if indicator.malware_families is defined and indicator.malware_families | length > 0 %}
+            <p><strong>Malware Families:</strong>
+              {% for family in indicator.malware_families %}
+              <span class="badge bg-danger" style="margin: 2px;">{{ family }}</span>
+              {% endfor %}
+            </p>
+            {% endif %}
+
+            {% if indicator.threat_types is defined and indicator.threat_types | length > 0 %}
+            <p><strong>Threat Types:</strong>
+              {% for tt in indicator.threat_types %}
+              <span class="badge bg-warning text-dark" style="margin: 2px;">{{ tt }}</span>
+              {% endfor %}
+            </p>
+            {% endif %}
+
+            {% if indicator.kill_chains is defined and indicator.kill_chains | length > 0 %}
+            <p><strong>Kill Chain:</strong>
+              {% for kc in indicator.kill_chains %}
+              <span class="badge bg-info text-dark" style="margin: 2px;">{{ kc }}</span>
+              {% endfor %}
+            </p>
+            {% endif %}
+
+            {% if indicator.vulnerabilities is defined and indicator.vulnerabilities | length > 0 %}
+            <p><strong>Vulnerabilities:</strong>
+              {% for cve in indicator.vulnerabilities %}
+              <span class="badge bg-secondary" style="margin: 2px;">{{ cve }}</span>
+              {% endfor %}
+            </p>
+            {% endif %}
+
+            {% if indicator.labels is defined and indicator.labels | length > 0 %}
+            <div>
+              <strong>Labels:</strong>
+              <ul>
+                {% for label in indicator.labels %}
+                <li>
+                  {% if label.name is defined %}
+                    {{ label.name }}
+                  {% else %}
+                    {{ label }}
+                  {% endif %}
+                </li>
+                {% endfor %}
+              </ul>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+
+        {% endif %}
+      </div>
+
+      <div class="tab-pane fade" id="json_{{ artifact.id }}" role="tabpanel" aria-labelledby="json-tab_{{ artifact.id }}">
+        <pre><code>{{ artifact.report | tojson(indent=2) }}</code></pre>
+      </div>
+    </div>
+  </div>
+</div>
+{% else %}
+<div class="card border-danger">
+  <div class="card-header alert alert-danger">
+    <strong>Error</strong>
+  </div>
+  <div class="card-body">
+    <strong>{{ artifact.data }}</strong><br>
+    {{ artifact.report.errorMessage if artifact.report and artifact.report.errorMessage is defined else 'Unknown error' }}
+  </div>
+</div>
+{% endif %}
