@@ -3,7 +3,7 @@
     "service": "intel_indicator",
     "client_id": "YOUR_CLIENT_ID",
     "client_secret": "YOUR_CLIENT_SECRET",
-    "base_url": "https://api.eu-2.crowdstrike.com",
+    "base_url": "https://api.eu-1.crowdstrike.com",
     "verifyssl": true
   },
   "dataType": "ip",

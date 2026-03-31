@@ -53,7 +53,7 @@ class CrowdStrikeIntelAnalyzer(Analyzer):
                 timeout=30
             )
 
-            if response.status_code != 200:
+            if not (200 <= response.status_code < 300):
                 self.error(f'OAuth2 token request failed (HTTP {response.status_code}): {response.text}')
 
             data = response.json()
