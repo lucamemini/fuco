@@ -190,6 +190,9 @@ class CrowdStrikeIntelAnalyzer(Analyzer):
         ioc_value = self.get_data()
 
         result = self._search_indicators(ioc_type, ioc_value)
+        if result is None:
+            self.error('Indicator search returned no data from API')
+            return
 
         if 'error' in result:
             self.error(result['error'])
@@ -239,6 +242,9 @@ class CrowdStrikeIntelAnalyzer(Analyzer):
         query = self.get_data()
 
         result = self._search_actors(query)
+        if result is None:
+            self.error('Actor search returned no data from API')
+            return
 
         actors = result.get('resources', [])
 
@@ -317,3 +323,7 @@ class CrowdStrikeIntelAnalyzer(Analyzer):
             taxonomies.append(self.build_taxonomy("suspicious", namespace, "Actor", actor_name))
 
         return {"taxonomies": taxonomies}
+
+
+if __name__ == '__main__':
+    CrowdStrikeIntelAnalyzer().run()
