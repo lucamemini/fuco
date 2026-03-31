@@ -183,6 +183,36 @@ class CrowdStrikeIntelAnalyzer(Analyzer):
 
         self.error('Missing datatype field and unable to infer it from input data')
 
+    def _to_summary_value(self, item, preferred_keys):
+        """Convert API fields that may be dict/list/string to a comparable summary string."""
+        if item is None:
+            return None
+
+        if isinstance(item, str):
+            value = item.strip()
+            return value or None
+
+        if isinstance(item, dict):
+            for key in preferred_keys:
+                candidate = item.get(key)
+                if isinstance(candidate, str) and candidate.strip():
+                    return candidate.strip()
+
+            # Stable fallback when no expected key is present
+            return json.dumps(item, sort_keys=True)
+
+        if isinstance(item, (list, tuple, set)):
+            values = []
+            for sub_item in item:
+                sub_value = self._to_summary_value(sub_item, preferred_keys)
+                if sub_value:
+                    values.append(sub_value)
+            if values:
+                return ', '.join(values)
+            return None
+
+        return str(item)
+
     def _search_indicators(self, ioc_type, ioc_value):
         """Search CrowdStrike Intel for indicators."""
         fql_filter = self._build_indicator_filter(ioc_type, ioc_value)
@@ -298,11 +328,21 @@ class CrowdStrikeIntelAnalyzer(Analyzer):
 
             # Collect actors
             for actor in indicator.get('actors', []):
-                all_actors.add(actor)
+                actor_value = self._to_summary_value(
+                    actor,
+                    ['name', 'slug', 'short_name', 'value', 'label']
+                )
+                if actor_value:
+                    all_actors.add(actor_value)
 
             # Collect labels
             for label in indicator.get('labels', []):
-                all_labels.add(label)
+                label_value = self._to_summary_value(
+                    label,
+                    ['name', 'label', 'value', 'slug']
+                )
+                if label_value:
+                    all_labels.add(label_value)
 
         report['summary_actors'] = list(all_actors)
         report['summary_labels'] = list(all_labels)
