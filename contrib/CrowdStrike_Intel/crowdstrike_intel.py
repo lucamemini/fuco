@@ -5,6 +5,7 @@ import time
 import hashlib
 import json
 import re
+import ipaddress
 from urllib.parse import quote
 
 import requests
@@ -110,6 +111,75 @@ class CrowdStrikeIntelAnalyzer(Analyzer):
 
         return None
 
+    def _get_input_data(self):
+        """Return observable data from Cortex input, with fallbacks for local tests."""
+        try:
+            value = self.get_data()
+        except Exception:
+            value = None
+
+        if value is None:
+            value = self.get_param('data.data', None)
+        if value is None:
+            value = self.get_param('data', None)
+
+        if value is None:
+            self.error('Observable data is missing')
+
+        value = str(value).strip()
+        if not value:
+            self.error('Observable data is missing')
+
+        return value
+
+    def _detect_ioc_type(self, value):
+        """Infer data type when the input payload does not expose dataType."""
+        candidate = str(value).strip()
+        if not candidate:
+            return None
+
+        if self._detect_hash_type(candidate):
+            return 'hash'
+
+        try:
+            ipaddress.ip_address(candidate)
+            return 'ip'
+        except ValueError:
+            pass
+
+        if re.match(r'^[a-zA-Z][a-zA-Z0-9+.-]*://', candidate):
+            return 'url'
+
+        if re.match(r'^[A-Za-z0-9._-]+\.[A-Za-z]{2,}$', candidate):
+            return 'fqdn'
+
+        return None
+
+    def _get_input_data_type(self, data_value=None):
+        """Resolve input datatype from Cortex payload or infer it when omitted."""
+        data_type = getattr(self, 'data_type', None)
+
+        if not data_type:
+            for key in ('data.dataType', 'data.datatype', 'dataType', 'datatype'):
+                data_type = self.get_param(key, None)
+                if data_type:
+                    break
+
+        if data_type:
+            return str(data_type).strip().lower()
+
+        if self.service == 'intel_actor':
+            return 'freetext'
+
+        if data_value is None:
+            data_value = self._get_input_data()
+
+        inferred_type = self._detect_ioc_type(data_value)
+        if inferred_type:
+            return inferred_type
+
+        self.error('Missing datatype field and unable to infer it from input data')
+
     def _search_indicators(self, ioc_type, ioc_value):
         """Search CrowdStrike Intel for indicators."""
         fql_filter = self._build_indicator_filter(ioc_type, ioc_value)
@@ -186,8 +256,8 @@ class CrowdStrikeIntelAnalyzer(Analyzer):
 
     def _run_intel_indicator(self):
         """Process indicator lookup."""
-        ioc_type = self.data_type
-        ioc_value = self.get_data()
+        ioc_value = self._get_input_data()
+        ioc_type = self._get_input_data_type(ioc_value)
 
         result = self._search_indicators(ioc_type, ioc_value)
         if result is None:
@@ -239,7 +309,8 @@ class CrowdStrikeIntelAnalyzer(Analyzer):
 
     def _run_intel_actor(self):
         """Process actor lookup."""
-        query = self.get_data()
+        query = self._get_input_data()
+        self._get_input_data_type(query)
 
         result = self._search_actors(query)
         if result is None:
