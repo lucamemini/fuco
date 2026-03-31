@@ -191,7 +191,7 @@ class CrowdStrikeIntelAnalyzer(Analyzer):
             return {'error': f'Unsupported IoC type or invalid hash format: {ioc_type}'}
 
         headers = self._get_headers()
-        url = f"{self.base_url}/intelligence/combined/indicators/v1"
+        url = f"{self.base_url}/intel/combined/indicators/v1"
 
         params = {
             'filter': fql_filter,
@@ -220,7 +220,7 @@ class CrowdStrikeIntelAnalyzer(Analyzer):
     def _search_actors(self, freetext_query):
         """Search CrowdStrike Intel for threat actors."""
         headers = self._get_headers()
-        url = f"{self.base_url}/intelligence/combined/actors/v1"
+        url = f"{self.base_url}/intel/combined/actors/v1"
 
         params = {
             'q': freetext_query,
