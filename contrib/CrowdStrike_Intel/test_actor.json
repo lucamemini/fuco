@@ -1,13 +1,13 @@
 {
   "config": {
-    "service": "intel_indicator",
+    "service": "intel_actor",
     "client_id": "YOUR_CLIENT_ID",
     "client_secret": "YOUR_CLIENT_SECRET",
     "base_url": "https://api.eu-2.crowdstrike.com",
     "verifyssl": true
   },
-  "dataType": "ip",
-  "data": "1.2.3.4",
+  "dataType": "other",
+  "data": "FANCY BEAR",
   "tlp": 2,
   "pap": 2
 }

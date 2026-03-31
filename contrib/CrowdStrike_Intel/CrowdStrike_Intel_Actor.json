@@ -5,7 +5,7 @@
   "url": "https://www.crowdstrike.com/",
   "license": "AGPL-V3",
   "description": "Query CrowdStrike Falcon Intelligence for threat actor information by name or free-text search. Returns actor profiles including origins, target industries, motivations, and known attack techniques.",
-  "dataTypeList": ["freetext"],
+  "dataTypeList": ["other"],
   "baseConfig": "CrowdStrike",
   "command": "CrowdStrike_Intel/crowdstrike_intel.py",
   "config": {

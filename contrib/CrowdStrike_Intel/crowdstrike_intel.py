@@ -166,10 +166,13 @@ class CrowdStrikeIntelAnalyzer(Analyzer):
                     break
 
         if data_type:
-            return str(data_type).strip().lower()
+            normalized_type = str(data_type).strip().lower()
+            if self.service == 'intel_actor' and normalized_type in ('freetext', 'other'):
+                return 'other'
+            return normalized_type
 
         if self.service == 'intel_actor':
-            return 'freetext'
+            return 'other'
 
         if data_value is None:
             data_value = self._get_input_data()
