@@ -95,10 +95,22 @@
               <dd>{{ indicator.malicious_confidence | title if indicator.malicious_confidence is defined else '-' }}</dd>
 
               <dt>Published</dt>
-              <dd>{{ indicator.published_date if indicator.published_date is defined else '-' }}</dd>
+              <dd>
+                {% if indicator.published_date is defined and indicator.published_date %}
+                  {{ indicator.published_date | int | datetimeformat('%Y-%m-%d %H:%M:%S UTC') }} ({{ indicator.published_date }})
+                {% else %}
+                  -
+                {% endif %}
+              </dd>
 
               <dt>Last Updated</dt>
-              <dd>{{ indicator.last_updated if indicator.last_updated is defined else '-' }}</dd>
+              <dd>
+                {% if indicator.last_updated is defined and indicator.last_updated %}
+                  {{ indicator.last_updated | int | datetimeformat('%Y-%m-%d %H:%M:%S UTC') }} ({{ indicator.last_updated }})
+                {% else %}
+                  -
+                {% endif %}
+              </dd>
 
               <dt>Deleted</dt>
               <dd>{{ indicator.deleted if indicator.deleted is defined else '-' }}</dd>
@@ -144,6 +156,19 @@
                 <li>
                   {% if label.name is defined %}
                     {{ label.name }}
+                    {% if label.created_on is defined or label.last_valid_on is defined %}
+                      <small class="text-muted">
+                        [
+                        {% if label.created_on is defined and label.created_on %}
+                          created: {{ label.created_on | int | datetimeformat('%Y-%m-%d %H:%M:%S UTC') }} ({{ label.created_on }})
+                        {% endif %}
+                        {% if label.created_on is defined and label.created_on and label.last_valid_on is defined and label.last_valid_on %}; {% endif %}
+                        {% if label.last_valid_on is defined and label.last_valid_on %}
+                          last valid: {{ label.last_valid_on | int | datetimeformat('%Y-%m-%d %H:%M:%S UTC') }} ({{ label.last_valid_on }})
+                        {% endif %}
+                        ]
+                      </small>
+                    {% endif %}
                   {% else %}
                     {{ label }}
                   {% endif %}

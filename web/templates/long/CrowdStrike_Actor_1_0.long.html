@@ -80,6 +80,42 @@
               <dt>Slug</dt>
               <dd><code>{{ actor.slug if actor.slug is defined else '-' }}</code></dd>
 
+              <dt>Created</dt>
+              <dd>
+                {% if actor.created_date is defined and actor.created_date %}
+                  {{ actor.created_date | int | datetimeformat('%Y-%m-%d %H:%M:%S UTC') }} ({{ actor.created_date }})
+                {% else %}
+                  -
+                {% endif %}
+              </dd>
+
+              <dt>Last Modified</dt>
+              <dd>
+                {% if actor.last_modified_date is defined and actor.last_modified_date %}
+                  {{ actor.last_modified_date | int | datetimeformat('%Y-%m-%d %H:%M:%S UTC') }} ({{ actor.last_modified_date }})
+                {% else %}
+                  -
+                {% endif %}
+              </dd>
+
+              <dt>First Activity</dt>
+              <dd>
+                {% if actor.first_activity_date is defined and actor.first_activity_date %}
+                  {{ actor.first_activity_date | int | datetimeformat('%Y-%m-%d %H:%M:%S UTC') }} ({{ actor.first_activity_date }})
+                {% else %}
+                  -
+                {% endif %}
+              </dd>
+
+              <dt>Last Activity</dt>
+              <dd>
+                {% if actor.last_activity_date is defined and actor.last_activity_date %}
+                  {{ actor.last_activity_date | int | datetimeformat('%Y-%m-%d %H:%M:%S UTC') }} ({{ actor.last_activity_date }})
+                {% else %}
+                  -
+                {% endif %}
+              </dd>
+
               <dt>URL</dt>
               <dd>
                 {% if actor.url is defined %}

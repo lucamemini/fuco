@@ -4,6 +4,7 @@ Flask application entry point
 """
 import logging
 import sys
+from datetime import datetime, timezone
 from flask import Flask, jsonify, request
 from urllib.parse import quote
 
@@ -145,6 +146,19 @@ app = Flask(__name__,
 
 # Load uppercase settings from config.py into Flask config for templates/routes.
 app.config.from_object(config)
+
+
+@app.template_filter('datetimeformat')
+def datetimeformat(value, fmt='%Y-%m-%d %H:%M:%S UTC'):
+    """Render epoch timestamps as human-readable UTC strings for Jinja templates."""
+    if value in (None, ''):
+        return '-'
+
+    try:
+        ts = int(float(value))
+        return datetime.fromtimestamp(ts, tz=timezone.utc).strftime(fmt)
+    except Exception:
+        return str(value)
 
 # ============ CSRF + Rate Limiting ============
 csrf.init_app(app)
