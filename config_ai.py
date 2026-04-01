@@ -13,7 +13,7 @@ AI_PROVIDER = 'gemini'  # currently supported: gemini
 AI_MODEL = 'gemini-flash-latest'
 
 # Prompt & policy versioning (used in cache key)
-AI_PROMPT_VERSION = 'v2'
+AI_PROMPT_VERSION = 'v3'
 AI_POLICY_VERSION = 'v1'
 
 # Request limits / behavior
@@ -21,6 +21,8 @@ AI_TIMEOUT_SECONDS = 60
 AI_TIMEOUT_RETRIES = 1
 AI_MAX_JOBS = 100
 AI_MAX_INPUT_BYTES = 250000
+AI_PROMPT_INJECTION_GUARD_ENABLED = True
+AI_PROMPT_MAX_STRING_CHARS = 1200
 # Short-report limits (condensed AI payload — no raw JSON blobs embedded)
 AI_MAX_TAGS_PER_REPORT = 5        # max taxonomy tags per analyzer sent to AI
 AI_MAX_TAG_VALUE_LEN = 80         # max chars for a single tag string

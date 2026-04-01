@@ -7,10 +7,10 @@ Use the same host where FUCO is served. Example:
 - http://<host>:<port>
 
 ## Authentication & CSRF
-Most APIs require an authenticated session and CSRF protection.
+POST requests should include CSRF protection; some APIs also require an authenticated session.
 
 **Flow**
-1. Call POST /api/auth/login with JSON credentials.
+1. Call POST /api/auth/login with JSON credentials when you need session-protected endpoints (for example responder actions).
 2. Store the session cookie returned by the server.
 3. Obtain a CSRF token from any HTML page that renders `csrf_token()` (e.g., the UI pages) and send it on POST requests as the `X-CSRFToken` header.
 
@@ -126,6 +126,70 @@ Returns rendered HTML for the LONG template for a job. If the template fails, a 
 
 ### GET /getShort?JobId=<job_id>
 Returns rendered HTML for the SHORT template for a job.
+
+---
+
+## AI Assessment APIs
+
+### POST /api/ai/analyze
+Generate an AI assessment for already collected FUCO/Cortex reports. The endpoint is cache-aware and may return either a fresh result or a cached one.
+
+Body:
+- observable (string)
+- datatype (string)
+- jobs (array of job IDs)
+- force_refresh (bool, optional; default `false`)
+
+Behavior:
+- reports are loaded from FUCO cache using the provided job IDs
+- if `AI_REQUIRE_FINAL_RESULTS=True`, non-final jobs return `409`
+- if the same normalized bundle was already assessed, the response may return `source: "cache"`
+- provider quota errors may return `429` with `retry_after_seconds`
+
+Response:
+- ok (bool)
+- source (`fresh` or `cache`)
+- cache_key (string)
+- prompt_version (string)
+- model (string)
+- latency_ms (int)
+- token_usage (object with `input_tokens`, `output_tokens`, `total_tokens`)
+- assessment (object)
+- created_at (ISO timestamp)
+
+Assessment fields:
+- risk_score (0-100)
+- risk_level (`low|medium|high|critical|unknown`)
+- confidence (0-1)
+- summary (string)
+- facts (array)
+- deductions (array)
+- key_findings (array)
+- recommended_actions (array)
+- limitations (array)
+
+Example:
+```json
+{
+  "observable": "8.8.8.8",
+  "datatype": "ip",
+  "jobs": ["job-id-1", "job-id-2"],
+  "force_refresh": false
+}
+```
+
+### POST /api/ai/cache-assessment
+Return only a cached AI assessment. This endpoint never triggers a new AI provider call.
+
+Body:
+- same as `/api/ai/analyze`
+
+Response:
+- same shape as `/api/ai/analyze`, with `source: "cache"`
+
+Notes:
+- returns `404` if no cached AI assessment is available
+- useful for preloading the AI panel in the UI without incurring model cost
 
 ---
 

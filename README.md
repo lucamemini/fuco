@@ -55,6 +55,12 @@ The application streamlines the workflow of security operations teams by providi
 - Historical analysis view for any observable
 - PDF export capability (Linux/macOS only)
 
+### 🤖 AI Assessment
+- Optional Gemini-powered SOC summary from completed analyzer results
+- Risk score, confidence, facts, deductions, findings, and recommended actions
+- Cache-aware behavior with fresh generation or instant retrieval from cache
+- Recent-search cache modal from the home page for already generated assessments
+
 ### 🛡️ Responder Actions
 - Execute Cortex responders directly from reports
 - Session-based authentication (login once, API key stored server-side)
@@ -65,6 +71,7 @@ The application streamlines the workflow of security operations teams by providi
 - `/api/short` - Fast taxonomy-only results
 - `/api/analysis` - Complete analysis reports
 - `/api/getAnalyzer` - Retrieve available analyzers
+- `/api/ai/analyze` and `/api/ai/cache-assessment` - AI assessment generation and cache lookup
 - `/api/responder/*` - Responder listing, execution, bulk, and status
 - Support for programmatic integrations
 
@@ -284,31 +291,67 @@ NOTIFY_TO = 'soc@example.com;secops@example.com'
 ```python
 # WHITE: 0, GREEN: 1, AMBER: 2, RED: 3
 ```
-lòa 
+
 ### AI Assessment (Gemini)
 
-FUCO supports optional AI assessment on results pages via the `Analisi IA` button.
+FUCO supports optional AI-assisted assessment on the results pages through the `Analisi IA` button and the cached AI modal on recent searches.
 
-Configuration files:
+**What the AI panel provides:**
+- `risk_score` and `risk_level`
+- `confidence`
+- concise `summary`
+- `facts`, `deductions`, `key_findings`, and `recommended_actions`
+- cache-aware reuse of previous assessments (`source=fresh|cache`)
 
-- `config_ai.py`: non-secret AI settings (provider, model, timeout, cache TTL)
+**Configuration files:**
+- `config_ai.py`: non-secret AI settings (provider, model, timeout, cache TTL, redaction, prompt hardening)
 - `secretai.py`: API key file (excluded from git)
 
-Setup:
+**Setup:**
 
 ```bash
 cp secretai.py.template secretai.py
 # edit secretai.py and set AI_API_KEY
 ```
 
-Main endpoint:
+You can also use environment variables instead of `secretai.py`:
 
-- `POST /api/ai/analyze` (cache-aware; returns `source=cache|fresh`)
+```bash
+export FUCO_AI_API_KEY="your-key-here"
+# or
+export GEMINI_API_KEY="your-key-here"
+```
 
-Notes:
+**Main settings in `config_ai.py`:**
+- `AI_ENABLED`: enable/disable the feature
+- `AI_MODEL`: Gemini model to use
+- `AI_TIMEOUT_SECONDS`: upstream timeout for AI calls
+- `AI_CACHE_TTL_MINUTES`: retention for cached assessments
+- `AI_REDACTION_ENABLED`: optional redaction of sensitive values before sending data
+- `AI_PROMPT_INJECTION_GUARD_ENABLED`: guardrails for untrusted analyzer output in prompts
 
-- Button is enabled when results are loaded/completed.
+**Endpoints:**
+- `POST /api/ai/analyze` → generate or reuse an AI assessment
+- `POST /api/ai/cache-assessment` → return cached assessment only (no provider call)
+
+**Example request:**
+
+```bash
+curl -X POST http://localhost:5000/api/ai/analyze \
+  -H "Content-Type: application/json" \
+  -H "X-CSRFToken: <token>" \
+  -d '{
+    "observable": "8.8.8.8",
+    "datatype": "ip",
+    "jobs": ["job-id-1", "job-id-2"],
+    "force_refresh": false
+  }'
+```
+
+**Notes:**
+- The button is enabled when results are loaded/completed.
 - If the same normalized input was already evaluated, FUCO returns the cached AI assessment.
+- The AI output is an analyst aid and should not replace final human validation.
 
 ### Cache Configuration
 
@@ -881,6 +924,7 @@ curl http://localhost:5000/api/getAnalyzer
 | `/api/analysis` | POST | Full analysis API |
 | `/api/getAnalyzer` | GET | List available analyzers |
 | `/api/ai/analyze` | POST | AI assessment (Gemini, cache-aware) |
+| `/api/ai/cache-assessment` | POST | Return cached AI assessment only |
 | `/api/submit_job` | POST | Submit single job (AJAX) |
 | `/api/poll_job/<job_id>` | GET | Poll job status |
 | `/api/cache/stats` | GET | Cache statistics (IP-restricted) |
@@ -929,6 +973,9 @@ curl http://localhost:5000/api/getAnalyzer
 
 ### Results Results
 ![FUCO Results](https://github.com/lucamemini/fuco/blob/master/img/fuco_result.jpg?raw=true)
+
+### AI Assessment
+![FUCO AI Assessment](https://github.com/lucamemini/fuco/blob/master/img/fuco_ia.jpg?raw=true)
 
 ### Bulk Action
 ![FUCO Bulk](https://github.com/lucamemini/fuco/blob/master/img/fuco_bulk.jpg?raw=true)
