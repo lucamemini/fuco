@@ -1,0 +1,5 @@
+{% for taxonomy in taxonomies %}
+<span class="badge {{ taxonomy.css | default('bg-secondary') }} me-1">
+  {{ taxonomy.namespace }}:{{ taxonomy.predicate }}={{ taxonomy.value }}
+</span>
+{% endfor %}

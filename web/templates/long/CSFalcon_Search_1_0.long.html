@@ -1,0 +1,110 @@
+{% set full = artifact.report if artifact.report is mapping else artifact %}
+
+<div class="card mb-3">
+  <div class="card-header"><strong>CSFalcon Search</strong></div>
+  <div class="card-body">
+    <div class="row g-3">
+      <div class="col-md-6">
+        <div><strong>Observable:</strong> {{ full.observable or '-' }}</div>
+        <div><strong>Input type:</strong> {{ full.input_type or '-' }}</div>
+        <div><strong>Normalized value:</strong> {{ full.normalized_value or '-' }}</div>
+        <div><strong>Telemetry query type:</strong> {{ full.telemetry_query_type or '-' }}</div>
+      </div>
+      <div class="col-md-6">
+        <div><strong>Found in scope:</strong> {{ 'Yes' if full.found else 'No' }}</div>
+        <div><strong>Lookback:</strong> {{ full.lookback_days or 0 }} days</div>
+        <div><strong>Since:</strong> {{ full.lookback_since or '-' }}</div>
+        <div><strong>Recent alerts:</strong> {{ full.alert_count or 0 }}</div>
+      </div>
+    </div>
+
+    {% if full.notes %}
+    <hr>
+    <strong>Notes</strong>
+    <ul class="mb-0">
+      {% for note in full.notes %}
+      <li>{{ note }}</li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+  </div>
+</div>
+
+<ul class="nav nav-tabs" role="tablist">
+  <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#csf-summary" type="button">Summary</button></li>
+  <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#csf-devices" type="button">Devices</button></li>
+  <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#csf-processes" type="button">Processes</button></li>
+  <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#csf-alerts" type="button">Alerts</button></li>
+  <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#csf-json" type="button">Json</button></li>
+</ul>
+
+<div class="tab-content border border-top-0 p-3">
+  <div class="tab-pane fade show active" id="csf-summary">
+    <ul class="mb-0">
+      <li><strong>Total devices with telemetry hit:</strong> {{ full.device_count_total or 0 }}</li>
+      <li><strong>Recent devices in lookback:</strong> {{ full.device_count_recent or 0 }}</li>
+      <li><strong>Recent alerts correlated:</strong> {{ full.alert_count or 0 }}</li>
+    </ul>
+  </div>
+
+  <div class="tab-pane fade" id="csf-devices">
+    {% if full.devices %}
+      {% for d in full.devices %}
+      <div class="card mb-2">
+        <div class="card-body py-2">
+          <div><strong>{{ d.hostname or d.device_id or 'Unknown host' }}</strong></div>
+          <div class="small text-muted">{{ d.platform_name or '-' }} | {{ d.status or '-' }}</div>
+          <div class="small">Device ID: {{ d.device_id or '-' }}</div>
+          <div class="small">Last seen: {{ d.last_seen or '-' }}</div>
+          <div class="small">First seen: {{ d.first_seen or '-' }}</div>
+          <div class="small">IPs: {{ d.local_ip or '-' }} / {{ d.external_ip or '-' }}</div>
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="text-muted">No recent devices found for the configured lookback.</div>
+    {% endif %}
+  </div>
+
+  <div class="tab-pane fade" id="csf-processes">
+    {% if full.processes %}
+      {% for p in full.processes %}
+      <div class="card mb-2">
+        <div class="card-body py-2">
+          <div><strong>{{ p.filename or p.id or 'Process' }}</strong></div>
+          <div class="small">Device ID: {{ p.device_id or '-' }}</div>
+          <div class="small">Command line: {{ p.command_line or '-' }}</div>
+          <div class="small">User: {{ p.user_name or '-' }}</div>
+          <div class="small">SHA256: {{ p.sha256 or '-' }}</div>
+          <div class="small">Timestamp: {{ p.timestamp or '-' }}</div>
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="text-muted">No related process details returned.</div>
+    {% endif %}
+  </div>
+
+  <div class="tab-pane fade" id="csf-alerts">
+    {% if full.alerts %}
+      {% for a in full.alerts %}
+      <div class="card mb-2">
+        <div class="card-body py-2">
+          <div><strong>{{ a.name or a.id or 'Alert' }}</strong></div>
+          <div class="small text-muted">{{ a.product or '-' }} | severity {{ a.severity or '-' }} | {{ a.status or '-' }}</div>
+          <div class="small">Host: {{ a.hostname or '-' }}</div>
+          <div class="small">Created: {{ a.created_timestamp or '-' }}</div>
+          <div class="small">Updated: {{ a.updated_timestamp or '-' }}</div>
+          <div class="small">ID: {{ a.id or '-' }}</div>
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="text-muted">No recent alerts correlated for this indicator.</div>
+    {% endif %}
+  </div>
+
+  <div class="tab-pane fade" id="csf-json">
+    <pre><code>{{ full | tojson(indent=2) }}</code></pre>
+  </div>
+</div>

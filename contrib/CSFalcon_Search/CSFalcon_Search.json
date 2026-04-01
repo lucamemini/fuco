@@ -1,0 +1,75 @@
+{
+  "name": "CSFalcon_Search",
+  "version": "1.0",
+  "author": "Luca Memini",
+  "url": "https://www.crowdstrike.com/",
+  "license": "AGPL-V3",
+  "description": "Check whether an indicator was observed on CrowdStrike-managed assets and correlate recent alerts in the last X days. Returns device, process and alert context when available.",
+  "dataTypeList": ["ip", "domain", "fqdn", "hash", "url", "mail", "other"],
+  "baseConfig": "CrowdStrike",
+  "command": "CSFalcon_Search/csfalcon_search.py",
+  "config": {
+    "check_tlp": true,
+    "max_tlp": 2
+  },
+  "configurationItems": [
+    {
+      "name": "client_id",
+      "description": "CrowdStrike Falcon OAuth2 Client ID",
+      "type": "string",
+      "required": true,
+      "multi": false
+    },
+    {
+      "name": "client_secret",
+      "description": "CrowdStrike Falcon OAuth2 Client Secret",
+      "type": "string",
+      "required": true,
+      "multi": false
+    },
+    {
+      "name": "base_url",
+      "description": "CrowdStrike API Base URL (e.g., https://api.eu-1.crowdstrike.com for EU region)",
+      "type": "string",
+      "required": true,
+      "defaultValue": "https://api.eu-1.crowdstrike.com",
+      "multi": false
+    },
+    {
+      "name": "lookback_days",
+      "description": "How many days back to consider for recent sightings and alert correlation",
+      "type": "number",
+      "required": false,
+      "defaultValue": 7,
+      "multi": false
+    },
+    {
+      "name": "max_results",
+      "description": "Maximum number of devices/processes/alerts to return",
+      "type": "number",
+      "required": false,
+      "defaultValue": 20,
+      "multi": false
+    },
+    {
+      "name": "include_hidden_alerts",
+      "description": "Also include hidden alerts during recent alert correlation",
+      "type": "boolean",
+      "required": false,
+      "defaultValue": false,
+      "multi": false
+    },
+    {
+      "name": "verifyssl",
+      "description": "Verify server SSL certificate",
+      "type": "boolean",
+      "required": false,
+      "defaultValue": true,
+      "multi": false
+    }
+  ],
+  "registration_required": true,
+  "subscription_required": true,
+  "free_subscription": false,
+  "service_homepage": "https://www.crowdstrike.com/platform/falcon-endpoint-protection/"
+}
