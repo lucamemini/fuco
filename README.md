@@ -329,6 +329,8 @@ export GEMINI_API_KEY="your-key-here"
 - `AI_CACHE_TTL_MINUTES`: retention for cached assessments
 - `AI_REDACTION_ENABLED`: optional redaction of sensitive values before sending data
 - `AI_PROMPT_INJECTION_GUARD_ENABLED`: guardrails for untrusted analyzer output in prompts
+- `AI_MAX_TLP`: maximum TLP level permitted for AI assessment (0=WHITE, 1=GREEN, 2=AMBER, 3=RED, `None`=no limit). If the analysis TLP exceeds this value, the AI call is blocked server-side and an error message is shown in the assessment panel. Default: `2` (AMBER — blocks RED analyses from being sent to the external AI provider).
+- `AI_MAX_PAP`: maximum PAP level permitted for AI assessment (same 0–3 scale as TLP). If the analysis PAP exceeds this value, the AI call is blocked server-side. Default: `2` (AMBER — blocks PAP:RED analyses).
 
 **Endpoints:**
 - `POST /api/ai/analyze` → generate or reuse an AI assessment

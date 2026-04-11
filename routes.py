@@ -169,6 +169,8 @@ class AiAnalyzeRequest(BaseModel):
     datatype: str = Field(..., min_length=1, max_length=100)
     jobs: List[str] = Field(..., min_items=1)
     force_refresh: Optional[bool] = False
+    tlp: Optional[int] = None
+    pap: Optional[int] = None
 
 
 # ============ Helper functions ============
@@ -839,6 +841,57 @@ def api_ai_analyze():
         observable = utils.InputValidator.sanitize_observable(ai_req.observable)
         datatype = utils.InputValidator.validate_datatype(ai_req.datatype)
 
+        # TLP enforcement: block if request TLP exceeds AI_MAX_TLP
+        _TLP_NAMES = {0: 'WHITE', 1: 'GREEN', 2: 'AMBER', 3: 'RED'}
+        _max_tlp = getattr(config_ai, 'AI_MAX_TLP', None)
+        if _max_tlp is not None:
+            _req_tlp = ai_req.tlp if ai_req.tlp is not None else config.DEFAULT_TLP
+            if not (0 <= _req_tlp <= 3):
+                _req_tlp = config.DEFAULT_TLP
+            if _req_tlp > _max_tlp:
+                logger.warning(
+                    "AI assessment blocked: TLP:%s exceeds AI_MAX_TLP:%s (observable=%s)",
+                    _TLP_NAMES.get(_req_tlp, _req_tlp),
+                    _TLP_NAMES.get(_max_tlp, _max_tlp),
+                    observable,
+                )
+                return jsonify({
+                    "error": "tlp_blocked",
+                    "message": (
+                        f"AI Assessment non consentito: il TLP dell'analisi è "
+                        f"TLP:{_TLP_NAMES.get(_req_tlp, _req_tlp)}, "
+                        f"ma la configurazione permette solo fino a "
+                        f"TLP:{_TLP_NAMES.get(_max_tlp, _max_tlp)}."
+                    ),
+                    "request_tlp": _req_tlp,
+                    "max_tlp": _max_tlp,
+                }), 403
+
+        # PAP enforcement: block if request PAP exceeds AI_MAX_PAP
+        _max_pap = getattr(config_ai, 'AI_MAX_PAP', None)
+        if _max_pap is not None:
+            _req_pap = ai_req.pap if ai_req.pap is not None else config.DEFAULT_PAP
+            if not (0 <= _req_pap <= 3):
+                _req_pap = config.DEFAULT_PAP
+            if _req_pap > _max_pap:
+                logger.warning(
+                    "AI assessment blocked: PAP:%s exceeds AI_MAX_PAP:%s (observable=%s)",
+                    _TLP_NAMES.get(_req_pap, _req_pap),
+                    _TLP_NAMES.get(_max_pap, _max_pap),
+                    observable,
+                )
+                return jsonify({
+                    "error": "pap_blocked",
+                    "message": (
+                        f"AI Assessment non consentito: il PAP dell'analisi è "
+                        f"PAP:{_TLP_NAMES.get(_req_pap, _req_pap)}, "
+                        f"ma la configurazione permette solo fino a "
+                        f"PAP:{_TLP_NAMES.get(_max_pap, _max_pap)}."
+                    ),
+                    "request_pap": _req_pap,
+                    "max_pap": _max_pap,
+                }), 403
+
         jobs = [str(job_id).strip() for job_id in ai_req.jobs if str(job_id).strip()]
         if not jobs:
             return error_response("No valid job ids provided", 400)
@@ -933,6 +986,57 @@ def api_ai_cache_assessment():
 
         observable = utils.InputValidator.sanitize_observable(ai_req.observable)
         datatype = utils.InputValidator.validate_datatype(ai_req.datatype)
+
+        # TLP enforcement: block if request TLP exceeds AI_MAX_TLP
+        _TLP_NAMES = {0: 'WHITE', 1: 'GREEN', 2: 'AMBER', 3: 'RED'}
+        _max_tlp = getattr(config_ai, 'AI_MAX_TLP', None)
+        if _max_tlp is not None:
+            _req_tlp = ai_req.tlp if ai_req.tlp is not None else config.DEFAULT_TLP
+            if not (0 <= _req_tlp <= 3):
+                _req_tlp = config.DEFAULT_TLP
+            if _req_tlp > _max_tlp:
+                logger.warning(
+                    "AI cache-assessment blocked: TLP:%s exceeds AI_MAX_TLP:%s (observable=%s)",
+                    _TLP_NAMES.get(_req_tlp, _req_tlp),
+                    _TLP_NAMES.get(_max_tlp, _max_tlp),
+                    observable,
+                )
+                return jsonify({
+                    "error": "tlp_blocked",
+                    "message": (
+                        f"AI Assessment non consentito: il TLP dell'analisi \u00e8 "
+                        f"TLP:{_TLP_NAMES.get(_req_tlp, _req_tlp)}, "
+                        f"ma la configurazione permette solo fino a "
+                        f"TLP:{_TLP_NAMES.get(_max_tlp, _max_tlp)}."
+                    ),
+                    "request_tlp": _req_tlp,
+                    "max_tlp": _max_tlp,
+                }), 403
+
+        # PAP enforcement: block if request PAP exceeds AI_MAX_PAP
+        _max_pap = getattr(config_ai, 'AI_MAX_PAP', None)
+        if _max_pap is not None:
+            _req_pap = ai_req.pap if ai_req.pap is not None else config.DEFAULT_PAP
+            if not (0 <= _req_pap <= 3):
+                _req_pap = config.DEFAULT_PAP
+            if _req_pap > _max_pap:
+                logger.warning(
+                    "AI cache-assessment blocked: PAP:%s exceeds AI_MAX_PAP:%s (observable=%s)",
+                    _TLP_NAMES.get(_req_pap, _req_pap),
+                    _TLP_NAMES.get(_max_pap, _max_pap),
+                    observable,
+                )
+                return jsonify({
+                    "error": "pap_blocked",
+                    "message": (
+                        f"AI Assessment non consentito: il PAP dell'analisi è "
+                        f"PAP:{_TLP_NAMES.get(_req_pap, _req_pap)}, "
+                        f"ma la configurazione permette solo fino a "
+                        f"PAP:{_TLP_NAMES.get(_max_pap, _max_pap)}."
+                    ),
+                    "request_pap": _req_pap,
+                    "max_pap": _max_pap,
+                }), 403
 
         jobs = [str(job_id).strip() for job_id in ai_req.jobs if str(job_id).strip()]
         if not jobs:
@@ -1166,11 +1270,37 @@ def all_reports():
                 except Exception:
                     resolved_datatype = datatype
 
+        # Calcola il TLP massimo (worst-case) tra tutti i job trovati
+        max_tlp = config.DEFAULT_TLP
+        for job in jobs:
+            job_tlp = getattr(job, 'tlp', None)
+            if job_tlp is not None:
+                try:
+                    job_tlp = int(job_tlp)
+                    if 0 <= job_tlp <= 3 and job_tlp > max_tlp:
+                        max_tlp = job_tlp
+                except (ValueError, TypeError):
+                    pass
+
+        # Calcola il PAP massimo (worst-case) tra tutti i job trovati
+        max_pap = config.DEFAULT_PAP
+        for job in jobs:
+            job_pap = getattr(job, 'pap', None)
+            if job_pap is not None:
+                try:
+                    job_pap = int(job_pap)
+                    if 0 <= job_pap <= 3 and job_pap > max_pap:
+                        max_pap = job_pap
+                except (ValueError, TypeError):
+                    pass
+
         # Prepare data structure for the template
         result = {
             'fuco': {
                 'question': observable,
-                'datatype': resolved_datatype
+                'datatype': resolved_datatype,
+                'tlp': max_tlp,
+                'pap': max_pap
             },
             'jobs': []
         }

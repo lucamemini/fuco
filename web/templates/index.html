@@ -757,11 +757,11 @@
                 <span class="tlp-pap-tooltip">Traffic Light Protocol</span>
               </span>
             </span>
-            <input type="hidden" name="tlp" id="tlp-input" value="2">
-            <span class="tlp-pap-badge tlp-white" data-type="tlp" onclick="selectTLP(0, this)">White</span>
-            <span class="tlp-pap-badge tlp-green active" data-type="tlp" onclick="selectTLP(1, this)">Green</span>
-            <span class="tlp-pap-badge tlp-amber" data-type="tlp" onclick="selectTLP(2, this)">Amber</span>
-            <span class="tlp-pap-badge tlp-red" data-type="tlp" onclick="selectTLP(3, this)">Red</span>
+            <input type="hidden" name="tlp" id="tlp-input" value="{{ config.get('DEFAULT_TLP', 1) }}">
+            <span class="tlp-pap-badge tlp-white{% if config.get('DEFAULT_TLP', 1) == 0 %} active{% endif %}" data-type="tlp" onclick="selectTLP(0, this)">White</span>
+            <span class="tlp-pap-badge tlp-green{% if config.get('DEFAULT_TLP', 1) == 1 %} active{% endif %}" data-type="tlp" onclick="selectTLP(1, this)">Green</span>
+            <span class="tlp-pap-badge tlp-amber{% if config.get('DEFAULT_TLP', 1) == 2 %} active{% endif %}" data-type="tlp" onclick="selectTLP(2, this)">Amber</span>
+            <span class="tlp-pap-badge tlp-red{% if config.get('DEFAULT_TLP', 1) == 3 %} active{% endif %}" data-type="tlp" onclick="selectTLP(3, this)">Red</span>
           </div>
           
           <div class="tlp-pap-group">
@@ -772,11 +772,11 @@
                 <span class="tlp-pap-tooltip">Permissible Actions Protocol</span>
               </span>
             </span>
-            <input type="hidden" name="pap" id="pap-input" value="2">
-            <span class="tlp-pap-badge pap-white" data-type="pap" onclick="selectPAP(0, this)">White</span>
-            <span class="tlp-pap-badge pap-green active" data-type="pap" onclick="selectPAP(1, this)">Green</span>
-            <span class="tlp-pap-badge pap-amber" data-type="pap" onclick="selectPAP(2, this)">Amber</span>
-            <span class="tlp-pap-badge pap-red" data-type="pap" onclick="selectPAP(3, this)">Red</span>
+            <input type="hidden" name="pap" id="pap-input" value="{{ config.get('DEFAULT_PAP', 1) }}">
+            <span class="tlp-pap-badge pap-white{% if config.get('DEFAULT_PAP', 1) == 0 %} active{% endif %}" data-type="pap" onclick="selectPAP(0, this)">White</span>
+            <span class="tlp-pap-badge pap-green{% if config.get('DEFAULT_PAP', 1) == 1 %} active{% endif %}" data-type="pap" onclick="selectPAP(1, this)">Green</span>
+            <span class="tlp-pap-badge pap-amber{% if config.get('DEFAULT_PAP', 1) == 2 %} active{% endif %}" data-type="pap" onclick="selectPAP(2, this)">Amber</span>
+            <span class="tlp-pap-badge pap-red{% if config.get('DEFAULT_PAP', 1) == 3 %} active{% endif %}" data-type="pap" onclick="selectPAP(3, this)">Red</span>
           </div>
           
           <!-- Select All Analyzers - ON ONE LINE -->

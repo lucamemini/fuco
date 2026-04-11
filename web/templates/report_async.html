@@ -136,6 +136,26 @@ body {
     display: flex;
     gap: 12px;
     align-items: center;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.report-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.report-title-wrap {
+    flex: 1 1 420px;
+    min-width: 0;
+}
+
+.report-title {
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 
 .action-btn-header {
@@ -175,6 +195,22 @@ body {
     background: #bb2d3b;
     color: white;
 }
+
+.tlp-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    vertical-align: middle;
+    margin-left: 8px;
+}
+.tlp-badge-white { background-color: #e0e0e0; color: #333; border: 1px solid #bbb; }
+.tlp-badge-green  { background-color: #28a745; color: #fff; }
+.tlp-badge-amber  { background-color: #fd7e14; color: #fff; }
+.tlp-badge-red    { background-color: #dc3545; color: #fff; }
 </style>
 
     <link href="/css/sticky-footer-navbar.css" rel="stylesheet">
@@ -237,10 +273,24 @@ body {
 
 <main class="flex-shrink-0">
   <div class="container">
-<div class="d-flex justify-content-between align-items-center mb-3">
-  <div>
-    <h1 class="mt-5 mb-0">{{ data.fuco.question }}</h1>
-    <small class="text-muted">({{ data.fuco.datatype }})</small>
+<div class="report-header mb-3">
+  <div class="report-title-wrap">
+    <h1 class="mt-5 mb-0 report-title">{{ data.fuco.question }}</h1>
+    <div>
+      {% set _tlp = data.fuco.tlp if data.fuco.tlp is defined else config.DEFAULT_TLP %}
+      {% set _pap = data.fuco.pap if data.fuco.pap is defined else config.DEFAULT_PAP %}
+      <small class="text-muted">({{ data.fuco.datatype }})</small>
+      {% if _tlp == 0 %}<span class="tlp-badge tlp-badge-white">TLP:WHITE</span>
+      {% elif _tlp == 1 %}<span class="tlp-badge tlp-badge-green">TLP:GREEN</span>
+      {% elif _tlp == 2 %}<span class="tlp-badge tlp-badge-amber">TLP:AMBER</span>
+      {% elif _tlp == 3 %}<span class="tlp-badge tlp-badge-red">TLP:RED</span>
+      {% endif %}
+      {% if _pap == 0 %}<span class="tlp-badge tlp-badge-white">PAP:WHITE</span>
+      {% elif _pap == 1 %}<span class="tlp-badge tlp-badge-green">PAP:GREEN</span>
+      {% elif _pap == 2 %}<span class="tlp-badge tlp-badge-amber">PAP:AMBER</span>
+      {% elif _pap == 3 %}<span class="tlp-badge tlp-badge-red">PAP:RED</span>
+      {% endif %}
+    </div>
   </div>
   <div class="action-buttons-header">
     <button id="export-pdf-btn" class="action-btn-header btn-export" onclick="exportToPDF()" disabled>
@@ -650,6 +700,8 @@ async function runAiAnalysis(forceRefresh = false) {
             observable: observable,
             datatype: datatype,
             jobs: jobs,
+            tlp: tlp,
+            pap: pap,
             force_refresh: forceRefresh
           })
         });
@@ -662,6 +714,22 @@ async function runAiAnalysis(forceRefresh = false) {
               'Analisi IA non disponibile: job non completati',
               'warning',
               `${msg409} Attendi il completamento dei report e poi riprova.`
+            );
+            return;
+          }
+          if (response.status === 403 && result.error === 'tlp_blocked') {
+            renderAiStatus(
+              '🔒 Analisi IA bloccata per policy TLP',
+              'warning',
+              result.message || 'AI Assessment non consentito per il TLP di questa analisi.'
+            );
+            return;
+          }
+          if (response.status === 403 && result.error === 'pap_blocked') {
+            renderAiStatus(
+              '🔒 Analisi IA bloccata per policy PAP',
+              'warning',
+              result.message || 'AI Assessment non consentito per il PAP di questa analisi.'
             );
             return;
           }

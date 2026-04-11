@@ -51,6 +51,16 @@ AI_CACHE_TTL_MINUTES = 240
 # Optional data protection toggles
 AI_REDACTION_ENABLED = False
 
+# TLP massimo consentito per l'invio dati all'AI provider (esterno)
+# 0=WHITE, 1=GREEN, 2=AMBER, 3=RED, None=nessun limite
+# Es: AI_MAX_TLP = 2 blocca TLP:RED, consente fino a TLP:AMBER
+AI_MAX_TLP = 2
+
+# PAP massimo consentito per l'invio dati all'AI provider (esterno)
+# 0=WHITE, 1=GREEN, 2=AMBER, 3=RED, None=nessun limite
+# Es: AI_MAX_PAP = 2 blocca PAP:RED, consente fino a PAP:AMBER
+AI_MAX_PAP = 2
+
 # Gemini endpoint template
 AI_GEMINI_ENDPOINT_TEMPLATE = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 
