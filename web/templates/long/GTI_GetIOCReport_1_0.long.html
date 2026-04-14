@@ -163,11 +163,6 @@
               <dd>{{ ga.threat_score.value }}</dd>
               {% endif %}
 
-              {% if ga.description is defined and ga.description %}
-              <dt>Description</dt>
-              <dd class="wrap">{{ ga.description }}</dd>
-              {% endif %}
-
               {% if cf.gti_confidence_score is defined %}
               <dt>GTI Confidence</dt>
               <dd>{{ cf.gti_confidence_score }}</dd>
@@ -188,39 +183,12 @@
           </div>
         {% endif %}
 
-        {% if taxonomies | length > 0 %}
+        {% if attrs.gti_assessment is defined and attrs.gti_assessment and attrs.gti_assessment.description is defined and attrs.gti_assessment.description %}
           <div class="col-12 col-xl-6">
         <div class="panel panel-info">
-          <div class="panel-heading"><strong>Taxonomies</strong></div>
+          <div class="panel-heading"><strong>Description</strong></div>
           <div class="panel-body">
-            <table class="table table-sm table-hover">
-              <thead>
-                <tr>
-                  <th>Namespace</th>
-                  <th>Predicate</th>
-                  <th>Value</th>
-                  <th>Level</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for item in taxonomies %}
-                <tr>
-                  <td>{{ item.namespace | default('-') }}</td>
-                  <td>{{ item.predicate | default('-') }}</td>
-                  <td>{{ item.value | default('-') }}</td>
-                  <td>
-                    {% if item.level == 'malicious' %}
-                    <span class="badge bg-danger">{{ item.level }}</span>
-                    {% elif item.level == 'suspicious' %}
-                    <span class="badge bg-warning text-dark">{{ item.level }}</span>
-                    {% else %}
-                    <span class="badge bg-secondary">{{ item.level | default('-') }}</span>
-                    {% endif %}
-                  </td>
-                </tr>
-                {% endfor %}
-              </tbody>
-            </table>
+            <div class="wrap">{{ attrs.gti_assessment.description }}</div>
           </div>
         </div>
           </div>
@@ -338,6 +306,24 @@
       </div>
 
       <div class="tab-pane fade" id="relationships_{{ artifact.id }}" role="tabpanel" aria-labelledby="relationships-tab_{{ artifact.id }}">
+        <style>
+          #relationships_{{ artifact.id }} .table-responsive {
+            overflow-x: auto;
+          }
+
+          #relationships_{{ artifact.id }} table {
+            table-layout: fixed;
+            width: 100%;
+          }
+
+          #relationships_{{ artifact.id }} th,
+          #relationships_{{ artifact.id }} td {
+            overflow-wrap: anywhere;
+            word-break: break-word;
+            white-space: normal;
+            vertical-align: top;
+          }
+        </style>
         {% set rel_reports = rel.reports if rel.reports is defined and rel.reports else [] %}
         {% set rel_collections = rel.collections if rel.collections is defined and rel.collections else [] %}
         {% set rel_campaigns = rel.campaigns if rel.campaigns is defined and rel.campaigns else [] %}
@@ -355,6 +341,7 @@
         <div class="panel panel-info">
           <div class="panel-heading"><strong>Reports ({{ rel_reports | length }})</strong></div>
           <div class="panel-body">
+            <div class="table-responsive">
             <table class="table table-sm table-bordered table-hover">
               <thead>
                 <tr>
@@ -373,6 +360,7 @@
                 {% endfor %}
               </tbody>
             </table>
+            </div>
           </div>
         </div>
         </div>
@@ -383,6 +371,7 @@
         <div class="panel panel-info">
           <div class="panel-heading"><strong>Collections ({{ rel_collections | length }})</strong></div>
           <div class="panel-body">
+            <div class="table-responsive">
             <table class="table table-sm table-bordered table-hover">
               <thead>
                 <tr>
@@ -401,6 +390,7 @@
                 {% endfor %}
               </tbody>
             </table>
+            </div>
           </div>
         </div>
         </div>
@@ -411,6 +401,7 @@
         <div class="panel panel-info">
           <div class="panel-heading"><strong>Campaigns ({{ rel_campaigns | length }})</strong></div>
           <div class="panel-body">
+            <div class="table-responsive">
             <table class="table table-sm table-bordered table-hover">
               <thead>
                 <tr>
@@ -429,6 +420,7 @@
                 {% endfor %}
               </tbody>
             </table>
+            </div>
           </div>
         </div>
         </div>
@@ -439,6 +431,7 @@
         <div class="panel panel-info">
           <div class="panel-heading"><strong>Malware Families ({{ rel_malware | length }})</strong></div>
           <div class="panel-body">
+            <div class="table-responsive">
             <table class="table table-sm table-bordered table-hover">
               <thead>
                 <tr>
@@ -457,6 +450,7 @@
                 {% endfor %}
               </tbody>
             </table>
+            </div>
           </div>
         </div>
         </div>
@@ -467,6 +461,7 @@
         <div class="panel panel-info">
           <div class="panel-heading"><strong>Threat Actors ({{ rel_actors | length }})</strong></div>
           <div class="panel-body">
+            <div class="table-responsive">
             <table class="table table-sm table-bordered table-hover">
               <thead>
                 <tr>
@@ -485,6 +480,7 @@
                 {% endfor %}
               </tbody>
             </table>
+            </div>
           </div>
         </div>
         </div>
@@ -495,6 +491,7 @@
         <div class="panel panel-info">
           <div class="panel-heading"><strong>Comments ({{ rel_comments | length }})</strong></div>
           <div class="panel-body">
+            <div class="table-responsive">
             <table class="table table-sm table-bordered table-hover">
               <thead>
                 <tr>
@@ -519,6 +516,7 @@
                 {% endfor %}
               </tbody>
             </table>
+            </div>
           </div>
         </div>
         </div>
@@ -529,6 +527,7 @@
         <div class="panel panel-info">
           <div class="panel-heading"><strong>Behaviours ({{ rel_behaviours | length }})</strong></div>
           <div class="panel-body">
+            <div class="table-responsive">
             <table class="table table-sm table-bordered table-hover">
               <thead>
                 <tr>
@@ -553,6 +552,7 @@
                 {% endfor %}
               </tbody>
             </table>
+            </div>
           </div>
         </div>
         </div>

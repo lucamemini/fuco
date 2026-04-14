@@ -1,5 +1,5 @@
+{% if artifact.status == "Success" %}
 {% set report = artifact.report if artifact.report is defined and artifact.report else {} %}
-{% set success = artifact.status == "Success" %}
 {% set content = report.full if report.full is defined and report.full is mapping else {} %}
 
 {% set entries = [] %}
@@ -25,73 +25,101 @@
 
 {% set count = content.count if content.count is defined else (entries|length) %}
 
-{% if success %}
-    {% if entries|length > 0 %}
-    <div class="panel panel-info">
-        <div class="panel-heading">
-            <strong>FireHOL IP Report</strong>
-            <span class="text-muted">(https://github.com/firehol/blocklist-ipsets)</span>
-        </div>
-        <div class="panel-body">
-            <dl class="dl-horizontal">
-                <dt>Number of matching lists</dt>
-                <dd>{{ count }}</dd>
-            </dl>
+<div class="card border-success">
+    <div class="card-header">
+        <ul class="nav nav-tabs card-header-tabs">
+            <li class="nav-item">
+                <a class="nav-link active" id="result-tab_{{ artifact.id }}" data-bs-toggle="tab" data-bs-target="#result_{{ artifact.id }}" role="tab" aria-controls="result_{{ artifact.id }}" aria-selected="true">Result</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="json-tab_{{ artifact.id }}" data-bs-toggle="tab" data-bs-target="#json_{{ artifact.id }}" role="tab" aria-controls="json_{{ artifact.id }}" aria-selected="false">Json</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link disabled">Ext. Analisys
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-link-45deg" viewBox="0 0 16 16">
+                        <path d="M4.715 6.542 3.343 7.914a3 3 0 1 0 4.243 4.243l1.828-1.829A3 3 0 0 0 8.586 5.5L8 6.086a1.002 1.002 0 0 0-.154.199 2 2 0 0 1 .861 3.337L6.88 11.45a2 2 0 1 1-2.83-2.83l.793-.792a4.018 4.018 0 0 1-.128-1.287z"/>
+                        <path d="M6.586 4.672A3 3 0 0 0 7.414 9.5l.775-.776a2 2 0 0 1-.896-3.346L9.12 3.55a2 2 0 1 1 2.83 2.83l-.793.792c.112.42.155.855.128 1.287l1.372-1.372a3 3 0 1 0-4.243-4.243L6.586 4.672z"/>
+                    </svg>
+                </a>
+            </li>
+        </ul>
+    </div>
 
-            <table class="table table-striped table-hover">
-                <thead>
-                    <tr>
-                        <th>List Name</th>
-                        <th>Last Updated</th>
-                        <th>Reference</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for h in entries %}
-                    {% set list_name = h.list if h.list is defined else (h.name if h.name is defined else '-') %}
-                    <tr>
-                        <td>{{ list_name }}</td>
-                        <td>{{ h.file_date if h.file_date is defined else (h.updated if h.updated is defined else '-') }}</td>
-                        <td>
-                            {% if list_name != '-' %}
-                            <a target="_blank" rel="noopener" href="https://iplists.firehol.org/?ipset={{ list_name }}">https://iplists.firehol.org/?ipset={{ list_name }}</a>
-                            {% else %}
-                            -
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+    <div class="card-body">
+        <div class="tab-content" id="fireholTabContent_{{ artifact.id }}">
+            <div class="tab-pane fade show active" id="result_{{ artifact.id }}" role="tabpanel" aria-labelledby="result-tab_{{ artifact.id }}">
+
+                <div class="panel panel-info">
+                    <div class="panel-heading">
+                        <strong>FireHOL IP Report</strong>
+                        <span class="text-muted">(https://github.com/firehol/blocklist-ipsets)</span>
+                    </div>
+                    <div class="panel-body">
+                        <dl class="dl-horizontal">
+                            <dt>Observable</dt>
+                            <dd><code>{{ artifact.data | default('-') }}</code></dd>
+                            <dt>Number of matching lists</dt>
+                            <dd>{{ count }}</dd>
+                        </dl>
+
+                        {% if entries|length > 0 %}
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>List Name</th>
+                                        <th>Last Updated</th>
+                                        <th>Reference</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for h in entries %}
+                                    {% set list_name = h.list if h.list is defined else (h.name if h.name is defined else '-') %}
+                                    <tr>
+                                        <td>{{ list_name }}</td>
+                                        <td>{{ h.file_date if h.file_date is defined else (h.updated if h.updated is defined else '-') }}</td>
+                                        <td>
+                                            {% if list_name != '-' %}
+                                            <a target="_blank" rel="noopener" href="https://iplists.firehol.org/?ipset={{ list_name }}">https://iplists.firehol.org/?ipset={{ list_name }}</a>
+                                            {% else %}
+                                            -
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="alert alert-success mb-0">
+                            <strong>No match found</strong> for <code>{{ artifact.data | default('-') }}</code> in FireHOL blocklists.
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-pane fade" id="json_{{ artifact.id }}" role="tabpanel" aria-labelledby="json-tab_{{ artifact.id }}">
+                <pre><code>{{ artifact.report | tojson(indent=2) }}</code></pre>
+            </div>
         </div>
     </div>
-    {% else %}
-    <div class="panel panel-success">
-        <div class="panel-heading">
-            <strong>FireHOL IP Report</strong>
-            <span class="text-muted">(https://github.com/firehol/blocklist-ipsets)</span>: <b>No match found</b>
-        </div>
-    </div>
-    {% endif %}
+</div>
+
 {% else %}
-<div class="panel panel-danger">
-    <div class="panel-heading">
-        <strong>FireHOL IP Report</strong>
-        <span class="text-muted">(https://github.com/firehol/blocklist-ipsets)</span> <b>Error</b>
+<div class="card border-danger">
+    <div class="card-header alert alert-danger">
+        <strong>Error</strong>
     </div>
-    <div class="panel-body">
-        <dl class="dl-horizontal">
-            <dt>Error</dt>
-            <dd>
-                {% if report.errorMessage is defined and report.errorMessage %}
-                    {{ report.errorMessage }}
-                {% elif artifact.errorMessage is defined and artifact.errorMessage %}
-                    {{ artifact.errorMessage }}
-                {% else %}
-                    Analyzer execution failed
-                {% endif %}
-            </dd>
-        </dl>
+    <div class="card-body">
+        <strong>{{ artifact.data | default('Unknown observable') }}</strong><br>
+        {% if artifact.report is defined and artifact.report and artifact.report.errorMessage is defined %}
+            {{ artifact.report.errorMessage }}
+        {% elif artifact.errorMessage is defined and artifact.errorMessage %}
+            {{ artifact.errorMessage }}
+        {% else %}
+            Analyzer execution failed
+        {% endif %}
     </div>
 </div>
 {% endif %}
