@@ -1,0 +1,583 @@
+{% if artifact.status == "Success" %}
+{% set report = artifact.report if artifact.report is defined and artifact.report else {} %}
+{% set success = report.success if report.success is defined else false %}
+{% set full = report.full if report.full is defined and report.full else {} %}
+{% set attrs = full.attributes if full.attributes is defined and full.attributes else {} %}
+{% set rel = full.relationships if full.relationships is defined and full.relationships else {} %}
+{% set summary = report.summary if report.summary is defined and report.summary else {} %}
+{% set taxonomies = summary.taxonomies if summary.taxonomies is defined and summary.taxonomies else [] %}
+{% set iocs = full.iocs if full.iocs is defined and full.iocs else {} %}
+{% set ioc_domains = iocs.domain if iocs.domain is defined and iocs.domain else [] %}
+{% set ioc_ips = iocs.ip if iocs.ip is defined and iocs.ip else [] %}
+{% set ioc_urls = iocs.url if iocs.url is defined and iocs.url else [] %}
+{% set ioc_hashes = iocs.hash if iocs.hash is defined and iocs.hash else [] %}
+
+<div class="card border-{% if success and full %}success{% else %}warning{% endif %}">
+  <div class="card-header">
+    <ul class="nav nav-tabs card-header-tabs">
+      <li class="nav-item">
+        <a class="nav-link active" id="summary-tab_{{ artifact.id }}" data-bs-toggle="tab" data-bs-target="#summary_{{ artifact.id }}" role="tab" aria-controls="summary_{{ artifact.id }}" aria-selected="true">Summary</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" id="scans-tab_{{ artifact.id }}" data-bs-toggle="tab" data-bs-target="#scans_{{ artifact.id }}" role="tab" aria-controls="scans_{{ artifact.id }}" aria-selected="false">Scans</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" id="relationships-tab_{{ artifact.id }}" data-bs-toggle="tab" data-bs-target="#relationships_{{ artifact.id }}" role="tab" aria-controls="relationships_{{ artifact.id }}" aria-selected="false">Relationships</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" id="json-tab_{{ artifact.id }}" data-bs-toggle="tab" data-bs-target="#json_{{ artifact.id }}" role="tab" aria-controls="json_{{ artifact.id }}" aria-selected="false">Json</a>
+      </li>
+    </ul>
+  </div>
+
+  <div class="card-body">
+    <div class="tab-content" id="gtiTabContent_{{ artifact.id }}">
+
+      <div class="tab-pane fade show active" id="summary_{{ artifact.id }}" role="tabpanel" aria-labelledby="summary-tab_{{ artifact.id }}">
+        {% if success and full %}
+
+        <div class="panel panel-info">
+          <div class="panel-heading"><strong>GTI Overview</strong></div>
+          <div class="panel-body">
+            <dl class="dl-horizontal">
+              <dt>Type</dt>
+              <dd>{{ full.type | default('-') }}</dd>
+
+              <dt>ID</dt>
+              <dd><code>{{ full.id | default('-') }}</code></dd>
+
+              {% if attrs.meaningful_name is defined and attrs.meaningful_name %}
+              <dt>Meaningful Name</dt>
+              <dd>{{ attrs.meaningful_name }}</dd>
+              {% endif %}
+
+              {% if attrs.type_description is defined and attrs.type_description %}
+              <dt>Type Description</dt>
+              <dd>{{ attrs.type_description }}</dd>
+              {% endif %}
+
+              {% if attrs.size is defined %}
+              <dt>Size</dt>
+              <dd>{{ attrs.size }} bytes</dd>
+              {% endif %}
+
+              {% if attrs.reputation is defined %}
+              <dt>Reputation</dt>
+              <dd>{{ attrs.reputation }}</dd>
+              {% endif %}
+
+              {% if attrs.times_submitted is defined %}
+              <dt>Times Submitted</dt>
+              <dd>{{ attrs.times_submitted }}</dd>
+              {% endif %}
+
+              {% if attrs.first_submission_date is defined and attrs.first_submission_date %}
+              <dt>First Submission</dt>
+              <dd>{{ attrs.first_submission_date | int | datetimeformat('%Y-%m-%d %H:%M:%S UTC') }}</dd>
+              {% endif %}
+
+              {% if attrs.last_submission_date is defined and attrs.last_submission_date %}
+              <dt>Last Submission</dt>
+              <dd>{{ attrs.last_submission_date | int | datetimeformat('%Y-%m-%d %H:%M:%S UTC') }}</dd>
+              {% endif %}
+
+              {% if attrs.last_analysis_date is defined and attrs.last_analysis_date %}
+              <dt>Last Analysis</dt>
+              <dd>{{ attrs.last_analysis_date | int | datetimeformat('%Y-%m-%d %H:%M:%S UTC') }}</dd>
+              {% endif %}
+            </dl>
+          </div>
+        </div>
+
+        {% set stats = attrs.last_analysis_stats if attrs.last_analysis_stats is defined and attrs.last_analysis_stats else {} %}
+        {% if stats %}
+        {% set malicious = stats.get('malicious', 0) %}
+        {% set suspicious = stats.get('suspicious', 0) %}
+        {% set harmless = stats.get('harmless', 0) %}
+        {% set undetected = stats.get('undetected', 0) %}
+        {% set unsupported = stats.get('type-unsupported', 0) %}
+        {% set failures = stats.get('failure', 0) + stats.get('timeout', 0) + stats.get('confirmed-timeout', 0) %}
+        {% set total = malicious + suspicious + harmless + undetected + unsupported + failures %}
+
+        <div class="panel panel-info">
+          <div class="panel-heading"><strong>Detection Summary</strong></div>
+          <div class="panel-body">
+            <dl class="dl-horizontal">
+              <dt>Malicious</dt>
+              <dd><span class="badge bg-danger">{{ malicious }}</span></dd>
+
+              <dt>Suspicious</dt>
+              <dd><span class="badge bg-warning text-dark">{{ suspicious }}</span></dd>
+
+              <dt>Harmless</dt>
+              <dd><span class="badge bg-success">{{ harmless }}</span></dd>
+
+              <dt>Undetected</dt>
+              <dd><span class="badge bg-secondary">{{ undetected }}</span></dd>
+
+              <dt>Unsupported/Failure</dt>
+              <dd>{{ unsupported + failures }}</dd>
+
+              <dt>Total Engines</dt>
+              <dd>{{ total }}</dd>
+            </dl>
+          </div>
+        </div>
+        {% endif %}
+
+        {% if attrs.gti_assessment is defined and attrs.gti_assessment %}
+        {% set ga = attrs.gti_assessment %}
+        {% set cf = ga.contributing_factors if ga.contributing_factors is defined and ga.contributing_factors else {} %}
+        <div class="panel panel-info">
+          <div class="panel-heading"><strong>GTI Assessment</strong></div>
+          <div class="panel-body">
+            <dl class="dl-horizontal">
+              {% if ga.verdict is defined and ga.verdict.value is defined %}
+              <dt>Verdict</dt>
+              <dd>
+                {% if ga.verdict.value == 'VERDICT_MALICIOUS' %}
+                <span class="badge bg-danger">{{ ga.verdict.value }}</span>
+                {% elif ga.verdict.value == 'VERDICT_BENIGN' %}
+                <span class="badge bg-success">{{ ga.verdict.value }}</span>
+                {% else %}
+                <span class="badge bg-warning text-dark">{{ ga.verdict.value }}</span>
+                {% endif %}
+              </dd>
+              {% endif %}
+
+              {% if ga.severity is defined and ga.severity.value is defined %}
+              <dt>Severity</dt>
+              <dd>{{ ga.severity.value }}</dd>
+              {% endif %}
+
+              {% if ga.threat_score is defined and ga.threat_score.value is defined %}
+              <dt>Threat Score</dt>
+              <dd>{{ ga.threat_score.value }}</dd>
+              {% endif %}
+
+              {% if ga.description is defined and ga.description %}
+              <dt>Description</dt>
+              <dd class="wrap">{{ ga.description }}</dd>
+              {% endif %}
+
+              {% if cf.gti_confidence_score is defined %}
+              <dt>GTI Confidence</dt>
+              <dd>{{ cf.gti_confidence_score }}</dd>
+              {% endif %}
+
+              {% if cf.mandiant_confidence_score is defined %}
+              <dt>Mandiant Confidence</dt>
+              <dd>{{ cf.mandiant_confidence_score }}</dd>
+              {% endif %}
+
+              {% if cf.normalised_categories is defined and cf.normalised_categories %}
+              <dt>Categories</dt>
+              <dd>{{ cf.normalised_categories | join(', ') }}</dd>
+              {% endif %}
+            </dl>
+          </div>
+        </div>
+        {% endif %}
+
+        {% if taxonomies | length > 0 %}
+        <div class="panel panel-info">
+          <div class="panel-heading"><strong>Taxonomies</strong></div>
+          <div class="panel-body">
+            <table class="table table-sm table-hover">
+              <thead>
+                <tr>
+                  <th>Namespace</th>
+                  <th>Predicate</th>
+                  <th>Value</th>
+                  <th>Level</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in taxonomies %}
+                <tr>
+                  <td>{{ item.namespace | default('-') }}</td>
+                  <td>{{ item.predicate | default('-') }}</td>
+                  <td>{{ item.value | default('-') }}</td>
+                  <td>
+                    {% if item.level == 'malicious' %}
+                    <span class="badge bg-danger">{{ item.level }}</span>
+                    {% elif item.level == 'suspicious' %}
+                    <span class="badge bg-warning text-dark">{{ item.level }}</span>
+                    {% else %}
+                    <span class="badge bg-secondary">{{ item.level | default('-') }}</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        {% endif %}
+
+        {% if ioc_domains or ioc_ips or ioc_urls or ioc_hashes %}
+        <div class="panel panel-info">
+          <div class="panel-heading"><strong>Extracted IOCs</strong></div>
+          <div class="panel-body">
+            <dl class="dl-horizontal">
+              <dt>Domains</dt>
+              <dd>{{ ioc_domains | length }}</dd>
+
+              <dt>IPs</dt>
+              <dd>{{ ioc_ips | length }}</dd>
+
+              <dt>URLs</dt>
+              <dd>{{ ioc_urls | length }}</dd>
+
+              <dt>Hashes</dt>
+              <dd>{{ ioc_hashes | length }}</dd>
+            </dl>
+          </div>
+        </div>
+        {% endif %}
+
+        {% if attrs.sha256 is defined and attrs.sha256 %}
+        <div class="panel panel-info">
+          <div class="panel-heading"><strong>Hashes</strong></div>
+          <div class="panel-body">
+            <dl class="dl-horizontal">
+              {% if attrs.md5 is defined and attrs.md5 %}
+              <dt>MD5</dt>
+              <dd><code>{{ attrs.md5 }}</code></dd>
+              {% endif %}
+
+              {% if attrs.sha1 is defined and attrs.sha1 %}
+              <dt>SHA1</dt>
+              <dd><code>{{ attrs.sha1 }}</code></dd>
+              {% endif %}
+
+              {% if attrs.sha256 is defined and attrs.sha256 %}
+              <dt>SHA256</dt>
+              <dd><code>{{ attrs.sha256 }}</code></dd>
+              {% endif %}
+
+              {% if attrs.ssdeep is defined and attrs.ssdeep %}
+              <dt>SSDEEP</dt>
+              <dd><code>{{ attrs.ssdeep }}</code></dd>
+              {% endif %}
+            </dl>
+          </div>
+        </div>
+        {% endif %}
+
+        {% else %}
+        <div class="alert alert-warning">
+          <strong>No GTI data available</strong><br>
+          The analyzer completed but did not return a valid full report structure.
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="tab-pane fade" id="scans_{{ artifact.id }}" role="tabpanel" aria-labelledby="scans-tab_{{ artifact.id }}">
+        {% set analysis_results = attrs.last_analysis_results if attrs.last_analysis_results is defined and attrs.last_analysis_results else {} %}
+        {% if analysis_results %}
+        <div class="panel panel-info">
+          <div class="panel-heading"><strong>Engine Results ({{ analysis_results | length }})</strong></div>
+          <div class="panel-body">
+            <table class="table table-sm table-hover table-bordered">
+              <thead>
+                <tr>
+                  <th>Engine</th>
+                  <th>Category</th>
+                  <th>Result</th>
+                  <th>Method</th>
+                  <th>Version</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for engine_name, result in analysis_results | dictsort %}
+                <tr>
+                  <td>{{ result.engine_name | default(engine_name) }}</td>
+                  <td>
+                    {% if result.category == 'malicious' %}
+                    <span class="badge bg-danger">{{ result.category }}</span>
+                    {% elif result.category == 'suspicious' %}
+                    <span class="badge bg-warning text-dark">{{ result.category }}</span>
+                    {% elif result.category == 'undetected' %}
+                    <span class="badge bg-secondary">{{ result.category }}</span>
+                    {% elif result.category == 'harmless' %}
+                    <span class="badge bg-success">{{ result.category }}</span>
+                    {% else %}
+                    <span class="badge bg-info text-dark">{{ result.category | default('-') }}</span>
+                    {% endif %}
+                  </td>
+                  <td class="wrap">{{ result.result | default('-') }}</td>
+                  <td>{{ result.method | default('-') }}</td>
+                  <td>{{ result.engine_version | default('-') }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        {% else %}
+        <div class="alert alert-info">No scan engine details available.</div>
+        {% endif %}
+      </div>
+
+      <div class="tab-pane fade" id="relationships_{{ artifact.id }}" role="tabpanel" aria-labelledby="relationships-tab_{{ artifact.id }}">
+        {% set rel_reports = rel.reports if rel.reports is defined and rel.reports else [] %}
+        {% set rel_collections = rel.collections if rel.collections is defined and rel.collections else [] %}
+        {% set rel_campaigns = rel.campaigns if rel.campaigns is defined and rel.campaigns else [] %}
+        {% set rel_malware = rel.malware_families if rel.malware_families is defined and rel.malware_families else [] %}
+        {% set rel_actors = rel.related_threat_actors if rel.related_threat_actors is defined and rel.related_threat_actors else [] %}
+        {% set rel_comments = rel.comments if rel.comments is defined and rel.comments else [] %}
+        {% set rel_behaviours = rel.behaviours if rel.behaviours is defined and rel.behaviours else [] %}
+
+        {% if rel_reports or rel_collections or rel_campaigns or rel_malware or rel_actors or rel_comments or rel_behaviours %}
+
+        {% if rel_reports %}
+        <div class="panel panel-info">
+          <div class="panel-heading"><strong>Reports ({{ rel_reports | length }})</strong></div>
+          <div class="panel-body">
+            <table class="table table-sm table-bordered table-hover">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Name</th>
+                  <th>Origin</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in rel_reports[:10] %}
+                <tr>
+                  <td><code>{{ item.id | default('-') }}</code></td>
+                  <td>{{ item.attributes.name | default('-') if item.attributes is defined else '-' }}</td>
+                  <td>{{ item.attributes.origin | default('-') if item.attributes is defined else '-' }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        {% endif %}
+
+        {% if rel_collections %}
+        <div class="panel panel-info">
+          <div class="panel-heading"><strong>Collections ({{ rel_collections | length }})</strong></div>
+          <div class="panel-body">
+            <table class="table table-sm table-bordered table-hover">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Name</th>
+                  <th>Origin</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in rel_collections[:10] %}
+                <tr>
+                  <td><code>{{ item.id | default('-') }}</code></td>
+                  <td>{{ item.attributes.name | default('-') if item.attributes is defined else '-' }}</td>
+                  <td>{{ item.attributes.origin | default('-') if item.attributes is defined else '-' }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        {% endif %}
+
+        {% if rel_campaigns %}
+        <div class="panel panel-info">
+          <div class="panel-heading"><strong>Campaigns ({{ rel_campaigns | length }})</strong></div>
+          <div class="panel-body">
+            <table class="table table-sm table-bordered table-hover">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Name</th>
+                  <th>Origin</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in rel_campaigns[:10] %}
+                <tr>
+                  <td><code>{{ item.id | default('-') }}</code></td>
+                  <td>{{ item.attributes.name | default('-') if item.attributes is defined else '-' }}</td>
+                  <td>{{ item.attributes.origin | default('-') if item.attributes is defined else '-' }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        {% endif %}
+
+        {% if rel_malware %}
+        <div class="panel panel-info">
+          <div class="panel-heading"><strong>Malware Families ({{ rel_malware | length }})</strong></div>
+          <div class="panel-body">
+            <table class="table table-sm table-bordered table-hover">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Name</th>
+                  <th>Origin</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in rel_malware[:10] %}
+                <tr>
+                  <td><code>{{ item.id | default('-') }}</code></td>
+                  <td>{{ item.attributes.name | default('-') if item.attributes is defined else '-' }}</td>
+                  <td>{{ item.attributes.origin | default('-') if item.attributes is defined else '-' }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        {% endif %}
+
+        {% if rel_actors %}
+        <div class="panel panel-info">
+          <div class="panel-heading"><strong>Threat Actors ({{ rel_actors | length }})</strong></div>
+          <div class="panel-body">
+            <table class="table table-sm table-bordered table-hover">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Name</th>
+                  <th>Origin</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in rel_actors[:10] %}
+                <tr>
+                  <td><code>{{ item.id | default('-') }}</code></td>
+                  <td>{{ item.attributes.name | default('-') if item.attributes is defined else '-' }}</td>
+                  <td>{{ item.attributes.origin | default('-') if item.attributes is defined else '-' }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        {% endif %}
+
+        {% if rel_comments %}
+        <div class="panel panel-info">
+          <div class="panel-heading"><strong>Comments ({{ rel_comments | length }})</strong></div>
+          <div class="panel-body">
+            <table class="table table-sm table-bordered table-hover">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Date</th>
+                  <th>Text</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in rel_comments[:10] %}
+                <tr>
+                  <td><code>{{ item.id | default('-') }}</code></td>
+                  <td>
+                    {% if item.attributes is defined and item.attributes.date is defined and item.attributes.date %}
+                    {{ item.attributes.date | int | datetimeformat('%Y-%m-%d %H:%M:%S UTC') }}
+                    {% else %}
+                    -
+                    {% endif %}
+                  </td>
+                  <td class="wrap">{{ item.attributes.text | default('-') if item.attributes is defined else '-' }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        {% endif %}
+
+        {% if rel_behaviours %}
+        <div class="panel panel-info">
+          <div class="panel-heading"><strong>Behaviours ({{ rel_behaviours | length }})</strong></div>
+          <div class="panel-body">
+            <table class="table table-sm table-bordered table-hover">
+              <thead>
+                <tr>
+                  <th>Sandbox</th>
+                  <th>Analysis Date</th>
+                  <th>Behaviour ID</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in rel_behaviours[:10] %}
+                <tr>
+                  <td>{{ item.attributes.sandbox_name | default('-') if item.attributes is defined else '-' }}</td>
+                  <td>
+                    {% if item.attributes is defined and item.attributes.analysis_date is defined and item.attributes.analysis_date %}
+                    {{ item.attributes.analysis_date | int | datetimeformat('%Y-%m-%d %H:%M:%S UTC') }}
+                    {% else %}
+                    -
+                    {% endif %}
+                  </td>
+                  <td><code>{{ item.id | default('-') }}</code></td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        {% endif %}
+
+        {% else %}
+        <div class="alert alert-info">No relationship data returned by GTI.</div>
+        {% endif %}
+
+        {% set mitre = full.mitre_attack_data if full.mitre_attack_data is defined and full.mitre_attack_data else [] %}
+        {% if mitre %}
+        <div class="panel panel-info">
+          <div class="panel-heading"><strong>MITRE ATT&CK ({{ mitre | length }})</strong></div>
+          <div class="panel-body">
+            <table class="table table-sm table-bordered table-hover">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Name</th>
+                  <th>Description</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in mitre[:10] %}
+                <tr>
+                  <td><code>{{ item.id | default('-') }}</code></td>
+                  <td>{{ item.name | default('-') }}</td>
+                  <td class="wrap">{{ item.description | default('-') }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="tab-pane fade" id="json_{{ artifact.id }}" role="tabpanel" aria-labelledby="json-tab_{{ artifact.id }}">
+        <pre><code>{{ report | tojson(indent=2) }}</code></pre>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% else %}
+<div class="card border-danger">
+  <div class="card-header alert alert-danger">
+    <strong>GTI Report Failed</strong>
+  </div>
+  <div class="card-body">
+    <strong>{{ artifact.data | default('Unknown observable') }}</strong><br>
+    {% if artifact.report is defined and artifact.report and artifact.report.errorMessage is defined %}
+    {{ artifact.report.errorMessage }}
+    {% elif artifact.errorMessage is defined %}
+    {{ artifact.errorMessage }}
+    {% else %}
+    Unknown error occurred
+    {% endif %}
+  </div>
+</div>
+{% endif %}
