@@ -305,19 +305,19 @@
         {% endif %}
       </div>
 
-      <div class="tab-pane fade" id="relationships_{{ artifact.id }}" role="tabpanel" aria-labelledby="relationships-tab_{{ artifact.id }}">
+      <div class="tab-pane fade gti-relationships" id="relationships_{{ artifact.id }}" role="tabpanel" aria-labelledby="relationships-tab_{{ artifact.id }}">
         <style>
-          #relationships_{{ artifact.id }} .table-responsive {
+          .gti-relationships .table-responsive {
             overflow-x: auto;
           }
 
-          #relationships_{{ artifact.id }} table {
+          .gti-relationships table {
             table-layout: fixed;
             width: 100%;
           }
 
-          #relationships_{{ artifact.id }} th,
-          #relationships_{{ artifact.id }} td {
+          .gti-relationships th,
+          .gti-relationships td {
             overflow-wrap: anywhere;
             word-break: break-word;
             white-space: normal;
