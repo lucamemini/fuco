@@ -305,25 +305,7 @@
         {% endif %}
       </div>
 
-      <div class="tab-pane fade gti-relationships" id="relationships_{{ artifact.id }}" role="tabpanel" aria-labelledby="relationships-tab_{{ artifact.id }}">
-        <style>
-          .gti-relationships .table-responsive {
-            overflow-x: auto;
-          }
-
-          .gti-relationships table {
-            table-layout: fixed;
-            width: 100%;
-          }
-
-          .gti-relationships th,
-          .gti-relationships td {
-            overflow-wrap: anywhere;
-            word-break: break-word;
-            white-space: normal;
-            vertical-align: top;
-          }
-        </style>
+      <div class="tab-pane fade" id="relationships_{{ artifact.id }}" role="tabpanel" aria-labelledby="relationships-tab_{{ artifact.id }}">
         {% set rel_reports = rel.reports if rel.reports is defined and rel.reports else [] %}
         {% set rel_collections = rel.collections if rel.collections is defined and rel.collections else [] %}
         {% set rel_campaigns = rel.campaigns if rel.campaigns is defined and rel.campaigns else [] %}
@@ -334,15 +316,12 @@
 
         {% if rel_reports or rel_collections or rel_campaigns or rel_malware or rel_actors or rel_comments or rel_behaviours %}
 
-        <div class="row">
-
         {% if rel_reports %}
-        <div class="col-12 col-xl-6">
         <div class="panel panel-info">
           <div class="panel-heading"><strong>Reports ({{ rel_reports | length }})</strong></div>
           <div class="panel-body">
             <div class="table-responsive">
-            <table class="table table-sm table-bordered table-hover">
+            <table class="table table-sm table-bordered table-hover" style="table-layout: fixed; width: 100%;">
               <thead>
                 <tr>
                   <th>ID</th>
@@ -353,9 +332,9 @@
               <tbody>
                 {% for item in rel_reports[:10] %}
                 <tr>
-                  <td><code>{{ item.id | default('-') }}</code></td>
-                  <td>{{ item.attributes.name | default('-') if item.attributes is defined else '-' }}</td>
-                  <td>{{ item.attributes.origin | default('-') if item.attributes is defined else '-' }}</td>
+                  <td style="overflow-wrap: anywhere; word-break: break-word; white-space: normal; vertical-align: top;"><code>{{ item.id | default('-') }}</code></td>
+                  <td style="overflow-wrap: anywhere; word-break: break-word; white-space: normal; vertical-align: top;">{{ item.attributes.name | default('-') if item.attributes is defined else '-' }}</td>
+                  <td style="overflow-wrap: anywhere; word-break: break-word; white-space: normal; vertical-align: top;">{{ item.attributes.origin | default('-') if item.attributes is defined else '-' }}</td>
                 </tr>
                 {% endfor %}
               </tbody>
@@ -363,16 +342,14 @@
             </div>
           </div>
         </div>
-        </div>
         {% endif %}
 
         {% if rel_collections %}
-        <div class="col-12 col-xl-6">
         <div class="panel panel-info">
           <div class="panel-heading"><strong>Collections ({{ rel_collections | length }})</strong></div>
           <div class="panel-body">
             <div class="table-responsive">
-            <table class="table table-sm table-bordered table-hover">
+            <table class="table table-sm table-bordered table-hover" style="table-layout: fixed; width: 100%;">
               <thead>
                 <tr>
                   <th>ID</th>
@@ -383,9 +360,9 @@
               <tbody>
                 {% for item in rel_collections[:10] %}
                 <tr>
-                  <td><code>{{ item.id | default('-') }}</code></td>
-                  <td>{{ item.attributes.name | default('-') if item.attributes is defined else '-' }}</td>
-                  <td>{{ item.attributes.origin | default('-') if item.attributes is defined else '-' }}</td>
+                  <td style="overflow-wrap: anywhere; word-break: break-word; white-space: normal; vertical-align: top;"><code>{{ item.id | default('-') }}</code></td>
+                  <td style="overflow-wrap: anywhere; word-break: break-word; white-space: normal; vertical-align: top;">{{ item.attributes.name | default('-') if item.attributes is defined else '-' }}</td>
+                  <td style="overflow-wrap: anywhere; word-break: break-word; white-space: normal; vertical-align: top;">{{ item.attributes.origin | default('-') if item.attributes is defined else '-' }}</td>
                 </tr>
                 {% endfor %}
               </tbody>
@@ -393,16 +370,14 @@
             </div>
           </div>
         </div>
-        </div>
         {% endif %}
 
         {% if rel_campaigns %}
-        <div class="col-12 col-xl-6">
         <div class="panel panel-info">
           <div class="panel-heading"><strong>Campaigns ({{ rel_campaigns | length }})</strong></div>
           <div class="panel-body">
             <div class="table-responsive">
-            <table class="table table-sm table-bordered table-hover">
+            <table class="table table-sm table-bordered table-hover" style="table-layout: fixed; width: 100%;">
               <thead>
                 <tr>
                   <th>ID</th>
@@ -413,9 +388,9 @@
               <tbody>
                 {% for item in rel_campaigns[:10] %}
                 <tr>
-                  <td><code>{{ item.id | default('-') }}</code></td>
-                  <td>{{ item.attributes.name | default('-') if item.attributes is defined else '-' }}</td>
-                  <td>{{ item.attributes.origin | default('-') if item.attributes is defined else '-' }}</td>
+                  <td style="overflow-wrap: anywhere; word-break: break-word; white-space: normal; vertical-align: top;"><code>{{ item.id | default('-') }}</code></td>
+                  <td style="overflow-wrap: anywhere; word-break: break-word; white-space: normal; vertical-align: top;">{{ item.attributes.name | default('-') if item.attributes is defined else '-' }}</td>
+                  <td style="overflow-wrap: anywhere; word-break: break-word; white-space: normal; vertical-align: top;">{{ item.attributes.origin | default('-') if item.attributes is defined else '-' }}</td>
                 </tr>
                 {% endfor %}
               </tbody>
@@ -423,16 +398,14 @@
             </div>
           </div>
         </div>
-        </div>
         {% endif %}
 
         {% if rel_malware %}
-        <div class="col-12 col-xl-6">
         <div class="panel panel-info">
           <div class="panel-heading"><strong>Malware Families ({{ rel_malware | length }})</strong></div>
           <div class="panel-body">
             <div class="table-responsive">
-            <table class="table table-sm table-bordered table-hover">
+            <table class="table table-sm table-bordered table-hover" style="table-layout: fixed; width: 100%;">
               <thead>
                 <tr>
                   <th>ID</th>
@@ -443,9 +416,9 @@
               <tbody>
                 {% for item in rel_malware[:10] %}
                 <tr>
-                  <td><code>{{ item.id | default('-') }}</code></td>
-                  <td>{{ item.attributes.name | default('-') if item.attributes is defined else '-' }}</td>
-                  <td>{{ item.attributes.origin | default('-') if item.attributes is defined else '-' }}</td>
+                  <td style="overflow-wrap: anywhere; word-break: break-word; white-space: normal; vertical-align: top;"><code>{{ item.id | default('-') }}</code></td>
+                  <td style="overflow-wrap: anywhere; word-break: break-word; white-space: normal; vertical-align: top;">{{ item.attributes.name | default('-') if item.attributes is defined else '-' }}</td>
+                  <td style="overflow-wrap: anywhere; word-break: break-word; white-space: normal; vertical-align: top;">{{ item.attributes.origin | default('-') if item.attributes is defined else '-' }}</td>
                 </tr>
                 {% endfor %}
               </tbody>
@@ -453,16 +426,14 @@
             </div>
           </div>
         </div>
-        </div>
         {% endif %}
 
         {% if rel_actors %}
-        <div class="col-12 col-xl-6">
         <div class="panel panel-info">
           <div class="panel-heading"><strong>Threat Actors ({{ rel_actors | length }})</strong></div>
           <div class="panel-body">
             <div class="table-responsive">
-            <table class="table table-sm table-bordered table-hover">
+            <table class="table table-sm table-bordered table-hover" style="table-layout: fixed; width: 100%;">
               <thead>
                 <tr>
                   <th>ID</th>
@@ -473,9 +444,9 @@
               <tbody>
                 {% for item in rel_actors[:10] %}
                 <tr>
-                  <td><code>{{ item.id | default('-') }}</code></td>
-                  <td>{{ item.attributes.name | default('-') if item.attributes is defined else '-' }}</td>
-                  <td>{{ item.attributes.origin | default('-') if item.attributes is defined else '-' }}</td>
+                  <td style="overflow-wrap: anywhere; word-break: break-word; white-space: normal; vertical-align: top;"><code>{{ item.id | default('-') }}</code></td>
+                  <td style="overflow-wrap: anywhere; word-break: break-word; white-space: normal; vertical-align: top;">{{ item.attributes.name | default('-') if item.attributes is defined else '-' }}</td>
+                  <td style="overflow-wrap: anywhere; word-break: break-word; white-space: normal; vertical-align: top;">{{ item.attributes.origin | default('-') if item.attributes is defined else '-' }}</td>
                 </tr>
                 {% endfor %}
               </tbody>
@@ -483,16 +454,14 @@
             </div>
           </div>
         </div>
-        </div>
         {% endif %}
 
         {% if rel_comments %}
-        <div class="col-12 col-xl-6">
         <div class="panel panel-info">
           <div class="panel-heading"><strong>Comments ({{ rel_comments | length }})</strong></div>
           <div class="panel-body">
             <div class="table-responsive">
-            <table class="table table-sm table-bordered table-hover">
+            <table class="table table-sm table-bordered table-hover" style="table-layout: fixed; width: 100%;">
               <thead>
                 <tr>
                   <th>ID</th>
@@ -503,15 +472,15 @@
               <tbody>
                 {% for item in rel_comments[:10] %}
                 <tr>
-                  <td><code>{{ item.id | default('-') }}</code></td>
-                  <td>
+                  <td style="overflow-wrap: anywhere; word-break: break-word; white-space: normal; vertical-align: top;"><code>{{ item.id | default('-') }}</code></td>
+                  <td style="overflow-wrap: anywhere; word-break: break-word; white-space: normal; vertical-align: top;">
                     {% if item.attributes is defined and item.attributes.date is defined and item.attributes.date %}
                     {{ item.attributes.date | int | datetimeformat('%Y-%m-%d %H:%M:%S UTC') }}
                     {% else %}
                     -
                     {% endif %}
                   </td>
-                  <td class="wrap">{{ item.attributes.text | default('-') if item.attributes is defined else '-' }}</td>
+                  <td class="wrap" style="overflow-wrap: anywhere; word-break: break-word; white-space: normal; vertical-align: top;">{{ item.attributes.text | default('-') if item.attributes is defined else '-' }}</td>
                 </tr>
                 {% endfor %}
               </tbody>
@@ -519,16 +488,14 @@
             </div>
           </div>
         </div>
-        </div>
         {% endif %}
 
         {% if rel_behaviours %}
-        <div class="col-12 col-xl-6">
         <div class="panel panel-info">
           <div class="panel-heading"><strong>Behaviours ({{ rel_behaviours | length }})</strong></div>
           <div class="panel-body">
             <div class="table-responsive">
-            <table class="table table-sm table-bordered table-hover">
+            <table class="table table-sm table-bordered table-hover" style="table-layout: fixed; width: 100%;">
               <thead>
                 <tr>
                   <th>Sandbox</th>
@@ -539,15 +506,15 @@
               <tbody>
                 {% for item in rel_behaviours[:10] %}
                 <tr>
-                  <td>{{ item.attributes.sandbox_name | default('-') if item.attributes is defined else '-' }}</td>
-                  <td>
+                  <td style="overflow-wrap: anywhere; word-break: break-word; white-space: normal; vertical-align: top;">{{ item.attributes.sandbox_name | default('-') if item.attributes is defined else '-' }}</td>
+                  <td style="overflow-wrap: anywhere; word-break: break-word; white-space: normal; vertical-align: top;">
                     {% if item.attributes is defined and item.attributes.analysis_date is defined and item.attributes.analysis_date %}
                     {{ item.attributes.analysis_date | int | datetimeformat('%Y-%m-%d %H:%M:%S UTC') }}
                     {% else %}
                     -
                     {% endif %}
                   </td>
-                  <td><code>{{ item.id | default('-') }}</code></td>
+                  <td style="overflow-wrap: anywhere; word-break: break-word; white-space: normal; vertical-align: top;"><code>{{ item.id | default('-') }}</code></td>
                 </tr>
                 {% endfor %}
               </tbody>
@@ -555,10 +522,7 @@
             </div>
           </div>
         </div>
-        </div>
         {% endif %}
-
-        </div>
 
         {% else %}
         <div class="alert alert-info">No relationship data returned by GTI.</div>
