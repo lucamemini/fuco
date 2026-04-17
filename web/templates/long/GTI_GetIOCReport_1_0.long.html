@@ -11,6 +11,82 @@
 {% set ioc_ips = iocs.ip if iocs.ip is defined and iocs.ip else [] %}
 {% set ioc_urls = iocs.url if iocs.url is defined and iocs.url else [] %}
 {% set ioc_hashes = iocs.hash if iocs.hash is defined and iocs.hash else [] %}
+{% set report_artifacts = report.artifacts if report.artifacts is defined and report.artifacts else [] %}
+{% set rel_contacted_domains = rel.contacted_domains if rel.contacted_domains is defined and rel.contacted_domains else [] %}
+{% set rel_contacted_ips = rel.contacted_ips if rel.contacted_ips is defined and rel.contacted_ips else [] %}
+{% set rel_contacted_urls = rel.contacted_urls if rel.contacted_urls is defined and rel.contacted_urls else [] %}
+{% set sigma_results = attrs.sigma_analysis_results if attrs.sigma_analysis_results is defined and attrs.sigma_analysis_results else [] %}
+{% set sigma_stats = attrs.sigma_analysis_stats if attrs.sigma_analysis_stats is defined and attrs.sigma_analysis_stats else {} %}
+{% set sigma_summary = attrs.sigma_analysis_summary if attrs.sigma_analysis_summary is defined and attrs.sigma_analysis_summary else {} %}
+{% set ioc_domain_ns = namespace(values=[]) %}
+{% for item in ioc_domains %}
+  {% if item.data is defined and item.data %}
+    {% set ioc_domain_ns.values = ioc_domain_ns.values + [item.data] %}
+  {% endif %}
+{% endfor %}
+{% set ioc_ip_ns = namespace(values=[]) %}
+{% for item in ioc_ips %}
+  {% if item.data is defined and item.data %}
+    {% set ioc_ip_ns.values = ioc_ip_ns.values + [item.data] %}
+  {% endif %}
+{% endfor %}
+{% set ioc_url_ns = namespace(values=[]) %}
+{% for item in ioc_urls %}
+  {% if item.data is defined and item.data %}
+    {% set ioc_url_ns.values = ioc_url_ns.values + [item.data] %}
+  {% endif %}
+{% endfor %}
+{% set ioc_all_ns = namespace(values=[]) %}
+{% for item in ioc_domains %}
+  {% if item.data is defined and item.data %}
+    {% set ioc_all_ns.values = ioc_all_ns.values + [item.data] %}
+  {% endif %}
+{% endfor %}
+{% for item in ioc_ips %}
+  {% if item.data is defined and item.data %}
+    {% set ioc_all_ns.values = ioc_all_ns.values + [item.data] %}
+  {% endif %}
+{% endfor %}
+{% for item in ioc_urls %}
+  {% if item.data is defined and item.data %}
+    {% set ioc_all_ns.values = ioc_all_ns.values + [item.data] %}
+  {% endif %}
+{% endfor %}
+{% for item in ioc_hashes %}
+  {% if item.data is defined and item.data %}
+    {% set ioc_all_ns.values = ioc_all_ns.values + [item.data] %}
+  {% endif %}
+{% endfor %}
+{% set overlap_artifacts_ioc = namespace(count=0) %}
+{% for item in report_artifacts %}
+  {% if item.data is defined and item.data in ioc_all_ns.values %}
+    {% set overlap_artifacts_ioc.count = overlap_artifacts_ioc.count + 1 %}
+  {% endif %}
+{% endfor %}
+{% set overlap_domains = namespace(count=0) %}
+{% for item in rel_contacted_domains %}
+  {% if item.id is defined and item.id in ioc_domain_ns.values %}
+    {% set overlap_domains.count = overlap_domains.count + 1 %}
+  {% endif %}
+{% endfor %}
+{% set overlap_ips = namespace(count=0) %}
+{% for item in rel_contacted_ips %}
+  {% if item.id is defined and item.id in ioc_ip_ns.values %}
+    {% set overlap_ips.count = overlap_ips.count + 1 %}
+  {% endif %}
+{% endfor %}
+{% set overlap_urls = namespace(count=0) %}
+{% for item in rel_contacted_urls %}
+  {% if item.id is defined and item.id in ioc_url_ns.values %}
+    {% set overlap_urls.count = overlap_urls.count + 1 %}
+  {% endif %}
+{% endfor %}
+{% set bundle_info = attrs.bundle_info if attrs.bundle_info is defined and attrs.bundle_info else {} %}
+{% set exiftool = attrs.exiftool if attrs.exiftool is defined and attrs.exiftool else {} %}
+{% set filecondis = attrs.filecondis if attrs.filecondis is defined and attrs.filecondis else {} %}
+{% set trid = attrs.trid if attrs.trid is defined and attrs.trid else [] %}
+{% set names = attrs.names if attrs.names is defined and attrs.names else [] %}
+{% set type_tags = attrs.type_tags if attrs.type_tags is defined and attrs.type_tags else [] %}
 
 <div class="card border-{% if success and full %}success{% else %}warning{% endif %}">
   <div class="card-header">
@@ -40,7 +116,7 @@
           <div class="col-12 col-xl-6">
 
         <div class="panel panel-info">
-          <div class="panel-heading"><strong>GTI Overview</strong></div>
+          <div class="panel-heading"><strong>Overview</strong></div>
           <div class="panel-body">
             <dl class="dl-horizontal">
               <dt>Type</dt>
@@ -106,7 +182,7 @@
           <div class="col-12 col-xl-6">
 
         <div class="panel panel-info">
-          <div class="panel-heading"><strong>Detection Summary</strong></div>
+          <div class="panel-heading"><strong>Detections</strong></div>
           <div class="panel-body">
             <dl class="dl-horizontal">
               <dt>Malicious</dt>
@@ -137,7 +213,7 @@
         {% set cf = ga.contributing_factors if ga.contributing_factors is defined and ga.contributing_factors else {} %}
           <div class="col-12 col-xl-6">
         <div class="panel panel-info">
-          <div class="panel-heading"><strong>GTI Assessment</strong></div>
+          <div class="panel-heading"><strong>Assessment</strong></div>
           <div class="panel-body">
             <dl class="dl-horizontal">
               {% if ga.verdict is defined and ga.verdict.value is defined %}
@@ -212,6 +288,435 @@
               <dt>Hashes</dt>
               <dd>{{ ioc_hashes | length }}</dd>
             </dl>
+            {% if rel_contacted_domains or rel_contacted_ips or rel_contacted_urls %}
+            <div class="text-muted">
+              Overlap with Contacted Entities: Domains {{ overlap_domains.count }}, IPs {{ overlap_ips.count }}, URLs {{ overlap_urls.count }}.
+            </div>
+            {% endif %}
+
+            <details>
+              <summary>Extracted IOC Details</summary>
+              {% if ioc_domains %}
+              <p><strong>Domains</strong></p>
+              <ul>
+                {% for item in ioc_domains %}
+                <li>
+                  {{ item.data | default('-') }}
+                  {% if item.tags is defined and item.tags %}
+                  <span class="text-muted">(tags: {{ item.tags | join(', ') }})</span>
+                  {% endif %}
+                </li>
+                {% endfor %}
+              </ul>
+              {% endif %}
+
+              {% if ioc_ips %}
+              <p><strong>IPs</strong></p>
+              <ul>
+                {% for item in ioc_ips %}
+                <li>
+                  {{ item.data | default('-') }}
+                  {% if item.tags is defined and item.tags %}
+                  <span class="text-muted">(tags: {{ item.tags | join(', ') }})</span>
+                  {% endif %}
+                </li>
+                {% endfor %}
+              </ul>
+              {% endif %}
+
+              {% if ioc_urls %}
+              <p><strong>URLs</strong></p>
+              <ul>
+                {% for item in ioc_urls %}
+                <li>
+                  {{ item.data | default('-') }}
+                  {% if item.tags is defined and item.tags %}
+                  <span class="text-muted">(tags: {{ item.tags | join(', ') }})</span>
+                  {% endif %}
+                </li>
+                {% endfor %}
+              </ul>
+              {% endif %}
+
+              {% if ioc_hashes %}
+              <p><strong>Hashes</strong></p>
+              <ul>
+                {% for item in ioc_hashes %}
+                <li>
+                  {{ item.data | default('-') }}
+                  {% if item.tags is defined and item.tags %}
+                  <span class="text-muted">(tags: {{ item.tags | join(', ') }})</span>
+                  {% endif %}
+                </li>
+                {% endfor %}
+              </ul>
+              {% endif %}
+            </details>
+          </div>
+        </div>
+          </div>
+        {% endif %}
+
+        {% if taxonomies %}
+          <div class="col-12 col-xl-6">
+        <div class="panel panel-info">
+          <div class="panel-heading"><strong>Taxonomies</strong></div>
+          <div class="panel-body">
+            <table class="table table-sm table-bordered table-hover">
+              <thead>
+                <tr>
+                  <th>Namespace</th>
+                  <th>Predicate</th>
+                  <th>Value</th>
+                  <th>Level</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in taxonomies %}
+                <tr>
+                  <td>{{ item.namespace | default('-') }}</td>
+                  <td>{{ item.predicate | default('-') }}</td>
+                  <td>{{ item.value | default('-') }}</td>
+                  <td>
+                    {% if item.level == 'malicious' %}
+                    <span class="badge bg-danger">{{ item.level }}</span>
+                    {% elif item.level == 'suspicious' %}
+                    <span class="badge bg-warning text-dark">{{ item.level }}</span>
+                    {% elif item.level == 'safe' %}
+                    <span class="badge bg-success">{{ item.level }}</span>
+                    {% else %}
+                    <span class="badge bg-secondary">{{ item.level | default('-') }}</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+          </div>
+        {% endif %}
+
+        {% if attrs.threat_severity is defined and attrs.threat_severity %}
+        {% set ts = attrs.threat_severity %}
+          <div class="col-12 col-xl-6">
+        <div class="panel panel-info">
+          <div class="panel-heading"><strong>Threat Severity</strong></div>
+          <div class="panel-body">
+            <dl class="dl-horizontal">
+              {% if ts.threat_severity_level is defined and ts.threat_severity_level %}
+              <dt>Level</dt>
+              <dd>{{ ts.threat_severity_level }}</dd>
+              {% endif %}
+
+              {% if ts.level_description is defined and ts.level_description %}
+              <dt>Description</dt>
+              <dd class="wrap">{{ ts.level_description }}</dd>
+              {% endif %}
+
+              {% if ts.last_analysis_date is defined and ts.last_analysis_date %}
+              <dt>Last Analysis Date</dt>
+              <dd>{{ ts.last_analysis_date }}</dd>
+              {% endif %}
+
+              {% if ts.threat_severity_data is defined and ts.threat_severity_data %}
+              {% if ts.threat_severity_data.popular_threat_category is defined and ts.threat_severity_data.popular_threat_category %}
+              <dt>Popular Category</dt>
+              <dd>{{ ts.threat_severity_data.popular_threat_category }}</dd>
+              {% endif %}
+              {% if ts.threat_severity_data.num_gav_detections is defined %}
+              <dt>GAV Detections</dt>
+              <dd>{{ ts.threat_severity_data.num_gav_detections }}</dd>
+              {% endif %}
+              {% endif %}
+            </dl>
+          </div>
+        </div>
+          </div>
+        {% endif %}
+
+        {% if attrs.popular_threat_classification is defined and attrs.popular_threat_classification %}
+        {% set ptc = attrs.popular_threat_classification %}
+          <div class="col-12 col-xl-6">
+        <div class="panel panel-info">
+          <div class="panel-heading"><strong>Threat Classification</strong></div>
+          <div class="panel-body">
+            <dl class="dl-horizontal">
+              {% if ptc.suggested_threat_label is defined and ptc.suggested_threat_label %}
+              <dt>Suggested Label</dt>
+              <dd>{{ ptc.suggested_threat_label }}</dd>
+              {% endif %}
+            </dl>
+
+            {% if ptc.popular_threat_category is defined and ptc.popular_threat_category %}
+            <strong>Categories</strong>
+            <table class="table table-sm table-bordered table-hover">
+              <thead>
+                <tr>
+                  <th>Category</th>
+                  <th>Count</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in ptc.popular_threat_category %}
+                <tr>
+                  <td>{{ item.value | default('-') }}</td>
+                  <td>{{ item.count | default('-') }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            {% endif %}
+
+            {% if ptc.popular_threat_name is defined and ptc.popular_threat_name %}
+            <strong>Names</strong>
+            <table class="table table-sm table-bordered table-hover">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Count</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in ptc.popular_threat_name %}
+                <tr>
+                  <td>{{ item.value | default('-') }}</td>
+                  <td>{{ item.count | default('-') }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            {% endif %}
+          </div>
+        </div>
+          </div>
+        {% endif %}
+
+        {% if sigma_results or sigma_stats %}
+          <div class="col-12 col-xl-6">
+        <div class="panel panel-info">
+          <div class="panel-heading"><strong>Sigma Summary</strong></div>
+          <div class="panel-body">
+            <dl class="dl-horizontal">
+              <dt>Rules Matched</dt>
+              <dd>{{ sigma_results | length }}</dd>
+              {% if sigma_stats.critical is defined %}
+              <dt>Critical</dt>
+              <dd>{{ sigma_stats.critical }}</dd>
+              {% endif %}
+              {% if sigma_stats.high is defined %}
+              <dt>High</dt>
+              <dd>{{ sigma_stats.high }}</dd>
+              {% endif %}
+              {% if sigma_stats.medium is defined %}
+              <dt>Medium</dt>
+              <dd>{{ sigma_stats.medium }}</dd>
+              {% endif %}
+              {% if sigma_stats.low is defined %}
+              <dt>Low</dt>
+              <dd>{{ sigma_stats.low }}</dd>
+              {% endif %}
+            </dl>
+          </div>
+        </div>
+          </div>
+        {% endif %}
+
+        {% if rel_contacted_domains or rel_contacted_ips or rel_contacted_urls %}
+          <div class="col-12 col-xl-6">
+        <div class="panel panel-info">
+          <div class="panel-heading"><strong>Contacted</strong></div>
+          <div class="panel-body">
+            <dl class="dl-horizontal">
+              <dt>Domains</dt>
+              <dd>{{ rel_contacted_domains | length }}</dd>
+              <dt>IPs</dt>
+              <dd>{{ rel_contacted_ips | length }}</dd>
+              <dt>URLs</dt>
+              <dd>{{ rel_contacted_urls | length }}</dd>
+            </dl>
+          </div>
+        </div>
+          </div>
+        {% endif %}
+
+        {% if report_artifacts %}
+          <div class="col-12 col-xl-6">
+        <div class="panel panel-info">
+          <div class="panel-heading"><strong>Report Artifacts ({{ report_artifacts | length }})</strong></div>
+          <div class="panel-body">
+            <div class="text-muted" style="margin-bottom: 8px;">
+              Già presenti in Extracted IOCs: {{ overlap_artifacts_ioc.count }} / {{ report_artifacts | length }}.
+            </div>
+            <table class="table table-sm table-bordered table-hover">
+              <thead>
+                <tr>
+                  <th>Data</th>
+                  <th>Type</th>
+                  <th>TLP</th>
+                  <th>In IOC</th>
+                  <th>Tags</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in report_artifacts[:20] %}
+                <tr>
+                  <td class="wrap">{{ item.data | default('-') }}</td>
+                  <td>{{ item.dataType | default('-') }}</td>
+                  <td>{{ item.tlp | default('-') }}</td>
+                  <td>
+                    {% if item.data is defined and item.data in ioc_all_ns.values %}
+                    <span class="badge bg-info text-dark">yes</span>
+                    {% else %}
+                    <span class="badge bg-secondary">no</span>
+                    {% endif %}
+                  </td>
+                  <td class="wrap">{{ item.tags | join(', ') if item.tags is defined and item.tags else '-' }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            {% if report_artifacts | length > 20 %}
+            <details>
+              <summary>Show all artifacts ({{ report_artifacts | length }})</summary>
+              <table class="table table-sm table-bordered table-hover">
+                <thead>
+                  <tr>
+                    <th>Data</th>
+                    <th>Type</th>
+                    <th>TLP</th>
+                    <th>In IOC</th>
+                    <th>Tags</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for item in report_artifacts %}
+                  <tr>
+                    <td class="wrap">{{ item.data | default('-') }}</td>
+                    <td>{{ item.dataType | default('-') }}</td>
+                    <td>{{ item.tlp | default('-') }}</td>
+                    <td>
+                      {% if item.data is defined and item.data in ioc_all_ns.values %}
+                      <span class="badge bg-info text-dark">yes</span>
+                      {% else %}
+                      <span class="badge bg-secondary">no</span>
+                      {% endif %}
+                    </td>
+                    <td class="wrap">{{ item.tags | join(', ') if item.tags is defined and item.tags else '-' }}</td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </details>
+            {% endif %}
+          </div>
+        </div>
+          </div>
+        {% endif %}
+
+        {% if bundle_info or exiftool or filecondis or attrs.magic is defined or attrs.magika is defined or names or type_tags or trid %}
+          <div class="col-12 col-xl-6">
+        <div class="panel panel-info">
+          <div class="panel-heading"><strong>File Metadata</strong></div>
+          <div class="panel-body">
+            <dl class="dl-horizontal">
+              {% if attrs.magic is defined and attrs.magic %}
+              <dt>Magic</dt>
+              <dd class="wrap">{{ attrs.magic }}</dd>
+              {% endif %}
+
+              {% if attrs.magika is defined and attrs.magika %}
+              <dt>Magika</dt>
+              <dd>{{ attrs.magika }}</dd>
+              {% endif %}
+
+              {% if attrs.type_tag is defined and attrs.type_tag %}
+              <dt>Type Tag</dt>
+              <dd>{{ attrs.type_tag }}</dd>
+              {% endif %}
+
+              {% if type_tags %}
+              <dt>Type Tags</dt>
+              <dd>{{ type_tags | join(', ') }}</dd>
+              {% endif %}
+            </dl>
+
+            {% if names %}
+            <p><strong>Known Names</strong></p>
+            <ul>
+              {% for n in names %}
+              <li class="wrap">{{ n }}</li>
+              {% endfor %}
+            </ul>
+            {% endif %}
+
+            {% if bundle_info %}
+            <p><strong>Bundle Info</strong></p>
+            <dl class="dl-horizontal">
+              {% if bundle_info.type is defined and bundle_info.type %}
+              <dt>Type</dt>
+              <dd>{{ bundle_info.type }}</dd>
+              {% endif %}
+              {% if bundle_info.num_children is defined %}
+              <dt>Children</dt>
+              <dd>{{ bundle_info.num_children }}</dd>
+              {% endif %}
+              {% if bundle_info.uncompressed_size is defined %}
+              <dt>Uncompressed Size</dt>
+              <dd>{{ bundle_info.uncompressed_size }}</dd>
+              {% endif %}
+              {% if bundle_info.lowest_datetime is defined and bundle_info.lowest_datetime %}
+              <dt>Lowest Datetime</dt>
+              <dd>{{ bundle_info.lowest_datetime }}</dd>
+              {% endif %}
+              {% if bundle_info.highest_datetime is defined and bundle_info.highest_datetime %}
+              <dt>Highest Datetime</dt>
+              <dd>{{ bundle_info.highest_datetime }}</dd>
+              {% endif %}
+              {% if bundle_info.file_types is defined and bundle_info.file_types %}
+              <dt>File Types</dt>
+              <dd class="wrap">{{ bundle_info.file_types | tojson }}</dd>
+              {% endif %}
+              {% if bundle_info.extensions is defined and bundle_info.extensions %}
+              <dt>Extensions</dt>
+              <dd class="wrap">{{ bundle_info.extensions | tojson }}</dd>
+              {% endif %}
+            </dl>
+            {% endif %}
+
+            {% if exiftool %}
+            <details>
+              <summary>Exiftool Details</summary>
+              <pre><code>{{ exiftool | tojson(indent=2) }}</code></pre>
+            </details>
+            {% endif %}
+
+            {% if filecondis %}
+            <details>
+              <summary>FileCondis Details</summary>
+              <pre><code>{{ filecondis | tojson(indent=2) }}</code></pre>
+            </details>
+            {% endif %}
+
+            {% if trid %}
+            <p><strong>TrID</strong></p>
+            <table class="table table-sm table-bordered table-hover">
+              <thead>
+                <tr>
+                  <th>File Type</th>
+                  <th>Probability</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for t in trid %}
+                <tr>
+                  <td>{{ t.file_type | default('-') }}</td>
+                  <td>{{ t.probability | default('-') }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            {% endif %}
           </div>
         </div>
           </div>
@@ -313,8 +818,11 @@
         {% set rel_actors = rel.related_threat_actors if rel.related_threat_actors is defined and rel.related_threat_actors else [] %}
         {% set rel_comments = rel.comments if rel.comments is defined and rel.comments else [] %}
         {% set rel_behaviours = rel.behaviours if rel.behaviours is defined and rel.behaviours else [] %}
+        {% set rel_contacted_domains = rel.contacted_domains if rel.contacted_domains is defined and rel.contacted_domains else [] %}
+        {% set rel_contacted_ips = rel.contacted_ips if rel.contacted_ips is defined and rel.contacted_ips else [] %}
+        {% set rel_contacted_urls = rel.contacted_urls if rel.contacted_urls is defined and rel.contacted_urls else [] %}
 
-        {% if rel_reports or rel_collections or rel_campaigns or rel_malware or rel_actors or rel_comments or rel_behaviours %}
+        {% if rel_reports or rel_collections or rel_campaigns or rel_malware or rel_actors or rel_comments or rel_behaviours or rel_contacted_domains or rel_contacted_ips or rel_contacted_urls %}
 
         {% if rel_reports %}
         <div class="panel panel-info">
@@ -520,6 +1028,328 @@
               </tbody>
             </table>
             </div>
+
+            {% for item in rel_behaviours[:5] %}
+            {% set battr = item.attributes if item.attributes is defined and item.attributes else {} %}
+            {% set bcommands = battr.command_executions if battr.command_executions is defined and battr.command_executions else [] %}
+            {% set bdns = battr.dns_lookups if battr.dns_lookups is defined and battr.dns_lookups else [] %}
+            {% set bsignatures = battr.signature_matches if battr.signature_matches is defined and battr.signature_matches else [] %}
+            {% set bsigma = battr.sigma_analysis_results if battr.sigma_analysis_results is defined and battr.sigma_analysis_results else [] %}
+            {% set btags = battr.tags if battr.tags is defined and battr.tags else [] %}
+
+            {% if bcommands or bdns or bsignatures or bsigma or btags %}
+            <div class="panel panel-default">
+              <div class="panel-heading"><strong>Behaviour Details: {{ item.id | default('-') }}</strong></div>
+              <div class="panel-body">
+                {% if btags %}
+                <p><strong>Tags:</strong> {{ btags | join(', ') }}</p>
+                {% endif %}
+
+                {% if bcommands %}
+                <p><strong>Command Executions</strong></p>
+                <ul>
+                  {% for cmd in bcommands[:10] %}
+                  <li class="wrap">{{ cmd }}</li>
+                  {% endfor %}
+                </ul>
+                {% endif %}
+
+                {% if bdns %}
+                <p><strong>DNS Lookups</strong></p>
+                <table class="table table-sm table-bordered table-hover">
+                  <thead>
+                    <tr>
+                      <th>Hostname</th>
+                      <th>Resolved IPs</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for d in bdns[:10] %}
+                    <tr>
+                      <td>{{ d.hostname | default('-') }}</td>
+                      <td>{{ d.resolved_ips | join(', ') if d.resolved_ips is defined and d.resolved_ips else '-' }}</td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+                {% endif %}
+
+                {% if bsignatures %}
+                <p><strong>Signature Matches</strong></p>
+                <table class="table table-sm table-bordered table-hover">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Severity</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for s in bsignatures[:10] %}
+                    {% set sig_severity = (s.severity | default('') | upper) %}
+                    <tr>
+                      <td>{{ s.name | default('-') }}</td>
+                      <td>
+                        {% if 'CRITICAL' in sig_severity or 'HIGH' in sig_severity %}
+                        <span class="badge bg-danger">{{ s.severity | default('-') }}</span>
+                        {% elif 'MEDIUM' in sig_severity %}
+                        <span class="badge bg-warning text-dark">{{ s.severity | default('-') }}</span>
+                        {% elif 'LOW' in sig_severity %}
+                        <span class="badge bg-info text-dark">{{ s.severity | default('-') }}</span>
+                        {% elif 'INFO' in sig_severity %}
+                        <span class="badge bg-secondary">{{ s.severity | default('-') }}</span>
+                        {% else %}
+                        {{ s.severity | default('-') }}
+                        {% endif %}
+                      </td>
+                      <td class="wrap">{{ s.description | default('-') }}</td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+                {% if bsignatures | length > 10 %}
+                <details>
+                  <summary>Show all signature matches ({{ bsignatures | length }})</summary>
+                  <table class="table table-sm table-bordered table-hover">
+                    <thead>
+                      <tr>
+                        <th>Name</th>
+                        <th>Severity</th>
+                        <th>Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for s in bsignatures %}
+                      {% set sig_severity = (s.severity | default('') | upper) %}
+                      <tr>
+                        <td>{{ s.name | default('-') }}</td>
+                        <td>
+                          {% if 'CRITICAL' in sig_severity or 'HIGH' in sig_severity %}
+                          <span class="badge bg-danger">{{ s.severity | default('-') }}</span>
+                          {% elif 'MEDIUM' in sig_severity %}
+                          <span class="badge bg-warning text-dark">{{ s.severity | default('-') }}</span>
+                          {% elif 'LOW' in sig_severity %}
+                          <span class="badge bg-info text-dark">{{ s.severity | default('-') }}</span>
+                          {% elif 'INFO' in sig_severity %}
+                          <span class="badge bg-secondary">{{ s.severity | default('-') }}</span>
+                          {% else %}
+                          {{ s.severity | default('-') }}
+                          {% endif %}
+                        </td>
+                        <td class="wrap">{{ s.description | default('-') }}</td>
+                      </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </details>
+                {% endif %}
+                {% endif %}
+
+                {% if bsigma %}
+                <p><strong>Sigma Rules</strong></p>
+                <table class="table table-sm table-bordered table-hover">
+                  <thead>
+                    <tr>
+                      <th>Title</th>
+                      <th>Level</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for sr in bsigma[:10] %}
+                    {% set sigma_level = (sr.rule_level | default('') | upper) %}
+                    <tr>
+                      <td>{{ sr.rule_title | default('-') }}</td>
+                      <td>
+                        {% if 'CRITICAL' in sigma_level or 'HIGH' in sigma_level %}
+                        <span class="badge bg-danger">{{ sr.rule_level | default('-') }}</span>
+                        {% elif 'MEDIUM' in sigma_level %}
+                        <span class="badge bg-warning text-dark">{{ sr.rule_level | default('-') }}</span>
+                        {% elif 'LOW' in sigma_level %}
+                        <span class="badge bg-info text-dark">{{ sr.rule_level | default('-') }}</span>
+                        {% else %}
+                        <span class="badge bg-secondary">{{ sr.rule_level | default('-') }}</span>
+                        {% endif %}
+                      </td>
+                      <td class="wrap">{{ sr.rule_description | default('-') }}</td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+                {% if bsigma | length > 10 %}
+                <details>
+                  <summary>Show all behavior Sigma rules ({{ bsigma | length }})</summary>
+                  <table class="table table-sm table-bordered table-hover">
+                    <thead>
+                      <tr>
+                        <th>Title</th>
+                        <th>Level</th>
+                        <th>Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for sr in bsigma %}
+                      {% set sigma_level = (sr.rule_level | default('') | upper) %}
+                      <tr>
+                        <td>{{ sr.rule_title | default('-') }}</td>
+                        <td>
+                          {% if 'CRITICAL' in sigma_level or 'HIGH' in sigma_level %}
+                          <span class="badge bg-danger">{{ sr.rule_level | default('-') }}</span>
+                          {% elif 'MEDIUM' in sigma_level %}
+                          <span class="badge bg-warning text-dark">{{ sr.rule_level | default('-') }}</span>
+                          {% elif 'LOW' in sigma_level %}
+                          <span class="badge bg-info text-dark">{{ sr.rule_level | default('-') }}</span>
+                          {% else %}
+                          <span class="badge bg-secondary">{{ sr.rule_level | default('-') }}</span>
+                          {% endif %}
+                        </td>
+                        <td class="wrap">{{ sr.rule_description | default('-') }}</td>
+                      </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </details>
+                {% endif %}
+                {% endif %}
+              </div>
+            </div>
+            {% endif %}
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+
+        {% if rel_contacted_domains %}
+        <div class="panel panel-info">
+          <div class="panel-heading"><strong>Contacted Domains ({{ rel_contacted_domains | length }})</strong></div>
+          <div class="panel-body">
+            <table class="table table-sm table-bordered table-hover">
+              <thead>
+                <tr>
+                  <th>Domain</th>
+                  <th>Type</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in rel_contacted_domains[:20] %}
+                <tr>
+                  <td class="wrap">{{ item.id | default('-') }}</td>
+                  <td>{{ item.type | default('-') }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            {% if rel_contacted_domains | length > 20 %}
+            <details>
+              <summary>Show all domains ({{ rel_contacted_domains | length }})</summary>
+              <table class="table table-sm table-bordered table-hover">
+                <thead>
+                  <tr>
+                    <th>Domain</th>
+                    <th>Type</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for item in rel_contacted_domains %}
+                  <tr>
+                    <td class="wrap">{{ item.id | default('-') }}</td>
+                    <td>{{ item.type | default('-') }}</td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </details>
+            {% endif %}
+          </div>
+        </div>
+        {% endif %}
+
+        {% if rel_contacted_ips %}
+        <div class="panel panel-info">
+          <div class="panel-heading"><strong>Contacted IPs ({{ rel_contacted_ips | length }})</strong></div>
+          <div class="panel-body">
+            <table class="table table-sm table-bordered table-hover">
+              <thead>
+                <tr>
+                  <th>IP</th>
+                  <th>Type</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in rel_contacted_ips[:20] %}
+                <tr>
+                  <td class="wrap">{{ item.id | default('-') }}</td>
+                  <td>{{ item.type | default('-') }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            {% if rel_contacted_ips | length > 20 %}
+            <details>
+              <summary>Show all IPs ({{ rel_contacted_ips | length }})</summary>
+              <table class="table table-sm table-bordered table-hover">
+                <thead>
+                  <tr>
+                    <th>IP</th>
+                    <th>Type</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for item in rel_contacted_ips %}
+                  <tr>
+                    <td class="wrap">{{ item.id | default('-') }}</td>
+                    <td>{{ item.type | default('-') }}</td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </details>
+            {% endif %}
+          </div>
+        </div>
+        {% endif %}
+
+        {% if rel_contacted_urls %}
+        <div class="panel panel-info">
+          <div class="panel-heading"><strong>Contacted URLs ({{ rel_contacted_urls | length }})</strong></div>
+          <div class="panel-body">
+            <table class="table table-sm table-bordered table-hover">
+              <thead>
+                <tr>
+                  <th>URL</th>
+                  <th>Type</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in rel_contacted_urls[:20] %}
+                <tr>
+                  <td class="wrap">{{ item.id | default('-') }}</td>
+                  <td>{{ item.type | default('-') }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            {% if rel_contacted_urls | length > 20 %}
+            <details>
+              <summary>Show all URLs ({{ rel_contacted_urls | length }})</summary>
+              <table class="table table-sm table-bordered table-hover">
+                <thead>
+                  <tr>
+                    <th>URL</th>
+                    <th>Type</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for item in rel_contacted_urls %}
+                  <tr>
+                    <td class="wrap">{{ item.id | default('-') }}</td>
+                    <td>{{ item.type | default('-') }}</td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </details>
+            {% endif %}
           </div>
         </div>
         {% endif %}
@@ -551,6 +1381,107 @@
                 {% endfor %}
               </tbody>
             </table>
+          </div>
+        </div>
+        {% endif %}
+
+        {% if sigma_results %}
+        <div class="panel panel-info">
+          <div class="panel-heading"><strong>Sigma Analysis Results ({{ sigma_results | length }})</strong></div>
+          <div class="panel-body">
+            <table class="table table-sm table-bordered table-hover">
+              <thead>
+                <tr>
+                  <th>Title</th>
+                  <th>Level</th>
+                  <th>Source</th>
+                  <th>Description</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in sigma_results[:20] %}
+                {% set sigma_level = (item.rule_level | default('') | upper) %}
+                <tr>
+                  <td>{{ item.rule_title | default('-') }}</td>
+                  <td>
+                    {% if 'CRITICAL' in sigma_level or 'HIGH' in sigma_level %}
+                    <span class="badge bg-danger">{{ item.rule_level | default('-') }}</span>
+                    {% elif 'MEDIUM' in sigma_level %}
+                    <span class="badge bg-warning text-dark">{{ item.rule_level | default('-') }}</span>
+                    {% elif 'LOW' in sigma_level %}
+                    <span class="badge bg-info text-dark">{{ item.rule_level | default('-') }}</span>
+                    {% else %}
+                    <span class="badge bg-secondary">{{ item.rule_level | default('-') }}</span>
+                    {% endif %}
+                  </td>
+                  <td>{{ item.rule_source | default('-') }}</td>
+                  <td class="wrap">{{ item.rule_description | default('-') }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            {% if sigma_results | length > 20 %}
+            <details>
+              <summary>Show all Sigma rules ({{ sigma_results | length }})</summary>
+              <table class="table table-sm table-bordered table-hover">
+                <thead>
+                  <tr>
+                    <th>Title</th>
+                    <th>Level</th>
+                    <th>Source</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for item in sigma_results %}
+                  {% set sigma_level = (item.rule_level | default('') | upper) %}
+                  <tr>
+                    <td>{{ item.rule_title | default('-') }}</td>
+                    <td>
+                      {% if 'CRITICAL' in sigma_level or 'HIGH' in sigma_level %}
+                      <span class="badge bg-danger">{{ item.rule_level | default('-') }}</span>
+                      {% elif 'MEDIUM' in sigma_level %}
+                      <span class="badge bg-warning text-dark">{{ item.rule_level | default('-') }}</span>
+                      {% elif 'LOW' in sigma_level %}
+                      <span class="badge bg-info text-dark">{{ item.rule_level | default('-') }}</span>
+                      {% else %}
+                      <span class="badge bg-secondary">{{ item.rule_level | default('-') }}</span>
+                      {% endif %}
+                    </td>
+                    <td>{{ item.rule_source | default('-') }}</td>
+                    <td class="wrap">{{ item.rule_description | default('-') }}</td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </details>
+            {% endif %}
+
+            {% if sigma_summary %}
+            <p><strong>Sigma Source Summary</strong></p>
+            <table class="table table-sm table-bordered table-hover">
+              <thead>
+                <tr>
+                  <th>Source</th>
+                  <th>Critical</th>
+                  <th>High</th>
+                  <th>Medium</th>
+                  <th>Low</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for source_name, source_stats in sigma_summary.items() %}
+                <tr>
+                  <td>{{ source_name }}</td>
+                  <td>{{ source_stats.critical | default(0) }}</td>
+                  <td>{{ source_stats.high | default(0) }}</td>
+                  <td>{{ source_stats.medium | default(0) }}</td>
+                  <td>{{ source_stats.low | default(0) }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            {% endif %}
           </div>
         </div>
         {% endif %}
