@@ -105,6 +105,9 @@ RATE_LIMIT_RESPONDER_LIST = "60/minute"  # Suggested "30-60/minute"
 RATE_LIMIT_RESPONDER_EXECUTE = "10/minute"  # Suggested "10-30/minute"
 RATE_LIMIT_RESPONDER_BULK = None  # Suggested "3-10/minute"
 RATE_LIMIT_RESPONDER_STATUS = "60/minute"  # Suggested "60-120/minute"
+RATE_LIMIT_ANALYZER_LIST = None            # Suggested "60/minute"
+RATE_LIMIT_API_ANALYSIS_BULK = None        # Suggested "3-10/minute"
+RATE_LIMIT_API_ANALYSIS_BULK_JOB = None    # Suggested "120-240/minute" (one call per pending job per poll cycle)
 RATE_LIMIT_RESPONDER_POLL = "60/minute"  # Suggested "120-240/minute"
 RATE_LIMIT_RESPONDER_HISTORY = "30/minute"  # Suggested "30-60/minute"
 RATE_LIMIT_RESPONDER_VALIDATE = "10/minute"  # Suggested "10-30/minute"
@@ -114,6 +117,12 @@ RATE_LIMIT_RESPONDER_FOR_OBSERVABLE = "60/minute"  # Suggested "60-120/minute"
 
 # Analyzer types
 ANALYZER_TYPES = ["domain", "ip", "url", "file", "hash", "mail", "mail_subject", "other"]
+
+# ============ BULK ANALYSIS LIMITS ============
+MAX_BULK_ANALYSIS_OBSERVABLES = 100
+MAX_BULK_ANALYZERS = 10
+BULK_ANALYSIS_DELAY = 0.4       # seconds between Cortex calls
+BULK_ANALYSIS_JOB_TIMEOUT = 180  # seconds polling timeout per job
 
 # Regex patterns for input validation
 IPV4_REGEX = r'^(\d{1,3}\.){3}\d{1,3}$'

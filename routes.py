@@ -4,13 +4,14 @@ Flask routes for the FUCO application.
 from io import BytesIO
 import json
 import logging
+import re
 import sys
 import time
 from typing import List, Optional
 from urllib.parse import quote
 from functools import wraps
 
-from flask import render_template, request, jsonify, Blueprint, current_app, abort
+from flask import render_template, request, jsonify, Blueprint, current_app, abort, session
 from markupsafe import escape
 from pydantic import BaseModel, Field, validator
 
@@ -171,6 +172,31 @@ class AiAnalyzeRequest(BaseModel):
     force_refresh: Optional[bool] = False
     tlp: Optional[int] = None
     pap: Optional[int] = None
+
+
+class AnalysisBulkObservable(BaseModel):
+    """Single observable item for bulk analysis."""
+    data: str = Field(..., min_length=1, max_length=255)
+    dataType: Optional[str] = Field(default=None)
+
+
+class AnalysisBulkRequest(BaseModel):
+    """Validation model for POST /api/analysis/bulk"""
+    observables: List[AnalysisBulkObservable] = Field(
+        ..., min_items=1, max_items=config.MAX_BULK_ANALYSIS_OBSERVABLES
+    )
+    analyzerIds: List[str] = Field(
+        ..., min_items=1, max_items=config.MAX_BULK_ANALYZERS
+    )
+    tlp: int = Field(default=config.DEFAULT_TLP, ge=0, le=3)
+    pap: int = Field(default=config.DEFAULT_PAP, ge=0, le=3)
+    message: Optional[str] = Field(default=None, max_length=500)
+
+    @validator('analyzerIds')
+    def validate_analyzer_ids(cls, v):
+        if not all(isinstance(x, str) and len(x) > 0 for x in v):
+            raise ValueError('analyzerIds must contain non-empty strings')
+        return v
 
 
 # ============ Helper functions ============
@@ -817,12 +843,310 @@ def api_analysis():
         return error_response(str(e), 500)
 
 
+@routes_bp.route('/api/analyzer/list', methods=['GET'])
+@login_required_json
+@optional_limit(getattr(config, 'RATE_LIMIT_ANALYZER_LIST', None))
+def api_analyzer_list():
+    """
+    Return available analyzers, optionally filtered by dataType.
+
+    Query params:
+        dataType (optional): one of config.ANALYZER_TYPES
+                             If omitted, returns analyzers for all types (union, deduplicated by id).
+
+    Response JSON:
+    {
+        "analyzers": [
+            {"id": "AnalyzerName_x_x", "name": "AnalyzerName_x_x", "dataTypeList": ["ip", "domain"]},
+            ...
+        ]
+    }
+    """
+    try:
+        data_type = request.args.get('dataType', '').strip() or None
+
+        if data_type:
+            data_type = utils.InputValidator.validate_datatype(data_type)
+            types_to_query = [data_type]
+        else:
+            types_to_query = config.ANALYZER_TYPES
+
+        seen_ids = set()
+        analyzers_out = []
+        for dt in types_to_query:
+            try:
+                results = utils.get_analyzer_by_type(dt)
+            except Exception as exc:
+                logger.warning(f"analyzer/list: could not query type '{dt}': {exc}")
+                results = []
+            for a in (results or []):
+                aid = getattr(a, 'id', None) or getattr(a, 'name', None)
+                if aid and aid not in seen_ids:
+                    seen_ids.add(aid)
+                    analyzers_out.append({
+                        'id': aid,
+                        'name': getattr(a, 'name', aid),
+                        'dataTypeList': list(getattr(a, 'dataTypeList', []) or []),
+                    })
+
+        return jsonify({'analyzers': analyzers_out})
+
+    except ValueError as e:
+        return error_response(f"Invalid dataType: {str(e)}", 400)
+    except Exception as e:
+        logger.error(f"Error in api_analyzer_list(): {e}", exc_info=True)
+        return error_response(str(e), 500)
+
+
+@routes_bp.route('/api/analysis/bulk/job/<job_id>', methods=['GET'])
+@login_required_json
+@optional_limit(getattr(config, 'RATE_LIMIT_API_ANALYSIS_BULK_JOB', None))
+def api_analysis_bulk_job(job_id):
+    """
+    Poll a single bulk-analysis job and return its short result when complete.
+
+    Intended to be called repeatedly by the frontend for each pending job
+    until status is no longer 'pending'.
+
+    URL params:
+        job_id: Cortex job ID
+
+    Query params (required when job completes, used to build the short result):
+        observable   – the observable string
+        dataType     – the dataType string
+        analyzer     – the analyzer ID/name (used for template lookup)
+
+    Response JSON:
+
+        While pending:
+            {"status": "pending", "jobId": "..."}
+
+        On completion (Success or Failure):
+            {
+                "status": "done",
+                "jobId": "...",
+                "result": {
+                    "observable": ..., "dataType": ..., "analyzer": ...,
+                    "jobId": ..., "status": "Success"|"Failure",
+                    "shortSummary": ..., "taxonomies": [...], "shortHtml": ...
+                }
+            }
+
+        On timeout (report is None):
+            {
+                "status": "done",
+                "jobId": "...",
+                "result": { ...timeout fallback... }
+            }
+    """
+    try:
+        # Validate job_id: Cortex IDs may include underscores.
+        if not re.fullmatch(r'[A-Za-z0-9_\-]{1,128}', job_id):
+            return error_response("Invalid job ID", 400)
+
+        # Single non-blocking check (max_attempts=1, initial_delay=0)
+        report = utils.get_cached_report(job_id)
+
+        if report is None:
+            return jsonify({'status': 'pending', 'jobId': job_id})
+
+        report_status = getattr(report, 'status', None)
+        if report_status in ('Waiting', 'InProgress'):
+            return jsonify({'status': 'pending', 'jobId': job_id})
+
+        # Job is terminal (Success / Failure / other) — build short result
+        observable = request.args.get('observable', '')
+        data_type  = request.args.get('dataType', '')
+        analyzer   = request.args.get('analyzer', '')
+        analyzer_name = getattr(report, 'analyzerName', None) or analyzer
+
+        result = utils.build_short_result(
+            observable=observable,
+            data_type=data_type,
+            analyzer=analyzer,
+            job_id=job_id,
+            report=report,
+            analyzer_name=analyzer_name,
+            app_root_path=current_app.root_path,
+        )
+
+        _user = session.get('cortex_username', 'unknown')
+        _ip   = request.remote_addr
+        logger.info(
+            f"[AUDIT] bulk_job_done user={_user} ip={_ip} job_id={job_id} "
+            f"status={result['status']} observable={observable} analyzer={analyzer}"
+        )
+        return jsonify({'status': 'done', 'jobId': job_id, 'result': result})
+
+    except Exception as e:
+        logger.error(f"Error in api_analysis_bulk_job({job_id}): {e}", exc_info=True)
+        return error_response(str(e), 500)
+
+
+@routes_bp.route('/api/analysis/bulk', methods=['POST'])
+@login_required_json
+@optional_limit(config.RATE_LIMIT_API_ANALYSIS_BULK)
+def api_analysis_bulk():
+    """
+    Submit a bulk analysis batch.
+
+    Body JSON:
+    {
+        "observables": [
+            {"data": "1.2.3.4", "dataType": "ip"},
+            {"data": "evil.com"}
+        ],
+        "analyzerIds": ["VirusTotal_GetReport_3_1", "AbuseIPDB_1_0"],
+        "tlp": 1,
+        "pap": 1,
+        "message": "optional context"
+    }
+
+    Response JSON (202):
+    {
+        "accepted": <int>,
+        "skipped": <int>,
+        "jobs": [
+            {
+                "observable": "1.2.3.4",
+                "dataType": "ip",
+                "analyzerId": "VirusTotal_GetReport_3_1",
+                "jobId": "...",
+                "status": "Waiting"
+            },
+            ...
+        ],
+        "errors": [
+            {"observable": "...", "analyzerId": "...", "reason": "..."},
+            ...
+        ]
+    }
+    """
+    try:
+        data = request.get_json()
+        if not data:
+            return error_response("Missing JSON body", 400)
+
+        try:
+            req = AnalysisBulkRequest(**data)
+        except ValueError as e:
+            return error_response(f"Invalid request: {str(e)}", 400)
+
+        # Normalise observables: sanitise + autodetect missing dataType
+        try:
+            for obs in req.observables:
+                obs.data = utils.InputValidator.sanitize_observable(obs.data)
+                if not obs.dataType or not str(obs.dataType).strip():
+                    detected = utils.detect_data_type(obs.data)
+                    if not detected:
+                        return error_response(
+                            f"Unable to detect data type for observable: {obs.data}", 400
+                        )
+                    if detected in ("md5", "sha256"):
+                        detected = "hash"
+                    if detected == "email":
+                        detected = "mail"
+                    obs.dataType = detected
+                obs.dataType = utils.InputValidator.validate_datatype(obs.dataType)
+        except ValueError as e:
+            return error_response(f"Invalid observable or dataType: {str(e)}", 400)
+
+        # Build an analyzer catalog for the queued data types and resolve
+        # requested identifiers (id or name) to runnable analyzer names.
+        # Cortex run API expects analyzer *name*.
+        distinct_types = list({obs.dataType for obs in req.observables})
+        analyzer_catalog: dict = {}
+        for dt in distinct_types:
+            try:
+                for a in (utils.get_analyzer_by_type(dt) or []):
+                    aid = getattr(a, 'id', None)
+                    aname = getattr(a, 'name', None) or aid
+                    if not aname:
+                        continue
+                    entry = analyzer_catalog.setdefault(aname, {
+                        'name': aname,
+                        'ids': set(),
+                        'supported': set(),
+                    })
+                    if aid:
+                        entry['ids'].add(aid)
+                    supported = list(getattr(a, 'dataTypeList', []) or [])
+                    if supported:
+                        entry['supported'].update(supported)
+                    else:
+                        entry['supported'].add(dt)
+            except Exception as exc:
+                logger.warning(f"Could not fetch analyzer map for type '{dt}': {exc}")
+
+        by_name = {name: meta for name, meta in analyzer_catalog.items()}
+        by_id = {}
+        for name, meta in analyzer_catalog.items():
+            for aid in meta['ids']:
+                by_id[aid] = meta
+
+        resolved_analyzers = []
+        resolved_set = set()
+        missing_analyzers = []
+        for analyzer_ref in req.analyzerIds:
+            meta = by_name.get(analyzer_ref) or by_id.get(analyzer_ref)
+            if not meta:
+                missing_analyzers.append(analyzer_ref)
+                continue
+            analyzer_name = meta['name']
+            if analyzer_name not in resolved_set:
+                resolved_set.add(analyzer_name)
+                resolved_analyzers.append(analyzer_name)
+
+        # Pre-filter incompatible analyzer/dataType pairs using resolved names.
+        filtered_map = {
+            name: sorted(list(meta['supported']))
+            for name, meta in analyzer_catalog.items()
+            if name in resolved_set
+        }
+
+        observables_dicts = [{'data': o.data, 'dataType': o.dataType} for o in req.observables]
+
+        jobs_out, errors_out = utils.run_analysis_bulk(
+            observables=observables_dicts,
+            analyzer_ids=resolved_analyzers,
+            tlp=req.tlp,
+            pap=req.pap,
+            message=req.message,
+            analyzer_map=filtered_map if filtered_map else None,
+        )
+
+        # Keep previous behavior: when an analyzer ref is unknown, report one
+        # skipped row per observable/analyzer pair.
+        for obs in observables_dicts:
+            for missing in missing_analyzers:
+                errors_out.append({
+                    'observable': obs['data'],
+                    'analyzerId': missing,
+                    'reason': f'Analyzer {missing} not found',
+                })
+
+        _user = session.get('cortex_username', 'unknown')
+        _ip   = request.remote_addr
+        logger.info(
+            f"[AUDIT] bulk_analysis_submit user={_user} ip={_ip} "
+            f"observables={len(req.observables)} analyzers={len(req.analyzerIds)} "
+            f"accepted={len(jobs_out)} skipped={len(errors_out)}"
+        )
+        return jsonify({
+            'accepted': len(jobs_out),
+            'skipped': len(errors_out),
+            'jobs': jobs_out,
+            'errors': errors_out,
+        }), 202
+
+    except Exception as e:
+        logger.error(f"Error in api_analysis_bulk(): {e}", exc_info=True)
+        return error_response(str(e), 500)
+
+
 @routes_bp.route('/api/ai/analyze', methods=['POST'])
 @optional_limit(getattr(config, 'RATE_LIMIT_API_AI_ANALYSIS', None))
 def api_ai_analyze():
-    """AI assessment endpoint (cache-aware)."""
-    if not config_ai.AI_ENABLED:
-        return error_response("AI feature disabled", 503)
 
     if not ai_manager.is_enabled():
         return error_response("AI not configured (missing provider/key)", 503)
@@ -1415,12 +1739,14 @@ def clear_cache():
         logger.error(f"Error clearing cache: {str(e)}")
         return error_response(str(e), 500)
 
-# @app.route('/bulk-responder')
-@routes_bp.route('/bulk-responder', methods=['GET'])
-def bulk_responder_page():
+# @app.route('/bulk-actions')
+@routes_bp.route('/bulk-actions', methods=['GET'])
+def bulk_actions_page():
     return render_template(
-        'bulk_responder.html',
-        max_bulk_observables=responder_cfg.MAX_BULK_OBSERVABLES,
+        'bulk_actions.html',
+        max_bulk_observables_responder=responder_cfg.MAX_BULK_OBSERVABLES,
+        max_bulk_observables_analyzer=config.MAX_BULK_ANALYSIS_OBSERVABLES,
+        max_job_timeout=config.BULK_ANALYSIS_JOB_TIMEOUT,
         cortex_host=_get_cortex_host()
     )
 

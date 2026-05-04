@@ -17,6 +17,7 @@ from cortex4py.api import Api
 from cortex4py.query import And, Eq
 import config
 
+from markupsafe import escape
 import bleach
 
 # cache
@@ -386,6 +387,96 @@ def run_analysis(analyzer: str, datatype: str, data: str, tlp: int = None, pap: 
         raise
 
 
+def run_analysis_bulk(
+    observables: list,
+    analyzer_ids: list,
+    tlp: int = None,
+    pap: int = None,
+    message: str = None,
+    delay: float = None,
+    analyzer_map: dict = None,
+) -> tuple:
+    """
+    Fan-out a list of pre-normalised observables across a list of analyzer IDs.
+
+    Each observable must already be a dict with keys ``data`` (str) and
+    ``dataType`` (str).  Normalisation (sanitise, autodetect) is expected to
+    have been done by the caller before invoking this function.
+
+    Args:
+        observables:  list of dicts ``{"data": ..., "dataType": ...}``
+        analyzer_ids: list of analyzer name/id strings
+        tlp:          TLP level (0-3); falls back to config default
+        pap:          PAP level (0-3); falls back to config default
+        message:      optional free-text context (not used by Cortex run, kept
+                      for future TheHive integration)
+        delay:        seconds to sleep between Cortex calls; falls back to
+                      ``config.BULK_ANALYSIS_DELAY``
+        analyzer_map: optional dict ``{analyzer_id: [supported_dataTypes]}``
+                      used for pre-filtering incompatible pairs without hitting
+                      Cortex.  When None, incompatibility is caught as an
+                      exception from ``run_analysis``.
+
+    Returns:
+        tuple (jobs, errors) where:
+            jobs   – list of dicts with observable/dataType/analyzerId/jobId/status
+            errors – list of dicts with observable/analyzerId/reason
+    """
+    if delay is None:
+        delay = config.BULK_ANALYSIS_DELAY
+
+    jobs_out = []
+    errors_out = []
+
+    for obs in observables:
+        obs_data = obs['data'] if isinstance(obs, dict) else obs.data
+        obs_type = obs['dataType'] if isinstance(obs, dict) else obs.dataType
+
+        for analyzer_id in analyzer_ids:
+            # Pre-filter: if caller provided a datatype map, check compatibility
+            if analyzer_map is not None:
+                supported = analyzer_map.get(analyzer_id)
+                if supported is not None and obs_type not in supported:
+                    errors_out.append({
+                        'observable': obs_data,
+                        'analyzerId': analyzer_id,
+                        'reason': (
+                            f"Analyzer does not support dataType '{obs_type}'. "
+                            f"Supported: {', '.join(supported) or 'none'}"
+                        ),
+                    })
+                    logger.debug(
+                        f"Bulk analysis: skipping incompatible pair "
+                        f"{analyzer_id} / {obs_type} for {obs_data}"
+                    )
+                    continue
+
+            time.sleep(delay)
+            try:
+                job = run_analysis(analyzer_id, obs_type, obs_data, tlp, pap)
+                jobs_out.append({
+                    'observable': obs_data,
+                    'dataType': obs_type,
+                    'analyzerId': analyzer_id,
+                    'jobId': job['id'],
+                    'status': job.get('status', 'Waiting'),
+                })
+            except Exception as exc:
+                logger.warning(
+                    f"Bulk analysis: skipping {analyzer_id} on {obs_data}: {exc}"
+                )
+                errors_out.append({
+                    'observable': obs_data,
+                    'analyzerId': analyzer_id,
+                    'reason': str(exc),
+                })
+
+    logger.info(
+        f"run_analysis_bulk: {len(jobs_out)} jobs started, "
+        f"{len(errors_out)} skipped"
+    )
+    return jobs_out, errors_out
+
 
 def poll_job(job_id: str, max_attempts: int = None, initial_delay: int = None):
     """
@@ -516,6 +607,128 @@ def render_short_template(taxonomies: list, analyzer_name: str, app_root_path: s
     except Exception as e:
         logger.exception("Error rendering short template")
         return "<p>Error loading taxonomies.</p>"
+
+
+def build_short_summary(taxonomies: list) -> str:
+    """
+    Build a pipe-separated short summary text from taxonomies.
+
+    Format: "level1 | namespace1:predicate1=value1 | level2 | namespace2:predicate2=value2 | ..."
+    
+    Skips empty/None values. Returns fallback "No Data" if no taxonomies or all empty.
+
+    Args:
+        taxonomies: list of dicts with keys level, namespace, predicate, value
+
+    Returns:
+        Pipe-separated string suitable for CSV and UI display
+    """
+    if not taxonomies:
+        return "No Data"
+
+    parts = []
+    for tax in taxonomies:
+        if not isinstance(tax, dict):
+            continue
+        level = (tax.get('level') or '').strip()
+        namespace = (tax.get('namespace') or '').strip()
+        predicate = (tax.get('predicate') or '').strip()
+        value = (tax.get('value') or '').strip()
+
+        # Include level if present
+        if level and level.lower() != 'undef':
+            parts.append(level)
+
+        # Include namespace:predicate=value if all parts present
+        if namespace and predicate and value:
+            parts.append(f"{namespace}:{predicate}={value}")
+        elif namespace and value:
+            parts.append(f"{namespace}={value}")
+        elif value:
+            parts.append(value)
+
+    if not parts:
+        return "No Data"
+
+    return " | ".join(parts)
+
+
+def build_short_result(
+    observable: str,
+    data_type: str,
+    analyzer: str,
+    job_id: str,
+    report,
+    analyzer_name: str,
+    app_root_path: str,
+) -> dict:
+    """
+    Build a normalised short result dict for bulk analysis.
+
+    Handles successful reports (extract taxonomies, build summary, render HTML)
+    and failed/timeout cases (populate with sensible fallbacks).
+
+    Args:
+        observable: the observable string
+        data_type: the detected/provided dataType
+        analyzer: the analyzer ID/name used
+        job_id: the Cortex job ID
+        report: Cortex report object (may be None for timeout)
+        analyzer_name: analyzer name for template lookup
+        app_root_path: Flask app root path for template resolution
+
+    Returns:
+        dict with keys:
+            observable, dataType, analyzer, jobId, status,
+            shortSummary, taxonomies, shortHtml
+    """
+    status = getattr(report, 'status', None) if report else None
+
+    # Determine final status
+    if status is None:
+        final_status = "Timeout"
+        taxonomies = []
+        short_summary = "Timeout"
+        short_html = "<span class='badge bg-secondary'>Timeout</span>"
+    elif status == "Success":
+        final_status = "Success"
+        try:
+            taxonomies = extract_taxonomies(report)
+        except Exception as exc:
+            logger.warning(f"Could not extract taxonomies for {job_id}: {exc}")
+            taxonomies = []
+        short_summary = build_short_summary(taxonomies)
+        try:
+            short_html = render_short_template(taxonomies, analyzer_name, app_root_path)
+        except Exception as exc:
+            logger.warning(f"Could not render short template for {job_id}: {exc}")
+            short_html = f"<span class='badge bg-info'>{escape(short_summary)}</span>"
+    elif status == "Failure":
+        final_status = "Failure"
+        try:
+            taxonomies = extract_taxonomies(report)
+        except Exception:
+            taxonomies = []
+        short_summary = "Analysis Failed"
+        short_html = "<span class='badge bg-danger'>Analysis Failed</span>"
+    else:
+        # Catch-all for other statuses (e.g., "Waiting", "InProgress")
+        final_status = status
+        taxonomies = []
+        short_summary = status
+        short_html = f"<span class='badge bg-info'>{escape(status)}</span>"
+
+    return {
+        'observable': observable,
+        'dataType': data_type,
+        'analyzer': analyzer,
+        'jobId': job_id,
+        'status': final_status,
+        'shortSummary': short_summary,
+        'taxonomies': taxonomies,
+        'shortHtml': short_html,
+    }
+
 
 def resolve_long_template(report, app_root_path: str) -> Optional[str]:
     """

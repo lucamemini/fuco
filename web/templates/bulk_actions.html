@@ -1,0 +1,1052 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>Bulk Actions - FUCO</title>
+    
+    <link href="/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/css/main.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/css/all.min.css">
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+        <script>
+            window.FUCO_DEFAULT_TLP = {{ config.get('DEFAULT_TLP', 1) | tojson }};
+            window.FUCO_DEFAULT_PAP = {{ config.get('DEFAULT_PAP', 1) | tojson }};
+        </script>
+    <script src="/js/responder_actions.js"></script>
+    <script>
+        function getCsrfToken() {
+            const meta = document.querySelector('meta[name="csrf-token"]');
+            return meta ? meta.getAttribute('content') : '';
+        }
+    </script>
+    
+    <style>
+        body {
+            padding-top: 70px;
+            background-color: #f2f2f2;
+        }
+        
+        .bulk-container {
+            max-width: 1200px;
+            margin: 30px auto;
+        }
+        .section-card {
+            margin-bottom: 30px;
+        }
+        .upload-area {
+            border: 2px dashed #007bff;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .upload-area:hover {
+            background-color: #f8f9fa;
+            border-color: #0056b3;
+        }
+        .upload-area.dragover {
+            background-color: #e7f3ff;
+            border-color: #0056b3;
+        }
+        .observable-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .observable-item:last-child {
+            border-bottom: none;
+        }
+        .results-table {
+            margin-top: 20px;
+        }
+        .status-badge {
+            padding: 5px 10px;
+            border-radius: 12px;
+            font-size: 0.85em;
+        }
+        .status-success {
+            background-color: #28a745;
+            color: white;
+        }
+        .status-pending {
+            background-color: #ffc107;
+            color: black;
+        }
+        .status-error {
+            background-color: #dc3545;
+            color: white;
+        }
+    </style>
+    
+    
+    <script src="/js/auth.js"></script>
+  </head>
+<body>
+<header>
+  <nav class="navbar navbar-expand-md navbar-light fixed-top bg-fuco">
+    <div class="container-fluid">
+
+      <a class="navbar-brand" href="/"><strong>FUCO</strong></a>
+
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="navbarCollapse">
+
+        <ul class="navbar-nav me-auto mb-2 mb-md-0">
+        </ul>
+
+        <ul class="navbar-nav mb-2 mb-md-0">
+          <li class="nav-item" id="bulkNav">
+            <a class="nav-link disabled" href="/bulk-actions">
+              <i class="fas fa-layer-group"></i> Bulk Actions
+            </a>
+          </li>
+
+          <li class="nav-item" id="loginNav">
+            <a class="nav-link" href="#" onclick="handleLogin()">
+              <i class="fas fa-sign-in-alt"></i> Login
+            </a>
+          </li>
+
+          <li class="nav-item dropdown d-none" id="userNav">
+            <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+              <span class="user-initial" id="userInitial">?</span>
+              <span id="usernameDisplay"></span>
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end">
+                            {% if cortex_host %}
+                            <li>
+                                <a class="dropdown-item" href="{{ cortex_host }}" target="_blank" rel="noopener">
+                                    <i class="fas fa-key"></i> Change password
+                                </a>
+                            </li>
+                            {% endif %}
+              <li>
+                <a class="dropdown-item" href="#" onclick="handleLogout()">
+                  <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+              </li>
+            </ul>
+          </li>
+
+        </ul>
+      </div>
+    </div>
+  </nav>
+</header>
+
+    <div class="container bulk-container">
+        
+        <!-- Page Header -->
+        <div class="row mb-4">
+            <div class="col-12 d-flex flex-wrap align-items-center gap-3">
+                <div>
+                    <h2 class="mb-1"><i class="fas fa-layer-group"></i> Bulk Actions</h2>
+                    <p class="text-muted mb-0">Execute responder actions or run analyzers on multiple observables at once</p>
+                </div>
+                <div class="ms-auto">
+                    <div class="btn-group" role="group" aria-label="Bulk mode">
+                        <button type="button" class="btn btn-danger active" id="modeResponderBtn" onclick="setMode('responder')">
+                            <i class="fas fa-bolt"></i> Responders
+                        </button>
+                        <button type="button" class="btn btn-outline-primary" id="modeAnalyzerBtn" onclick="setMode('analyzer')">
+                            <i class="fas fa-search"></i> Analyzers
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-8">
+                <!-- Section 1: Single Observable -->
+                <div class="card section-card">
+                    <div class="card-header bg-primary text-white">
+                        <h5><i class="fas fa-plus-circle"></i> Add Single Observable</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="singleObservableForm">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <input type="text" class="form-control" id="singleObservable" 
+                                               placeholder="e.g., 1.2.3.4, evil.com, hash..." required>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <select class="form-control" id="singleDataType" required>
+                                            <option value="">Select type...</option>
+                                            <option value="domain">domain</option>
+                                            <option value="url">url</option>
+                                            <option value="fqdn">fqdn</option>
+                                            <option value="ip">ip</option>
+                                            <option value="hash">hash</option>
+                                            <option value="certificate_hash">certificate_hash</option>
+                                            <option value="file">file</option>
+                                            <option value="mail">mail</option>
+                                            <option value="other">other</option>
+                                            <option value="filename">filename</option>
+                                            <option value="uri_path">uri_path</option>
+                                            <option value="user-agent">user-agent</option>
+                                            <option value="mail_subject">mail_subject</option>
+                                            <option value="registry">registry</option>
+                                            <option value="regexp">regexp</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <label>&nbsp;</label>
+                                    <button type="submit" class="btn btn-primary btn-block text-nowrap">
+                                        <i class="fas fa-plus"></i> Add
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Section 2: Bulk Upload -->
+                <div class="card section-card">
+                    <div class="card-header bg-success text-white">
+                        <h5><i class="fas fa-file-upload"></i> Bulk Upload (CSV/TXT)</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="upload-area" id="uploadArea">
+                            <i class="fas fa-cloud-upload-alt fa-3x text-primary mb-3"></i>
+                            <h5>Drop CSV/TXT file here or click to browse</h5>
+                            <p class="text-muted">
+                                Format: observable,type<br>
+                                Example: 1.2.3.4,ip<br>
+                                evil.com,domain
+                            </p>
+                            <input type="file" id="fileInput" accept=".csv,.txt" style="display: none;">
+                            <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">
+                                <i class="fas fa-folder-open"></i> Choose File
+                            </button>
+                        </div>
+                        <div id="fileInfo" class="mt-3"></div>
+                        <div id="fileWarnings" class="mt-2"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 3: Observable List -->
+            <div class="col-lg-4">
+                <div class="card section-card">
+                    <div class="card-header bg-info text-white">
+                        <h5><i class="fas fa-list"></i> Observable Queue (<span id="queueCount">0</span>/<span id="queueLimit">{{ max_bulk_observables_responder }}</span>)</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="observableQueue" class="border rounded p-3" style="max-height: 520px; overflow-y: auto;">
+                            <p class="text-muted text-center">No observables added yet</p>
+                        </div>
+                        <div class="mt-3">
+                            <button class="btn btn-danger btn-sm" id="clearQueueBtn">
+                                <i class="fas fa-trash"></i> Clear All
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 4: Action Selection & Execution -->
+        <div class="card section-card">
+            <div class="card-header bg-danger text-white" id="executeSectionHeader">
+                <h5 id="executeSectionTitle"><i class="fas fa-bolt"></i> Execute Responders</h5>
+            </div>
+            <div class="card-body">
+                <form id="bulkExecuteForm">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+
+                    <!-- Responder Selection -->
+                    <div id="responderSelectionPanel">
+                        <div class="form-group">
+                            <label>Select Responders:</label>
+                            <select id="responderSelection" class="form-control" multiple size="5">
+                                <option disabled>Loading responders...</option>
+                            </select>
+                            <small class="form-text text-muted">Hold Ctrl/Cmd to select multiple</small>
+                        </div>
+                    </div>
+
+                    <!-- Analyzer Selection (hidden by default) -->
+                    <div id="analyzerSelectionPanel" style="display:none">
+                        <div class="form-group">
+                            <label>Select Analyzers:</label>
+                            <select id="analyzerSelection" class="form-control" multiple size="7">
+                                <option disabled>Add observables to the queue first</option>
+                            </select>
+                            <small class="form-text text-muted">Hold Ctrl/Cmd to select multiple</small>
+                        </div>
+                        <div id="mixedTypeWarning" class="alert alert-warning align-items-start gap-2 mt-2" style="display:none">
+                            <i class="fas fa-exclamation-triangle mt-1"></i>
+                            <span id="mixedTypeWarningText">Queue contains mixed data types. Incompatible analyzer/type pairs will be automatically skipped.</span>
+                        </div>
+                    </div>
+
+                    <!-- TLP/PAP -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label>TLP Level:</label>
+                            <select class="form-control" id="bulkTLP">
+                                <option value="0" {% if config.get('DEFAULT_TLP', 1) == 0 %}selected{% endif %}>WHITE (0)</option>
+                                <option value="1" {% if config.get('DEFAULT_TLP', 1) == 1 %}selected{% endif %}>GREEN (1)</option>
+                                <option value="2" {% if config.get('DEFAULT_TLP', 1) == 2 %}selected{% endif %}>AMBER (2)</option>
+                                <option value="3" {% if config.get('DEFAULT_TLP', 1) == 3 %}selected{% endif %}>RED (3)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label>PAP Level:</label>
+                            <select class="form-control" id="bulkPAP">
+                                <option value="0" {% if config.get('DEFAULT_PAP', 1) == 0 %}selected{% endif %}>WHITE (0)</option>
+                                <option value="1" {% if config.get('DEFAULT_PAP', 1) == 1 %}selected{% endif %}>GREEN (1)</option>
+                                <option value="2" {% if config.get('DEFAULT_PAP', 1) == 2 %}selected{% endif %}>AMBER (2)</option>
+                                <option value="3" {% if config.get('DEFAULT_PAP', 1) == 3 %}selected{% endif %}>RED (3)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Notes -->
+                    <div class="form-group mt-3">
+                        <label>Notes:</label>
+                        <textarea class="form-control" id="bulkMessage" rows="2"
+                                  placeholder="Add notes or reason for this action"></textarea>
+                    </div>
+
+                    <!-- Execute Button -->
+                    <div class="mt-4 text-center">
+                        <button type="submit" class="btn btn-danger btn-lg" id="bulkExecuteBtn">
+                            <i class="fas fa-rocket"></i> <span id="executeButtonText">Execute Bulk Actions</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Section 5: Results -->
+        <div class="card section-card" id="resultsSection" style="display: none;">
+            <div class="card-header bg-dark text-white d-flex align-items-center">
+                <h5 class="mb-0"><i class="fas fa-chart-bar"></i> Results</h5>
+                <button class="btn btn-sm btn-outline-light ms-auto" id="exportCsvBtn" style="display:none"
+                        onclick="exportAnalysisCsv()">
+                    <i class="fas fa-file-csv"></i> Export CSV
+                </button>
+            </div>
+            <div class="card-body">
+                <div id="resultsContainer"></div>
+                <div class="table-responsive results-table">
+                    <table class="table table-bordered table-sm" id="resultsTable">
+                        <thead>
+                            <tr>
+                                <th>Observable</th>
+                                <th>Type</th>
+                                <th id="resultsColAction">Responder</th>
+                                <th>Job ID</th>
+                                <th>Status</th>
+                                <th class="col-analyzer-only" style="display:none">Short Result</th>
+                                <th class="col-analyzer-only" style="display:none">Report</th>
+                            </tr>
+                        </thead>
+                        <tbody id="resultsTableBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Bulk Actions Logic -->
+    <script>
+        // ── State ─────────────────────────────────────────────────────────────
+        let observableQueue = [];
+        let currentMode = 'responder'; // 'responder' | 'analyzer'
+        const maxQueueSizeResponder = {{ max_bulk_observables_responder }};
+        const maxQueueSizeAnalyzer  = {{ max_bulk_observables_analyzer }};
+        function getMaxQueueSize() { return currentMode === 'analyzer' ? maxQueueSizeAnalyzer : maxQueueSizeResponder; }
+
+        // ── Mode management ───────────────────────────────────────────────────
+        function setMode(mode) {
+            currentMode = mode;
+            const isAnalyzer = mode === 'analyzer';
+
+            // Buttons
+            document.getElementById('modeResponderBtn').className = isAnalyzer
+                ? 'btn btn-outline-danger' : 'btn btn-danger active';
+            document.getElementById('modeAnalyzerBtn').className = isAnalyzer
+                ? 'btn btn-primary active' : 'btn btn-outline-primary';
+
+            // Selection panels
+            document.getElementById('responderSelectionPanel').style.display = isAnalyzer ? 'none' : '';
+            document.getElementById('analyzerSelectionPanel').style.display  = isAnalyzer ? '' : 'none';
+
+            // Execute section header color + title
+            const header = document.getElementById('executeSectionHeader');
+            header.className = isAnalyzer
+                ? 'card-header bg-primary text-white'
+                : 'card-header bg-danger text-white';
+            document.getElementById('executeSectionTitle').innerHTML = isAnalyzer
+                ? '<i class="fas fa-search"></i> Run Analyzers'
+                : '<i class="fas fa-bolt"></i> Execute Responders';
+
+            // Execute button
+            document.getElementById('executeButtonText').textContent = isAnalyzer
+                ? 'Run Bulk Analysis' : 'Execute Bulk Actions';
+
+            // Results table header + extra columns
+            document.getElementById('resultsColAction').textContent = isAnalyzer ? 'Analyzer' : 'Responder';
+            document.querySelectorAll('.col-analyzer-only').forEach(el => {
+                el.style.display = isAnalyzer ? '' : 'none';
+            });
+
+            // CSV button visibility
+            document.getElementById('exportCsvBtn').style.display = 'none'; // reset until results arrive
+
+            // Update queue limit display
+            document.getElementById('queueLimit').textContent = getMaxQueueSize();
+
+            if (isAnalyzer) updateAnalyzerSelection();
+        }
+
+        // ── Observable Queue ──────────────────────────────────────────────────
+        document.getElementById('singleObservableForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const observable = document.getElementById('singleObservable').value.trim();
+            const dataType   = document.getElementById('singleDataType').value;
+            if (observable && dataType) {
+                addToQueue({ data: observable, dataType: dataType });
+                this.reset();
+            }
+        });
+
+        const singleObservableInput = document.getElementById('singleObservable');
+        const singleDataTypeSelect  = document.getElementById('singleDataType');
+
+        function detectSingleDataType(value) {
+            const v = (value || '').trim();
+            if (!v) return '';
+            if (/^https?:\/\//i.test(v)) return 'url';
+            if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)) return 'mail';
+            if (/^(\d{1,3}\.){3}\d{1,3}$/.test(v)) return 'ip';
+            if (/^[A-Fa-f0-9]{32}$/.test(v) || /^[A-Fa-f0-9]{40}$/.test(v) || /^[A-Fa-f0-9]{64}$/.test(v)) return 'hash';
+            if (/^(?!-)([A-Za-z0-9-]{1,63}(?<!-)\.)+[A-Za-z]{2,63}$/.test(v)) return 'domain';
+            return '';
+        }
+
+        function setSingleDataType(value) {
+            const detected = detectSingleDataType(value);
+            if (detected && singleDataTypeSelect) singleDataTypeSelect.value = detected;
+        }
+
+        if (singleObservableInput) {
+            singleObservableInput.addEventListener('blur',  () => setSingleDataType(singleObservableInput.value));
+            singleObservableInput.addEventListener('input', () => setSingleDataType(singleObservableInput.value));
+        }
+
+        function addToQueue(item) {
+            if (observableQueue.length >= getMaxQueueSize()) return false;
+            const exists = observableQueue.some(o => o.data === item.data && o.dataType === item.dataType);
+            if (!exists) {
+                observableQueue.push(item);
+                updateQueueDisplay();
+                return true;
+            }
+            return false;
+        }
+
+        function removeFromQueue(index) {
+            observableQueue.splice(index, 1);
+            updateQueueDisplay();
+        }
+
+        function updateQueueDisplay() {
+            const container = document.getElementById('observableQueue');
+            const count     = document.getElementById('queueCount');
+            count.textContent = observableQueue.length;
+            if (observableQueue.length === 0) {
+                container.innerHTML = '<p class="text-muted text-center">No observables added yet</p>';
+            } else {
+                let html = '';
+                observableQueue.forEach((item, index) => {
+                    html += `
+                        <div class="observable-item">
+                            <span>
+                                <strong>${escapeHtml(item.data)}</strong>
+                                <span class="badge bg-secondary text-white ms-2">${escapeHtml(item.dataType)}</span>
+                            </span>
+                            <button class="btn btn-sm btn-danger" onclick="removeFromQueue(${index})">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>`;
+                });
+                container.innerHTML = html;
+            }
+            // Refresh analyzer list when queue changes in analyzer mode
+            if (currentMode === 'analyzer') updateAnalyzerSelection();
+        }
+
+        document.getElementById('clearQueueBtn').addEventListener('click', () => {
+            if (confirm('Clear all observables?')) {
+                observableQueue = [];
+                updateQueueDisplay();
+            }
+        });
+
+        // ── File Upload ───────────────────────────────────────────────────────
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput  = document.getElementById('fileInput');
+
+        uploadArea.addEventListener('click', () => fileInput.click());
+        uploadArea.addEventListener('dragover', (e) => { e.preventDefault(); uploadArea.classList.add('dragover'); });
+        uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('dragover'));
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            if (e.dataTransfer.files.length > 0) handleFile(e.dataTransfer.files[0]);
+        });
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) handleFile(e.target.files[0]);
+        });
+
+        function handleFile(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                parseCSV(e.target.result);
+                document.getElementById('fileInfo').innerHTML = `
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-circle"></i> File loaded: ${escapeHtml(file.name)}
+                    </div>`;
+                document.getElementById('fileWarnings').innerHTML = '';
+            };
+            reader.readAsText(file);
+        }
+
+        function parseCSV(content) {
+            const lines = content.split('\n');
+            let added = 0, limitReached = false, skippedUnknown = 0;
+            const skippedUnknownItems = [];
+            lines.forEach(line => {
+                line = line.trim();
+                if (!line || line.startsWith('#')) return;
+                const parts = line.split(',');
+                if (parts.length >= 1) {
+                    const observable = parts[0].trim();
+                    let dataType = (parts[1] || '').trim();
+                    if (observable && !dataType) dataType = detectSingleDataType(observable);
+                    if (observable && dataType) {
+                        if (addToQueue({ data: observable, dataType })) { added++; }
+                        else if (!limitReached) { limitReached = true; }
+                    } else if (observable && !dataType) {
+                        skippedUnknown++;
+                        skippedUnknownItems.push(observable);
+                    }
+                }
+            });
+            if (added > 0) alert(`Added ${added} observables to queue`);
+            if (limitReached) alert(`Queue limit reached (${getMaxQueueSize()}). Extra observables were skipped.`);
+            if (skippedUnknown > 0) {
+                const list = skippedUnknownItems.slice(0, 50).map(i => `<li>${escapeHtml(i)}</li>`).join('');
+                const more = skippedUnknownItems.length > 50
+                    ? `<div class="small text-muted">${skippedUnknownItems.length - 50} more not shown</div>` : '';
+                document.getElementById('fileWarnings').innerHTML = `
+                    <div class="alert alert-warning">
+                        <strong>Skipped ${skippedUnknown} observables (unknown data type).</strong>
+                        <ul class="mb-1">${list}</ul>${more}
+                    </div>`;
+            }
+        }
+
+        // ── Analyzer loading (Step 7/8) ────────────────────────────────────────
+        async function loadAnalyzers(dataTypes) {
+            const select = document.getElementById('analyzerSelection');
+            select.innerHTML = '<option disabled>Loading...</option>';
+            try {
+                const params = dataTypes && dataTypes.length === 1
+                    ? `?dataType=${encodeURIComponent(dataTypes[0])}` : '';
+                const resp = await fetch(`/api/analyzer/list${params}`);
+                const data = await resp.json();
+                select.innerHTML = '';
+                if (data.analyzers && data.analyzers.length > 0) {
+                    data.analyzers.forEach(a => {
+                        const opt = document.createElement('option');
+                        // Cortex bulk run expects analyzer name, not internal analyzer id.
+                        opt.value = a.name || a.id;
+                        opt.textContent = a.name;
+                        opt.dataset.analyzerId = a.id || '';
+                        opt.dataset.datatypes = JSON.stringify(a.dataTypeList || []);
+                        select.appendChild(opt);
+                    });
+                } else {
+                    select.innerHTML = '<option disabled>No analyzers available for this data type</option>';
+                }
+            } catch(e) {
+                select.innerHTML = '<option disabled>Error loading analyzers</option>';
+                console.error('Error loading analyzers:', e);
+            }
+        }
+
+        function updateAnalyzerSelection() {
+            if (currentMode !== 'analyzer') return;
+            const queueTypes = [...new Set(observableQueue.map(o => o.dataType))];
+
+            const warning     = document.getElementById('mixedTypeWarning');
+            const warningText = document.getElementById('mixedTypeWarningText');
+            if (queueTypes.length > 1) {
+                const renderedTypes = queueTypes.filter(Boolean).join(', ');
+                warningText.textContent = renderedTypes
+                    ? `Queue contains mixed data types (${renderedTypes}). Incompatible analyzer/type pairs will be automatically skipped.`
+                    : 'Queue contains mixed data types. Incompatible analyzer/type pairs will be automatically skipped.';
+                warning.style.removeProperty('display');
+                warning.style.display = 'flex';
+            } else {
+                warning.style.display = 'none';
+                warningText.textContent = '';
+            }
+            if (observableQueue.length > 0) {
+                loadAnalyzers(queueTypes);
+            } else {
+                document.getElementById('analyzerSelection').innerHTML = '<option disabled>Add observables to the queue first</option>';
+            }
+        }
+
+        // ── Responder loading ─────────────────────────────────────────────────
+        async function loadResponders() {
+            try {
+                const response = await fetch('/api/responder/list');
+                const data = await response.json();
+                const select = document.getElementById('responderSelection');
+                select.innerHTML = '';
+                if (data.success && data.responders.length > 0) {
+                    data.responders.forEach(resp => {
+                        const option = document.createElement('option');
+                        option.value = resp.id;
+                        option.textContent = `${resp.name} (${resp.version})`;
+                        select.appendChild(option);
+                    });
+                } else {
+                    select.innerHTML = '<option disabled>No responders available</option>';
+                }
+            } catch(error) {
+                console.error('Error loading responders:', error);
+            }
+        }
+
+        // ── Form submit dispatcher ────────────────────────────────────────────
+        function setBulkExecuteBusy(isBusy) {
+            const btn = document.getElementById('bulkExecuteBtn');
+            if (!btn) return;
+            btn.disabled = isBusy;
+            const label = currentMode === 'analyzer' ? 'Running...' : 'Executing...';
+            btn.innerHTML = isBusy
+                ? `<i class="fas fa-spinner fa-spin"></i> ${label}`
+                : `<i class="fas fa-rocket"></i> <span id="executeButtonText">${currentMode === 'analyzer' ? 'Run Bulk Analysis' : 'Execute Bulk Actions'}</span>`;
+        }
+
+        document.getElementById('bulkExecuteForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            if (currentMode === 'analyzer') {
+                await submitAnalyzerBulk();
+            } else {
+                await submitResponderBulk();
+            }
+        });
+
+        // ── Responder bulk submit (original logic, extracted to function) ─────
+        async function submitResponderBulk() {
+            if (observableQueue.length === 0) { alert('Please add at least one observable'); return; }
+            const select = document.getElementById('responderSelection');
+            const selectedResponders = Array.from(select.selectedOptions).map(o => o.value);
+            if (selectedResponders.length === 0) { alert('Please select at least one responder'); return; }
+
+            const tlp     = parseInt(document.getElementById('bulkTLP').value);
+            const pap     = parseInt(document.getElementById('bulkPAP').value);
+            const message = document.getElementById('bulkMessage').value;
+            const payload = { observables: observableQueue, responderIds: selectedResponders, tlp, pap, message };
+
+            showResultsLoading(observableQueue.length, selectedResponders.length);
+            setBulkExecuteBusy(true);
+
+            try {
+                const response = await fetch('/api/responder/bulk', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+                    body: JSON.stringify(payload)
+                });
+                const contentType = response.headers.get('content-type') || '';
+                if (!response.ok) {
+                    if (response.status === 403) {
+                        const msg = contentType.includes('application/json')
+                            ? ((await response.json()).error || 'User not authorized')
+                            : 'Utente non autorizzato';
+                        displayExecutionError(msg.includes('Responder not allowed') ? 'Utente non autorizzato' : msg);
+                        return;
+                    }
+                    if (contentType.includes('application/json')) {
+                        const err = await response.json();
+                        throw new Error(err.error || 'Execution failed');
+                    }
+                    throw new Error('Execution failed. Please reload the page and try again.');
+                }
+                if (!contentType.includes('application/json')) throw new Error('Unexpected response format.');
+                const result = await response.json();
+                if (result.success) {
+                    displayResponderResults(result);
+                    await pollBulkResults(result.results || []);
+                } else {
+                    alert('Error: ' + result.error);
+                }
+            } catch (error) {
+                console.error('Bulk execution error:', error);
+                alert('Execution failed: ' + error.message);
+            } finally {
+                setBulkExecuteBusy(false);
+            }
+        }
+
+        // ── Analyzer bulk submit ───────────────────────────────────────────────
+        async function submitAnalyzerBulk() {
+            if (observableQueue.length === 0) { alert('Please add at least one observable'); return; }
+            const select = document.getElementById('analyzerSelection');
+            const selectedAnalyzers = Array.from(select.selectedOptions).map(o => o.value);
+            if (selectedAnalyzers.length === 0) { alert('Please select at least one analyzer'); return; }
+
+            const tlp     = parseInt(document.getElementById('bulkTLP').value);
+            const pap     = parseInt(document.getElementById('bulkPAP').value);
+            const message = document.getElementById('bulkMessage').value;
+            const payload = { observables: observableQueue, analyzerIds: selectedAnalyzers, tlp, pap, message };
+
+            showAnalysisLoading(observableQueue.length, selectedAnalyzers.length);
+            setBulkExecuteBusy(true);
+
+            try {
+                const response = await fetch('/api/analysis/bulk', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+                    body: JSON.stringify(payload)
+                });
+                const contentType = response.headers.get('content-type') || '';
+                if (!response.ok) {
+                    const errMsg = contentType.includes('application/json')
+                        ? ((await response.json()).error || 'Submission failed')
+                        : `HTTP ${response.status}`;
+                    throw new Error(errMsg);
+                }
+                const result = await response.json();
+                displayAnalysisResults(result);
+                await pollAnalysisJobs(result.jobs || []);
+            } catch(e) {
+                console.error('Analyzer bulk error:', e);
+                alert('Bulk analysis failed: ' + e.message);
+            } finally {
+                setBulkExecuteBusy(false);
+            }
+        }
+
+        // ── Results display: responder mode ───────────────────────────────────
+        function showResultsLoading(observableCount, actionCount) {
+            const section = document.getElementById('resultsSection');
+            const tbody   = document.getElementById('resultsTableBody');
+            const container = document.getElementById('resultsContainer');
+            section.style.display = 'block';
+            container.innerHTML = `
+                <div class="alert alert-info d-flex align-items-center gap-2">
+                    <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+                    <div><strong>Executing bulk actions...</strong>
+                    <div class="small text-muted">Submitting ${observableCount * actionCount} jobs</div></div>
+                </div>`;
+            tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted">Waiting for execution results...</td></tr>`;
+            section.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function displayExecutionError(message) {
+            const section   = document.getElementById('resultsSection');
+            const tbody     = document.getElementById('resultsTableBody');
+            const container = document.getElementById('resultsContainer');
+            section.style.display = 'block';
+            container.innerHTML = `<div class="alert alert-danger"><strong>Execution blocked:</strong> ${escapeHtml(message)}</div>`;
+            tbody.innerHTML = `<tr>
+                <td>-</td><td><span class="badge bg-secondary">-</span></td>
+                <td>-</td><td><code>N/A</code></td>
+                <td><span class="status-badge status-error">${escapeHtml(message)}</span></td>
+            </tr>`;
+            section.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function displayResponderResults(result) {
+            const section   = document.getElementById('resultsSection');
+            const tbody     = document.getElementById('resultsTableBody');
+            const container = document.getElementById('resultsContainer');
+            section.style.display = 'block';
+            tbody.innerHTML = '';
+            container.innerHTML = `
+                <div class="alert alert-info">
+                    <strong>Execution Summary:</strong>
+                    ${result.total_executed}/${result.total_requested} jobs executed successfully
+                </div>`;
+            (result.results || []).forEach(r => {
+                const row = tbody.insertRow();
+                if (r.job_id) row.setAttribute('data-job-id', r.job_id);
+                const statusText  = r.status || 'In esecuzione';
+                const statusClass = statusText === 'Invalid data type' ? 'status-error' : 'status-pending';
+                row.innerHTML = `
+                    <td>${escapeHtml(r.observable)}</td>
+                    <td><span class="badge bg-secondary text-white">${escapeHtml(r.data_type)}</span></td>
+                    <td>${escapeHtml(r.responder_name)}</td>
+                    <td><code>${escapeHtml(r.job_id || 'N/A')}</code></td>
+                    <td><span class="status-badge ${statusClass}">${escapeHtml(statusText)}</span></td>`;
+            });
+            section.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        async function pollBulkResults(results) {
+            const jobs = results.filter(r => r.job_id);
+            if (!jobs.length) return;
+            await Promise.all(jobs.map(async (job) => {
+                try {
+                    const response = await fetch(`/api/responder/poll/${encodeURIComponent(job.job_id)}`);
+                    const ct = response.headers.get('content-type') || '';
+                    if (!response.ok || !ct.includes('application/json')) return;
+                    const data = await response.json();
+                    const status = data.job && data.job.status ? data.job.status : 'Unknown';
+                    updateJobStatus(job.job_id, status);
+                } catch(e) { console.error('Polling error:', e); }
+            }));
+        }
+
+        function updateJobStatus(jobId, status) {
+            const row = document.querySelector(`#resultsTableBody tr[data-job-id="${CSS.escape(jobId)}"]`);
+            if (!row) return;
+            const badge = row.querySelector('.status-badge');
+            if (!badge) return;
+            badge.textContent = status;
+            badge.className = 'status-badge ' + (
+                status === 'Success' ? 'status-success' :
+                (status === 'Failure' || status === 'Error' || status === 'Timeout') ? 'status-error' :
+                'status-pending');
+        }
+
+        // ── Results display: analyzer mode ────────────────────────────────────
+        function showAnalysisLoading(observableCount, analyzerCount) {
+            const section   = document.getElementById('resultsSection');
+            const tbody     = document.getElementById('resultsTableBody');
+            const container = document.getElementById('resultsContainer');
+            document.getElementById('exportCsvBtn').style.display = 'none';
+            section.style.display = 'block';
+            container.innerHTML = `
+                <div class="alert alert-info d-flex align-items-center gap-2">
+                    <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+                    <div><strong>Submitting bulk analysis...</strong>
+                    <div class="small text-muted">${observableCount * analyzerCount} combinations</div></div>
+                </div>`;
+            tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted">Waiting for jobs to start...</td></tr>`;
+            section.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function displayAnalysisResults(result) {
+            const section   = document.getElementById('resultsSection');
+            const tbody     = document.getElementById('resultsTableBody');
+            const container = document.getElementById('resultsContainer');
+            section.style.display = 'block';
+            tbody.innerHTML = '';
+
+            const errList = (result.errors || []).length > 0
+                ? `<ul class="mt-2 mb-0 small">${result.errors.map(e =>
+                    `<li>${escapeHtml(e.observable)} / ${escapeHtml(e.analyzerId)}: ${escapeHtml(e.reason)}</li>`
+                  ).join('')}</ul>` : '';
+            container.innerHTML = `
+                <div class="alert alert-info">
+                    <strong>Bulk Analysis Summary:</strong>
+                    ${result.accepted} job(s) started, ${result.skipped} skipped${errList}
+                </div>`;
+
+            (result.jobs || []).forEach(job => {
+                const row = tbody.insertRow();
+                row.setAttribute('data-job-id', job.jobId);
+                row.setAttribute('data-observable', job.observable);
+                row.setAttribute('data-datatype', job.dataType);
+                row.setAttribute('data-analyzer', job.analyzerId);
+                row.innerHTML = `
+                    <td>${escapeHtml(job.observable)}</td>
+                    <td><span class="badge bg-secondary text-white">${escapeHtml(job.dataType)}</span></td>
+                    <td>${escapeHtml(job.analyzerId)}</td>
+                    <td><code>${escapeHtml(job.jobId)}</code></td>
+                    <td class="col-status"><span class="status-badge status-pending">Pending</span></td>
+                    <td class="col-analyzer-only col-short-result">
+                        <span class="text-muted small"><i class="fas fa-spinner fa-spin"></i> Analyzing...</span>
+                    </td>
+                    <td class="col-analyzer-only col-report-link">-</td>`;
+            });
+            (result.errors || []).forEach(err => {
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td>${escapeHtml(err.observable)}</td>
+                    <td><span class="badge bg-secondary text-white">-</span></td>
+                    <td>${escapeHtml(err.analyzerId)}</td>
+                    <td><code>N/A</code></td>
+                    <td><span class="status-badge status-error">Skipped</span></td>
+                    <td class="col-analyzer-only col-short-result">
+                        <small class="text-muted">${escapeHtml(err.reason)}</small>
+                    </td>
+                    <td class="col-analyzer-only col-report-link">-</td>`;
+            });
+            section.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // ── Polling: analyzer mode ────────────────────────────────────────────
+        async function pollAnalysisJobs(jobs) {
+            const POLL_INTERVAL_MS = 4000;
+            const MAX_POLLS        = Math.ceil({{ max_job_timeout }} / (POLL_INTERVAL_MS / 1000));
+            let pending = jobs.filter(j => j.jobId).map(j => ({...j}));
+
+            for (let attempt = 0; attempt < MAX_POLLS && pending.length > 0; attempt++) {
+                await new Promise(r => setTimeout(r, POLL_INTERVAL_MS));
+
+                const fetches = pending.map(job =>
+                    fetch(
+                        `/api/analysis/bulk/job/${encodeURIComponent(job.jobId)}` +
+                        `?observable=${encodeURIComponent(job.observable)}` +
+                        `&dataType=${encodeURIComponent(job.dataType)}` +
+                        `&analyzer=${encodeURIComponent(job.analyzerId)}`
+                    )
+                    .then(r => r.ok ? r.json() : null)
+                    .catch(() => null)
+                );
+
+                const results  = await Promise.allSettled(fetches);
+                const stillPending = [];
+
+                results.forEach((res, i) => {
+                    const data = res.status === 'fulfilled' ? res.value : null;
+                    if (data && data.status === 'done') {
+                        updateAnalysisRow(pending[i].jobId, data.result);
+                    } else {
+                        stillPending.push(pending[i]);
+                    }
+                });
+                pending = stillPending;
+            }
+
+            // Mark remaining jobs as Timeout
+            pending.forEach(job => {
+                updateAnalysisRow(job.jobId, {
+                    status: 'Timeout',
+                    shortSummary: 'Timeout',
+                    shortHtml: "<span class='badge bg-secondary'>Timeout</span>",
+                    taxonomies: []
+                });
+            });
+
+            // Show Export CSV button once all done
+            if (currentMode === 'analyzer') {
+                document.getElementById('exportCsvBtn').style.display = '';
+            }
+        }
+
+        function updateAnalysisRow(jobId, result) {
+            const row = document.querySelector(`#resultsTableBody tr[data-job-id="${CSS.escape(jobId)}"]`);
+            if (!row) return;
+
+            const badge = row.querySelector('.col-status .status-badge');
+            if (badge) {
+                badge.textContent = result.status;
+                badge.className   = 'status-badge ' + (
+                    result.status === 'Success' ? 'status-success' :
+                    result.status === 'Pending' ? 'status-pending' :
+                    'status-error');
+            }
+
+            const shortCell = row.querySelector('.col-short-result');
+            if (shortCell) {
+                shortCell.innerHTML = result.shortHtml || escapeHtml(result.shortSummary || '-');
+            }
+
+            const reportCell = row.querySelector('.col-report-link');
+            if (reportCell) {
+                reportCell.innerHTML = result.status === 'Success'
+                    ? `<a href="/allReports?observable=${encodeURIComponent(result.observable || row.getAttribute('data-observable') || '')}&datatype=${encodeURIComponent(result.dataType || row.getAttribute('data-datatype') || '')}" target="_blank" rel="noopener" title="Open full report"><i class="fas fa-external-link-alt"></i></a>`
+                    : '-';
+            }
+
+            // Store normalised result on the row for CSV export
+            row.dataset.result = JSON.stringify(result);
+        }
+
+        // ── CSV Export ────────────────────────────────────────────────────────
+        function exportAnalysisCsv() {
+            const rows = document.querySelectorAll('#resultsTableBody tr[data-result]');
+            if (!rows.length) return;
+
+            const headers = ['observable','dataType','analyzer','jobId','status','shortSummary',
+                             'taxonomyLevel','taxonomyNamespace','taxonomyPredicate','taxonomyValue'];
+            const lines = [headers.join(',')];
+
+            rows.forEach(row => {
+                let result;
+                try { result = JSON.parse(row.dataset.result); } catch { return; }
+                const base = [
+                    row.dataset.observable || '',
+                    row.dataset.datatype   || '',
+                    row.dataset.analyzer   || '',
+                    row.getAttribute('data-job-id') || '',
+                    result.status || '',
+                    result.shortSummary || ''
+                ].map(csvEscape);
+
+                const taxonomies = result.taxonomies || [];
+                if (taxonomies.length === 0) {
+                    lines.push([...base, '', '', '', ''].join(','));
+                } else {
+                    taxonomies.forEach(t => {
+                        lines.push([
+                            ...base,
+                            csvEscape(t.level || ''),
+                            csvEscape(t.namespace || ''),
+                            csvEscape(t.predicate || ''),
+                            csvEscape(t.value || '')
+                        ].join(','));
+                    });
+                }
+            });
+
+            const blob = new Blob([lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+            const url  = URL.createObjectURL(blob);
+            const a    = document.createElement('a');
+            a.href     = url;
+            a.download = `bulk_analysis_${new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // ── Utilities ─────────────────────────────────────────────────────────
+        function escapeHtml(str) {
+            const d = document.createElement('div');
+            d.appendChild(document.createTextNode(String(str)));
+            return d.innerHTML;
+        }
+
+        function csvEscape(val) {
+            const s = String(val).replace(/\r?\n/g, ' ');
+            if (/[",\r\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+            return s;
+        }
+
+        // ── Init ──────────────────────────────────────────────────────────────
+        document.addEventListener('DOMContentLoaded', () => {
+            loadResponders();
+        });
+    </script>
+    <script src="/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
