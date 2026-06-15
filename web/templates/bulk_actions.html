@@ -288,9 +288,9 @@
                             </select>
                             <small class="form-text text-muted">Hold Ctrl/Cmd to select multiple</small>
                         </div>
-                        <div id="mixedTypeWarning" class="alert alert-warning align-items-start gap-2 mt-2" style="display:none">
+                        <div id="mixedTypeWarning" class="alert alert-warning d-flex align-items-start gap-2 mt-2" style="display:none!important">
                             <i class="fas fa-exclamation-triangle mt-1"></i>
-                            <span id="mixedTypeWarningText">Queue contains mixed data types. Incompatible analyzer/type pairs will be automatically skipped.</span>
+                            <span id="mixedTypeWarningText"></span>
                         </div>
                     </div>
 
@@ -579,10 +579,8 @@
                 if (data.analyzers && data.analyzers.length > 0) {
                     data.analyzers.forEach(a => {
                         const opt = document.createElement('option');
-                        // Cortex bulk run expects analyzer name, not internal analyzer id.
-                        opt.value = a.name || a.id;
+                        opt.value = a.id;
                         opt.textContent = a.name;
-                        opt.dataset.analyzerId = a.id || '';
                         opt.dataset.datatypes = JSON.stringify(a.dataTypeList || []);
                         select.appendChild(opt);
                     });
@@ -602,15 +600,11 @@
             const warning     = document.getElementById('mixedTypeWarning');
             const warningText = document.getElementById('mixedTypeWarningText');
             if (queueTypes.length > 1) {
-                const renderedTypes = queueTypes.filter(Boolean).join(', ');
-                warningText.textContent = renderedTypes
-                    ? `Queue contains mixed data types (${renderedTypes}). Incompatible analyzer/type pairs will be automatically skipped.`
-                    : 'Queue contains mixed data types. Incompatible analyzer/type pairs will be automatically skipped.';
-                warning.style.removeProperty('display');
+                warningText.textContent = `Queue contains mixed data types (${queueTypes.join(', ')}). Incompatible analyzer/type pairs will be automatically skipped.`;
+                warning.style.removeProperty('display'); // override the !important none
                 warning.style.display = 'flex';
             } else {
                 warning.style.display = 'none';
-                warningText.textContent = '';
             }
             if (observableQueue.length > 0) {
                 loadAnalyzers(queueTypes);
@@ -973,7 +967,7 @@
             const reportCell = row.querySelector('.col-report-link');
             if (reportCell) {
                 reportCell.innerHTML = result.status === 'Success'
-                    ? `<a href="/allReports?observable=${encodeURIComponent(result.observable || row.getAttribute('data-observable') || '')}&datatype=${encodeURIComponent(result.dataType || row.getAttribute('data-datatype') || '')}" target="_blank" rel="noopener" title="Open full report"><i class="fas fa-external-link-alt"></i></a>`
+                    ? `<a href="/getAnalysis?JobId=${encodeURIComponent(jobId)}" target="_blank" rel="noopener" title="Open full report"><i class="fas fa-external-link-alt"></i></a>`
                     : '-';
             }
 

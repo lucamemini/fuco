@@ -940,8 +940,8 @@ def api_analysis_bulk_job(job_id):
             }
     """
     try:
-        # Validate job_id: Cortex IDs may include underscores.
-        if not re.fullmatch(r'[A-Za-z0-9_\-]{1,128}', job_id):
+        # Validate job_id: Cortex IDs are alphanumeric + hyphens only
+        if not re.fullmatch(r'[A-Za-z0-9\-]{1,128}', job_id):
             return error_response("Invalid job ID", 400)
 
         # Single non-blocking check (max_attempts=1, initial_delay=0)
@@ -1051,79 +1051,38 @@ def api_analysis_bulk():
         except ValueError as e:
             return error_response(f"Invalid observable or dataType: {str(e)}", 400)
 
-        # Build an analyzer catalog for the queued data types and resolve
-        # requested identifiers (id or name) to runnable analyzer names.
-        # Cortex run API expects analyzer *name*.
+        # Build analyzer→dataTypeList map for pre-filtering incompatible pairs.
+        # We query only the distinct dataTypes present in the queue to limit
+        # round-trips to Cortex.
         distinct_types = list({obs.dataType for obs in req.observables})
-        analyzer_catalog: dict = {}
+        analyzer_map: dict = {}
         for dt in distinct_types:
             try:
                 for a in (utils.get_analyzer_by_type(dt) or []):
-                    aid = getattr(a, 'id', None)
-                    aname = getattr(a, 'name', None) or aid
-                    if not aname:
-                        continue
-                    entry = analyzer_catalog.setdefault(aname, {
-                        'name': aname,
-                        'ids': set(),
-                        'supported': set(),
-                    })
+                    aid = getattr(a, 'id', None) or getattr(a, 'name', None)
                     if aid:
-                        entry['ids'].add(aid)
-                    supported = list(getattr(a, 'dataTypeList', []) or [])
-                    if supported:
-                        entry['supported'].update(supported)
-                    else:
-                        entry['supported'].add(dt)
+                        analyzer_map.setdefault(aid, set()).add(dt)
             except Exception as exc:
                 logger.warning(f"Could not fetch analyzer map for type '{dt}': {exc}")
-
-        by_name = {name: meta for name, meta in analyzer_catalog.items()}
-        by_id = {}
-        for name, meta in analyzer_catalog.items():
-            for aid in meta['ids']:
-                by_id[aid] = meta
-
-        resolved_analyzers = []
-        resolved_set = set()
-        missing_analyzers = []
-        for analyzer_ref in req.analyzerIds:
-            meta = by_name.get(analyzer_ref) or by_id.get(analyzer_ref)
-            if not meta:
-                missing_analyzers.append(analyzer_ref)
-                continue
-            analyzer_name = meta['name']
-            if analyzer_name not in resolved_set:
-                resolved_set.add(analyzer_name)
-                resolved_analyzers.append(analyzer_name)
-
-        # Pre-filter incompatible analyzer/dataType pairs using resolved names.
+        # Convert sets → lists; keep only requested analyzers in the map
         filtered_map = {
-            name: sorted(list(meta['supported']))
-            for name, meta in analyzer_catalog.items()
-            if name in resolved_set
+            aid: list(supported)
+            for aid, supported in analyzer_map.items()
+            if aid in req.analyzerIds
         }
+        # Analyzers not found in the map are passed through (Cortex will reject
+        # incompatible calls, which are caught as row errors).
 
         observables_dicts = [{'data': o.data, 'dataType': o.dataType} for o in req.observables]
 
         jobs_out, errors_out = utils.run_analysis_bulk(
             observables=observables_dicts,
-            analyzer_ids=resolved_analyzers,
+            analyzer_ids=req.analyzerIds,
             tlp=req.tlp,
             pap=req.pap,
             message=req.message,
             analyzer_map=filtered_map if filtered_map else None,
         )
-
-        # Keep previous behavior: when an analyzer ref is unknown, report one
-        # skipped row per observable/analyzer pair.
-        for obs in observables_dicts:
-            for missing in missing_analyzers:
-                errors_out.append({
-                    'observable': obs['data'],
-                    'analyzerId': missing,
-                    'reason': f'Analyzer {missing} not found',
-                })
 
         _user = session.get('cortex_username', 'unknown')
         _ip   = request.remote_addr

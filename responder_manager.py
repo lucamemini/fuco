@@ -169,6 +169,9 @@ class ResponderManager:
                 }
                 result.append(resp_data)
                 self._responder_cache[resp.id] = resp_data
+
+            # Ensure deterministic alphabetical order for UI/API consumers.
+            result.sort(key=lambda r: ((r.get('name') or '').lower(), (r.get('id') or '').lower()))
             
             logger.info(f"Retrieved {len(result)} responders" + 
                        (f" for type {data_type}" if data_type else ""))
