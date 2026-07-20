@@ -230,13 +230,6 @@
   </div>
 </div>
 
-  <div class="alert alert-warning small mt-3 mb-3" role="note">
-    <strong>AI Usage Notice</strong><br>
-    The "Analisi IA" and "AI Assessment" features are provided to support analyst work only and do not replace final human judgment.<br>
-    Review and validate the output before taking any decision. Do not submit personal data or confidential company information unless strictly necessary for the analysis.<br>
-    Prefer anonymous or generic observables whenever possible and use this feature in accordance with internal security and compliance policies.
-  </div>
-
 <script>
 function initResponderButtons() {
   if (typeof window.addResponderButtons === 'function') {
@@ -354,7 +347,20 @@ function setAiCacheIndicator(state, text) {
   el.textContent = text;
 }
 
-function renderAiAssessment(result) {
+function appendAiUsageNotice(content) {
+  const notice = document.createElement('div');
+  notice.className = 'alert alert-warning small mt-3 mb-0';
+  notice.setAttribute('role', 'note');
+  notice.innerHTML = `
+    <strong>AI Usage Notice</strong><br>
+    The "Analisi IA" and "AI Assessment" features are provided to support analyst work only and do not replace final human judgment.<br>
+    Review and validate the output before taking any decision. Do not submit personal data or confidential company information unless strictly necessary for the analysis.<br>
+    Prefer anonymous or generic observables whenever possible and use this feature in accordance with internal security and compliance policies.
+  `;
+  content.appendChild(notice);
+}
+
+function renderAiAssessment(result, showUsageNotice = false) {
     const content = document.getElementById('ai-assessment-content');
     const panel = document.getElementById('ai-assessment-panel');
     if (!content || !panel) return;
@@ -447,6 +453,10 @@ function renderAiAssessment(result) {
   if (deductions.length)  content.appendChild(makeSection('Deduzioni (da training)', deductions));
   if (findings.length)    content.appendChild(makeSection('Findings', findings));
   content.appendChild(makeSection('Azioni consigliate', actions));
+
+  if (showUsageNotice) {
+    appendAiUsageNotice(content);
+  }
 }
 
   function renderAiStatus(message, level = 'info', guidance = '') {
@@ -541,7 +551,7 @@ async function runAiAnalysis(forceRefresh = false) {
           throw new Error(result.error || 'Errore API Analisi IA');
         }
 
-        renderAiAssessment(result);
+        renderAiAssessment(result, true);
         setAiCacheIndicator('ready', 'AI assessment in cache: available');
     } catch (error) {
         renderAiStatus(
@@ -581,7 +591,7 @@ async function runAiAnalysis(forceRefresh = false) {
 
         const result = await response.json();
         if (response.ok) {
-          renderAiAssessment(result);
+          renderAiAssessment(result, false);
           setAiCacheIndicator('ready', 'AI assessment in cache: available');
           return;
         }

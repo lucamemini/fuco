@@ -303,13 +303,6 @@ body {
   </div>
 </div>
 
-<div class="alert alert-warning small mt-3 mb-3" role="note">
-  <strong>AI Usage Notice</strong><br>
-  The "Analisi IA" and "AI Assessment" features are provided to support analyst work only and do not replace final human judgment.<br>
-  Review and validate the output before taking any decision. Do not submit personal data or confidential company information unless strictly necessary for the analysis.<br>
-  Prefer anonymous or generic observables whenever possible and use this feature in accordance with internal security and compliance policies.
-</div>
-
 <div id="ai-assessment-panel" class="card mb-3 d-none">
   <div class="card-body">
     <h5 class="card-title"><i class="fas fa-brain"></i> AI Assessment</h5>
@@ -656,6 +649,19 @@ function renderAiAssessment(result) {
     content.appendChild(makeSection('Azioni consigliate', actions));
 }
 
+  function appendAiUsageNotice(content) {
+    const notice = document.createElement('div');
+    notice.className = 'alert alert-warning small mt-3 mb-0';
+    notice.setAttribute('role', 'note');
+    notice.innerHTML = `
+      <strong>AI Usage Notice</strong><br>
+      The "Analisi IA" and "AI Assessment" features are provided to support analyst work only and do not replace final human judgment.<br>
+      Review and validate the output before taking any decision. Do not submit personal data or confidential company information unless strictly necessary for the analysis.<br>
+      Prefer anonymous or generic observables whenever possible and use this feature in accordance with internal security and compliance policies.
+    `;
+    content.appendChild(notice);
+  }
+
   function renderAiStatus(message, level = 'info', guidance = '') {
     const content = document.getElementById('ai-assessment-content');
     const panel = document.getElementById('ai-assessment-panel');
@@ -752,6 +758,7 @@ async function runAiAnalysis(forceRefresh = false) {
         }
 
         renderAiAssessment(result);
+        appendAiUsageNotice(document.getElementById('ai-assessment-content'));
     } catch (error) {
         renderAiStatus(
           'Analisi IA non disponibile',
