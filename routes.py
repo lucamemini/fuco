@@ -43,6 +43,12 @@ logger = logging.getLogger(__name__)
 routes_bp = Blueprint('routes', __name__)
 
 
+def _analyzer_sort_key(analyzer):
+    if isinstance(analyzer, dict):
+        return str(analyzer.get('name') or analyzer.get('id') or '').casefold()
+    return str(getattr(analyzer, 'name', None) or getattr(analyzer, 'id', None) or '').casefold()
+
+
 def _render_generic_fallback(report):
     """
     Render a safe fallback HTML block.
@@ -514,7 +520,7 @@ def get_analyzer():
     try:
         analyzer_type = str(request.args.get('type', 'domain'))
         analyzer_type = utils.InputValidator.validate_datatype(analyzer_type)
-        result = utils.get_analyzer_by_type(analyzer_type)
+        result = sorted(utils.get_analyzer_by_type(analyzer_type), key=_analyzer_sort_key)
         return render_template('analyzer.html', data=result)
     except Exception as e:
         logger.error(f"Error in get_analyzer(): {str(e)}")
@@ -889,6 +895,7 @@ def api_analyzer_list():
                         'dataTypeList': list(getattr(a, 'dataTypeList', []) or []),
                     })
 
+        analyzers_out.sort(key=_analyzer_sort_key)
         return jsonify({'analyzers': analyzers_out})
 
     except ValueError as e:
@@ -1403,7 +1410,7 @@ def api_get_analyzer():
                 continue
         
         response = {
-            "analyzers": all_analyzers,
+            "analyzers": sorted(all_analyzers, key=_analyzer_sort_key),
             "supportedDataTypes": list(all_data_types)
         }
         
