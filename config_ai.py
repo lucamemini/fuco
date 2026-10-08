@@ -22,14 +22,14 @@ AI_MODEL = 'gemini-flash-latest'  # model of the 'gemini' provider
 # and an API key is configured. Placeholders below are not implemented yet.
 AI_PROVIDERS = {
     'gemini': {
-        'label': 'Google Gemini (free tier)',
+        'label': 'Google Gemini (free)',
         'model': AI_MODEL,
         'enabled': True,
         'api_key_env': ['FUCO_AI_API_KEY', 'GEMINI_API_KEY'],
         'secret_attr': 'AI_API_KEY',
     },
     'gti': {
-        'label': 'Google Threat Intelligence (agentic)',
+        'label': 'Google Threat Intelligence (Enterprise)',
         'model': 'gti-agent',
         'enabled': True,
         'api_key_env': ['GTI_APIKEY', 'AI_GTI_API_KEY'],

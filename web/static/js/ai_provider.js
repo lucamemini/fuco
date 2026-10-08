@@ -8,6 +8,12 @@ window.FucoAiProvider = (function () {
     try { return localStorage.getItem(STORAGE_KEY) || null; } catch (e) { return null; }
   }
 
+  const labels = {};
+
+  function label(id) {
+    return labels[id] || id;
+  }
+
   function selected() {
     return current || stored();
   }
@@ -24,7 +30,7 @@ window.FucoAiProvider = (function () {
         if (p.id === current) return;
         current = p.id;
         try { localStorage.setItem(STORAGE_KEY, current); } catch (e) { /* storage unavailable */ }
-        toggle.title = 'Motore IA: ' + p.label;
+        toggle.title = 'AI engine: ' + p.label;
         renderMenu(menu, providers, onChange, toggle);
         if (typeof onChange === 'function') onChange(current);
       });
@@ -44,13 +50,15 @@ window.FucoAiProvider = (function () {
       const data = await response.json();
       const providers = (data.providers || []).filter(function (p) { return p.available; });
 
+      (data.providers || []).forEach(function (p) { labels[p.id] = p.label; });
       const ids = providers.map(function (p) { return p.id; });
       current = [stored(), data.default].find(function (id) { return ids.indexOf(id) !== -1; }) || ids[0] || null;
 
       if (toggle) {
         const label = (providers.find(function (p) { return p.id === current; }) || {}).label;
-        toggle.title = label ? 'Motore IA: ' + label : 'Scegli il motore IA';
+        toggle.title = label ? 'AI engine: ' + label : 'Select AI engine';
         toggle.classList.toggle('d-none', providers.length < 2);
+        toggle.parentElement.classList.toggle('has-menu', providers.length >= 2);
         renderMenu(menu, providers, onChange, toggle);
       }
     } catch (e) {
@@ -58,5 +66,5 @@ window.FucoAiProvider = (function () {
     }
   }
 
-  return { init: init, selected: selected };
+  return { init: init, selected: selected, label: label };
 })();

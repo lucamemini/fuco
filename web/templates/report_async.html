@@ -197,7 +197,7 @@ body {
     color: white;
 }
 
-.ai-split .ai-split-main { border-radius: 6px 0 0 6px; }
+.ai-split.has-menu .ai-split-main { border-radius: 6px 0 0 6px; }
 .ai-split .ai-split-toggle { border-radius: 0 6px 6px 0; padding: 10px 8px; border-left: 1px solid rgba(255,255,255,0.35); }
 .ai-split .action-btn-header:hover { transform: none; }
 .ai-split .dropdown-item.active { background: #0d6efd; }
@@ -304,9 +304,9 @@ body {
     </button>
     <div class="btn-group ai-split">
       <button id="ai-analysis-btn" class="action-btn-header btn-export ai-split-main" onclick="runAiAnalysis()" disabled>
-        <i class="fas fa-brain"></i> Analisi IA
+        <i class="fas fa-brain"></i> AI Analysis
       </button>
-      <button type="button" class="action-btn-header btn-export ai-split-toggle dropdown-toggle dropdown-toggle-split d-none" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Scegli il motore IA" title="Scegli il motore IA"></button>
+      <button type="button" class="action-btn-header btn-export ai-split-toggle dropdown-toggle dropdown-toggle-split d-none" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Select AI engine" title="Select AI engine"></button>
       <ul id="ai-provider-menu" class="dropdown-menu dropdown-menu-end"></ul>
     </div>
     <div id="responder-actions-{{ data.fuco.id }}"></div>
@@ -610,7 +610,7 @@ function renderAiAssessment(result) {
       if (!isoValue) return '';
       const d = new Date(isoValue);
       if (Number.isNaN(d.getTime())) return '';
-      return d.toLocaleString('it-IT', {
+      return d.toLocaleString('en-GB', {
         day: '2-digit',
         month: '2-digit',
         year: 'numeric',
@@ -643,7 +643,8 @@ function renderAiAssessment(result) {
     if (generatedAt) {
       const ts = document.createElement('div');
       ts.className = 'small text-muted mt-1';
-      ts.textContent = `Generato il ${generatedAt}`;
+      const engine = FucoAiProvider.label((result && result.provider) || 'gemini');
+    ts.textContent = `Generated on ${generatedAt} · Engine: ${engine}`;
       badges.appendChild(document.createElement('br'));
       badges.appendChild(ts);
     }
@@ -665,7 +666,7 @@ function renderAiAssessment(result) {
     notice.setAttribute('role', 'note');
     notice.innerHTML = `
       <strong>AI Usage Notice</strong><br>
-      The "Analisi IA" and "AI Assessment" features are provided to support analyst work only and do not replace final human judgment.<br>
+      The "AI Analysis" and "AI Assessment" features are provided to support analyst work only and do not replace final human judgment.<br>
       Review and validate the output before taking any decision. Do not submit personal data or confidential company information unless strictly necessary for the analysis.<br>
       Prefer anonymous or generic observables whenever possible and use this feature in accordance with internal security and compliance policies.
     `;
@@ -701,7 +702,7 @@ function renderAiAssessment(result) {
 async function runAiAnalysis(forceRefresh = false) {
     const btn = $('#ai-analysis-btn');
     btn.prop('disabled', true);
-    btn.html('<i class="fas fa-spinner fa-spin"></i> Analisi IA...');
+    btn.html('<i class="fas fa-spinner fa-spin"></i> AI Analysis...');
     renderAiStatus('AI analysis in progress...', 'info', 'Please wait while correlation across reports is completed.');
 
     try {
@@ -710,7 +711,7 @@ async function runAiAnalysis(forceRefresh = false) {
           .filter(Boolean);
 
         if (!jobs.length) {
-            throw new Error('Nessun job disponibile per l\'analisi IA');
+            throw new Error('No jobs available for AI analysis');
         }
 
         const response = await fetch('/api/ai/analyze', {
@@ -733,27 +734,27 @@ async function runAiAnalysis(forceRefresh = false) {
         const result = await response.json();
         if (!response.ok) {
           if (response.status === 409) {
-            const msg409 = result.error || 'Alcuni analyzer non hanno ancora completato il job.';
+            const msg409 = result.error || 'Some analyzers have not completed their job yet.';
             renderAiStatus(
-              'Analisi IA non disponibile: job non completati',
+              'AI Analysis unavailable: jobs not completed',
               'warning',
-              `${msg409} Attendi il completamento dei report e poi riprova.`
+              `${msg409} Wait for the reports to complete and try again.`
             );
             return;
           }
           if (response.status === 403 && result.error === 'tlp_blocked') {
             renderAiStatus(
-              '🔒 Analisi IA bloccata per policy TLP',
+              '🔒 AI Analysis blocked by TLP policy',
               'warning',
-              result.message || 'AI Assessment non consentito per il TLP di questa analisi.'
+              result.message || 'AI Assessment is not allowed for the TLP of this analysis.'
             );
             return;
           }
           if (response.status === 403 && result.error === 'pap_blocked') {
             renderAiStatus(
-              '🔒 Analisi IA bloccata per policy PAP',
+              '🔒 AI Analysis blocked by PAP policy',
               'warning',
-              result.message || 'AI Assessment non consentito per il PAP di questa analisi.'
+              result.message || 'AI Assessment is not allowed for the PAP of this analysis.'
             );
             return;
           }
@@ -765,20 +766,20 @@ async function runAiAnalysis(forceRefresh = false) {
             );
             return;
           }
-          throw new Error(result.error || 'Errore API Analisi IA');
+          throw new Error(result.error || 'AI Analysis API error');
         }
 
         renderAiAssessment(result);
         appendAiUsageNotice(document.getElementById('ai-assessment-content'));
     } catch (error) {
         renderAiStatus(
-          'Analisi IA non disponibile',
+          'AI Analysis unavailable',
           'danger',
-          error && error.message ? error.message : 'Errore inatteso durante la richiesta.'
+          error && error.message ? error.message : 'Unexpected error during the request.'
         );
     } finally {
         btn.prop('disabled', completedCount !== totalCount);
-        btn.html('<i class="fas fa-brain"></i> Analisi IA');
+        btn.html('<i class="fas fa-brain"></i> AI Analysis');
     }
 }
 
