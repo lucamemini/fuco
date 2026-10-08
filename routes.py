@@ -176,6 +176,7 @@ class AiAnalyzeRequest(BaseModel):
     datatype: str = Field(..., min_length=1, max_length=100)
     jobs: List[str] = Field(..., min_items=1)
     force_refresh: Optional[bool] = False
+    provider: Optional[str] = Field(default=None, max_length=50)
     tlp: Optional[int] = None
     pap: Optional[int] = None
 
@@ -1219,6 +1220,7 @@ def api_ai_analyze():
             current_app.cache_manager,
             bundle,
             force_refresh=bool(ai_req.force_refresh),
+            provider=ai_req.provider,
         )
         ai_step_ms = int((time.time() - ai_step_started) * 1000)
 
@@ -1354,11 +1356,16 @@ def api_ai_cache_assessment():
             return error_response("No reports available for AI analysis", 404)
 
         bundle = ai_manager.build_bundle(observable, datatype, reports_payload)
-        cache_key = ai_manager.make_cache_key(bundle)
+        try:
+            provider = ai_manager.resolve_provider(ai_req.provider)
+        except ai_manager.AIProviderError:
+            # Stale provider choice (e.g. saved in the browser): fall back to the default for cache lookup
+            provider = ai_manager.resolve_provider(None)
+        cache_key = ai_manager.make_cache_key(bundle, provider)
         cached = current_app.cache_manager.get_ai_assessment(cache_key)
 
         if not cached:
-            latest_index_key = ai_manager.make_latest_index_key(observable, datatype)
+            latest_index_key = ai_manager.make_latest_index_key(observable, datatype, provider)
             latest_ptr = current_app.cache_manager.get_ai_assessment(latest_index_key)
             latest_cache_key = (latest_ptr or {}).get('cache_key') if isinstance(latest_ptr, dict) else None
             if latest_cache_key:
@@ -1373,9 +1380,19 @@ def api_ai_cache_assessment():
 
     except ValueError as e:
         return error_response(str(e), 400)
+    except ai_manager.AIProviderError as e:
+        return error_response(str(e), int(getattr(e, 'status_code', 502) or 502))
     except Exception as e:
         logger.error(f"Error in api_ai_cache_assessment(): {str(e)}", exc_info=True)
         return error_response(str(e), 500)
+
+
+@routes_bp.route('/api/ai/providers', methods=['GET'])
+def api_ai_providers():
+    """List AI providers available for the GUI dropdown."""
+    if not config_ai.AI_ENABLED:
+        return error_response("AI feature disabled", 503)
+    return jsonify(ai_manager.list_providers())
 
 
 @routes_bp.route('/api/getAnalyzer', methods=['GET'])

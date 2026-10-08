@@ -1,0 +1,166 @@
+{% if artifact.status == "Success" %}
+{% set content = artifact.report.full if artifact.report.full is defined else {} %}
+{% set cti = content.cti %}
+{% set rdns = content.rdns %}
+{% set cbs = content.cbs %}
+{% set errors = content.errors if content.errors else {} %}
+
+<div class="card border-success report-ELLIO-Reputation">
+  <div class="card-header">
+    <ul class="nav nav-tabs card-header-tabs">
+      <li class="nav-item">
+        <a class="nav-link active" id="summary-tab_{{ artifact.id }}" data-bs-toggle="tab" data-bs-target="#summary_{{ artifact.id }}" role="tab" aria-controls="summary_{{ artifact.id }}" aria-selected="true">Summary</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" id="rdns-tab_{{ artifact.id }}" data-bs-toggle="tab" data-bs-target="#rdns_{{ artifact.id }}" role="tab" aria-controls="rdns_{{ artifact.id }}" aria-selected="false">rDNS</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" id="cbs-tab_{{ artifact.id }}" data-bs-toggle="tab" data-bs-target="#cbs_{{ artifact.id }}" role="tab" aria-controls="cbs_{{ artifact.id }}" aria-selected="false">CBS</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" id="json-tab_{{ artifact.id }}" data-bs-toggle="tab" data-bs-target="#json_{{ artifact.id }}" role="tab" aria-controls="json_{{ artifact.id }}" aria-selected="false">Json</a>
+      </li>
+    </ul>
+  </div>
+
+  <div class="card-body">
+    <div class="tab-content" id="ellioTabContent_{{ artifact.id }}">
+
+      <div class="tab-pane fade show active" id="summary_{{ artifact.id }}" role="tabpanel" aria-labelledby="summary-tab_{{ artifact.id }}">
+        {% if errors.cti %}
+        <div class="alert alert-warning"><strong>CTI:</strong> {{ errors.cti }}</div>
+        {% elif cti is none %}
+        <div class="alert alert-info">CTI lookup not performed or no data returned.</div>
+        {% else %}
+        <div class="panel panel-info">
+          <div class="panel-heading"><strong>Threat Intelligence</strong></div>
+          <div class="panel-body">
+            <dl class="dl-horizontal">
+              <dt>IP</dt>
+              <dd><code>{{ cti.ip if cti.ip else content.ioc }}</code></dd>
+
+              <dt>Seen</dt>
+              <dd>
+                {% if cti.seen %}
+                <span class="badge bg-danger">Yes</span>
+                {% else %}
+                <span class="badge bg-secondary">No</span>
+                {% endif %}
+              </dd>
+
+              {% if cti.classification %}
+              <dt>Classification</dt>
+              <dd><span class="badge bg-warning text-dark">{{ cti.classification }}</span></dd>
+              {% endif %}
+
+              {% if cti.actor %}
+              <dt>Actor</dt>
+              <dd>{{ cti.actor }}</dd>
+              {% endif %}
+
+              {% if cti.rdns %}
+              <dt>rDNS</dt>
+              <dd>{{ cti.rdns }}</dd>
+              {% endif %}
+
+              {% if cti.first_seen %}
+              <dt>First Seen</dt>
+              <dd>{{ cti.first_seen }}</dd>
+              {% endif %}
+
+              {% if cti.last_seen %}
+              <dt>Last Seen</dt>
+              <dd>{{ cti.last_seen }}</dd>
+              {% endif %}
+
+              {% if cti.spoofable is not none %}
+              <dt>Spoofable</dt>
+              <dd>{{ 'Yes' if cti.spoofable else 'No' }}</dd>
+              {% endif %}
+            </dl>
+
+            {% if cti.tags %}
+            <p><strong>Tags:</strong>
+              {% for tag in cti.tags %}
+              <span class="badge bg-info text-dark" style="margin: 2px;">{{ tag }}</span>
+              {% endfor %}
+            </p>
+            {% endif %}
+          </div>
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="tab-pane fade" id="rdns_{{ artifact.id }}" role="tabpanel" aria-labelledby="rdns-tab_{{ artifact.id }}">
+        {% if errors.rdns %}
+        <div class="alert alert-warning">{{ errors.rdns }}</div>
+        {% elif not rdns or not rdns.ptr %}
+        <div class="alert alert-info">No PTR records found.</div>
+        {% else %}
+        <table class="table table-sm table-striped">
+          <thead><tr><th>PTR records</th></tr></thead>
+          <tbody>
+            {% for ptr in rdns.ptr %}
+            <tr><td><code>{{ ptr }}</code></td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% endif %}
+      </div>
+
+      <div class="tab-pane fade" id="cbs_{{ artifact.id }}" role="tabpanel" aria-labelledby="cbs-tab_{{ artifact.id }}">
+        {% if errors.cbs %}
+        <div class="alert alert-warning">{{ errors.cbs }}</div>
+        {% elif not cbs or not cbs.found %}
+        <div class="alert alert-info">IP not part of any known Common Business Service range.</div>
+        {% else %}
+        <dl class="dl-horizontal">
+          <dt>CIDR</dt>
+          <dd><code>{{ cbs.cidr if cbs.cidr else '-' }}</code></dd>
+          {% for title, items in [('Providers', cbs.providers), ('Types', cbs.types), ('Services', cbs.services), ('Regions', cbs.regions), ('Labels', cbs.labels)] %}
+          {% if items %}
+          <dt>{{ title }}</dt>
+          <dd>
+            {% for item in items %}
+            <span class="badge bg-secondary" style="margin: 2px;">{{ item }}</span>
+            {% endfor %}
+          </dd>
+          {% endif %}
+          {% endfor %}
+        </dl>
+
+        {% if cbs.matches %}
+        <table class="table table-sm table-striped">
+          <thead><tr><th>Provider</th><th>Type</th><th>Service</th><th>Region</th></tr></thead>
+          <tbody>
+            {% for m in cbs.matches %}
+            <tr>
+              <td>{{ m.provider or '-' }}</td>
+              <td>{{ m.type or '-' }}</td>
+              <td>{{ m.service or '-' }}</td>
+              <td>{{ m.region or '-' }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% endif %}
+        {% endif %}
+      </div>
+
+      <div class="tab-pane fade" id="json_{{ artifact.id }}" role="tabpanel" aria-labelledby="json-tab_{{ artifact.id }}">
+        <pre><code>{{ artifact.report | tojson(indent=2) }}</code></pre>
+      </div>
+    </div>
+  </div>
+</div>
+{% else %}
+<div class="card border-danger">
+  <div class="card-header alert alert-danger">
+    <strong>Error</strong>
+  </div>
+  <div class="card-body">
+    <strong>{{ artifact.data }}</strong><br>
+    {{ artifact.report.errorMessage if artifact.report and artifact.report.errorMessage is defined else 'Unknown error' }}
+  </div>
+</div>
+{% endif %}

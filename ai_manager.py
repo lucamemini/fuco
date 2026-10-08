@@ -1,6 +1,8 @@
 """
 AI assessment manager.
-Handles normalization, cache key generation, cache usage and Gemini calls.
+Handles normalization, cache key generation, cache usage and the provider registry
+(each provider implements `fn(bundle) -> (assessment, meta)` and is registered with
+@register_provider; currently implemented: gemini).
 """
 
 import hashlib
@@ -177,27 +179,105 @@ def _guard_untrusted_llm_input(obj):
     return _neutralize_untrusted_text(obj)
 
 
-def get_api_key() -> str:
-    env_key = os.getenv("FUCO_AI_API_KEY") or os.getenv("GEMINI_API_KEY")
-    env_key = _normalize_api_key(env_key)
-    if env_key:
-        return env_key
+_PROVIDER_CALLS = {}
 
-    if secretai is not None:
-        key = _normalize_api_key(getattr(secretai, "AI_API_KEY", None))
-        if key:
-            return key
 
-    cfg_key = _normalize_api_key(getattr(ai_cfg, "AI_API_KEY", None))
-    return cfg_key if cfg_key else ""
+def register_provider(provider_id: str):
+    """Register the callable `fn(bundle) -> (assessment, meta)` implementing a provider."""
+    def decorator(fn):
+        _PROVIDER_CALLS[provider_id] = fn
+        return fn
+    return decorator
+
+
+def _provider_registry() -> dict:
+    registry = getattr(ai_cfg, "AI_PROVIDERS", None)
+    if isinstance(registry, dict) and registry:
+        return registry
+    return {"gemini": {"label": "Gemini", "model": getattr(ai_cfg, "AI_MODEL", "gemini-2.0-flash"),
+                       "enabled": True, "api_key_env": ["FUCO_AI_API_KEY", "GEMINI_API_KEY"],
+                       "secret_attr": "AI_API_KEY"}}
+
+
+def get_default_provider() -> str:
+    return str(getattr(ai_cfg, "AI_PROVIDER", "gemini") or "gemini").strip().lower()
+
+
+def get_provider_config(provider: str = None) -> dict:
+    provider_id = str(provider or get_default_provider()).strip().lower()
+    return _provider_registry().get(provider_id) or {}
+
+
+def get_provider_model(provider: str = None) -> str:
+    return str(get_provider_config(provider).get("model") or "")
+
+
+def get_api_key(provider: str = None) -> str:
+    cfg = get_provider_config(provider)
+
+    for env_name in cfg.get("api_key_env") or []:
+        env_key = _normalize_api_key(os.getenv(env_name))
+        if env_key:
+            return env_key
+
+    secret_attr = cfg.get("secret_attr")
+    if secret_attr:
+        if secretai is not None:
+            key = _normalize_api_key(getattr(secretai, secret_attr, None))
+            if key:
+                return key
+
+        cfg_key = _normalize_api_key(getattr(ai_cfg, secret_attr, None))
+        if cfg_key:
+            return cfg_key
+
+    return ""
+
+
+def is_provider_available(provider: str = None) -> bool:
+    provider_id = str(provider or get_default_provider()).strip().lower()
+    cfg = get_provider_config(provider_id)
+    return bool(
+        cfg.get("enabled")
+        and provider_id in _PROVIDER_CALLS
+        and get_api_key(provider_id)
+    )
+
+
+def resolve_provider(requested: str = None) -> str:
+    """Return the provider id to use, or raise AIProviderError if it is not usable."""
+    provider_id = str(requested or get_default_provider()).strip().lower()
+    cfg = get_provider_config(provider_id)
+    if not cfg:
+        raise AIProviderError(f"Unknown AI provider: {provider_id}", status_code=400)
+    if not cfg.get("enabled"):
+        raise AIProviderError(f"AI provider '{provider_id}' is disabled", status_code=400)
+    if provider_id not in _PROVIDER_CALLS:
+        raise AIProviderError(f"AI provider '{provider_id}' is not implemented yet", status_code=501)
+    if not get_api_key(provider_id):
+        raise AIProviderError(f"AI provider '{provider_id}' has no API key configured", status_code=503)
+    return provider_id
+
+
+def list_providers() -> dict:
+    """Describe providers for the GUI dropdown (never exposes API keys)."""
+    default_id = get_default_provider()
+    providers = []
+    for provider_id, cfg in _provider_registry().items():
+        providers.append({
+            "id": provider_id,
+            "label": cfg.get("label") or provider_id,
+            "model": cfg.get("model") or "",
+            "available": is_provider_available(provider_id),
+            "default": provider_id == default_id,
+        })
+    return {"default": default_id, "providers": providers}
 
 
 def is_enabled() -> bool:
     if not getattr(ai_cfg, "AI_ENABLED", False):
         return False
-    if getattr(ai_cfg, "AI_PROVIDER", "").lower() != "gemini":
-        return False
-    return bool(get_api_key())
+    return any(is_provider_available(p) for p in _provider_registry())
 
 
 def _build_signals(reports: list) -> dict:
@@ -284,23 +364,25 @@ def build_bundle(observable: str, datatype: str, reports: list) -> dict:
     return bundle
 
 
-def make_cache_key(bundle: dict) -> str:
+def make_cache_key(bundle: dict, provider: str = None) -> str:
+    provider_id = str(provider or get_default_provider()).strip().lower()
     stable = {
         "bundle": bundle,
-        "provider": getattr(ai_cfg, "AI_PROVIDER", "gemini"),
-        "model": getattr(ai_cfg, "AI_MODEL", "gemini-2.0-flash"),
+        "provider": provider_id,
+        "model": get_provider_model(provider_id) or "gemini-2.0-flash",
         "prompt_version": getattr(ai_cfg, "AI_PROMPT_VERSION", "v1"),
         "policy_version": getattr(ai_cfg, "AI_POLICY_VERSION", "v1"),
     }
     return _hash_payload(stable)
 
 
-def make_latest_index_key(observable: str, datatype: str) -> str:
+def make_latest_index_key(observable: str, datatype: str, provider: str = None) -> str:
+    provider_id = str(provider or get_default_provider()).strip().lower()
     stable = {
         "observable": str(observable or ""),
         "datatype": str(datatype or ""),
-        "provider": getattr(ai_cfg, "AI_PROVIDER", "gemini"),
-        "model": getattr(ai_cfg, "AI_MODEL", "gemini-2.0-flash"),
+        "provider": provider_id,
+        "model": get_provider_model(provider_id) or "gemini-2.0-flash",
         "prompt_version": getattr(ai_cfg, "AI_PROMPT_VERSION", "v1"),
         "policy_version": getattr(ai_cfg, "AI_POLICY_VERSION", "v1"),
     }
@@ -392,9 +474,10 @@ def _build_prompt(bundle: dict) -> str:
     return system_prompt + "\n" + user_prompt
 
 
+@register_provider("gemini")
 def call_gemini(bundle: dict) -> Tuple[dict, dict]:
-    model = getattr(ai_cfg, "AI_MODEL", "gemini-2.0-flash")
-    api_key = get_api_key()
+    model = get_provider_model("gemini") or "gemini-2.0-flash"
+    api_key = get_api_key("gemini")
     if not api_key:
         raise RuntimeError("AI API key not configured")
 
@@ -623,9 +706,113 @@ def call_gemini(bundle: dict) -> Tuple[dict, dict]:
     return _normalize_assessment(assessment), meta
 
 
-def get_or_generate_assessment(cache_manager, bundle: dict, force_refresh: bool = False) -> dict:
-    cache_key = make_cache_key(bundle)
-    latest_index_key = make_latest_index_key(bundle.get("observable"), bundle.get("datatype"))
+def _gti_extract_answer(session: dict) -> str:
+    events = ((session or {}).get("attributes") or {}).get("events") or []
+    texts = []
+    for event in events:
+        if event.get("message_type") != "AGENT_FINAL_RESPONSE":
+            continue
+        for widget in (event.get("agent_final_response") or {}).get("widgets", []):
+            if widget.get("widget_type") == "MARKDOWN_TEXT":
+                text = (widget.get("markdown_text_widget") or {}).get("text")
+                if text:
+                    texts.append(text)
+    return "\n".join(texts).strip()
+
+
+def _gti_parse_json(text: str) -> dict:
+    cleaned = (text or "").strip()
+    fence = re.match(r"^```(?:json)?\s*(.*?)\s*```$", cleaned, re.DOTALL)
+    if fence:
+        cleaned = fence.group(1)
+    try:
+        parsed = json.loads(cleaned)
+    except Exception:
+        start, end = cleaned.find("{"), cleaned.rfind("}")
+        if start == -1 or end <= start:
+            raise
+        parsed = json.loads(cleaned[start:end + 1])
+    if not isinstance(parsed, dict):
+        raise ValueError("GTI response is not a JSON object")
+    return parsed
+
+
+@register_provider("gti")
+def call_gti(bundle: dict) -> Tuple[dict, dict]:
+    import requests
+
+    api_key = get_api_key("gti")
+    if not api_key:
+        raise AIProviderError("GTI API key not configured", status_code=503)
+
+    base_url = str(getattr(ai_cfg, "AI_GTI_BASE_URL", "https://www.virustotal.com/api/v3")).rstrip("/")
+    timeout = int(getattr(ai_cfg, "AI_GTI_TIMEOUT_SECONDS", 900))
+    url = base_url + "/agentspace/sessions"
+
+    system_prompt, user_prompt = _build_prompt_parts(bundle)
+    message = (
+        system_prompt + "\n\n" + user_prompt
+        + "\n\nYou may enrich the observables with your own Google Threat Intelligence tools. "
+        "Answer ONLY with the JSON object, no prose and no markdown fences."
+    )
+
+    if bool(getattr(ai_cfg, "AI_LOG_REQUEST_RESPONSE", True)):
+        logger.info(
+            "AI_REQUEST provider=gti endpoint=%s reports=%s message_chars=%s",
+            url, len(bundle.get("reports") or []), len(message),
+        )
+
+    started = time.time()
+    try:
+        resp = requests.post(url, headers={"x-apikey": api_key}, data={"message": message}, timeout=timeout)
+    except requests.exceptions.Timeout:
+        raise AIProviderError("GTI request timed out", status_code=504, retry_after_seconds=5)
+    except requests.exceptions.RequestException as e:
+        raise RuntimeError(f"GTI request failed: {e}")
+
+    if resp.status_code >= 400:
+        provider_message = _extract_provider_error_message(resp.text) or f"GTI HTTP error: {resp.status_code}"
+        logger.warning("AI_ERROR provider=gti status_code=%s detail=%s", resp.status_code,
+                       _truncate_for_log(resp.text, _get_log_max_chars()))
+        # Upstream auth/permission errors must not look like Fuco's own 401/403 to the browser
+        status = 502 if resp.status_code in (401, 403, 404) else resp.status_code
+        if resp.status_code in (401, 403):
+            provider_message = f"GTI access denied (HTTP {resp.status_code}): {provider_message}"
+        raise AIProviderError(provider_message, status_code=status)
+
+    try:
+        session = (resp.json() or {}).get("data") or {}
+    except ValueError:
+        raise RuntimeError("GTI returned a non-JSON response")
+    elapsed_ms = int((time.time() - started) * 1000)
+
+    text = _gti_extract_answer(session)
+    if not text:
+        raise RuntimeError("GTI returned no final response")
+    try:
+        assessment = _gti_parse_json(text)
+    except Exception as json_err:
+        logger.warning("AI_ERROR provider=gti json_err=%s detail=%s", json_err,
+                       _truncate_for_log(text, _get_log_max_chars()))
+        raise RuntimeError("GTI did not return valid JSON")
+
+    meta = {
+        "model": get_provider_model("gti") or "gti-agent",
+        "latency_ms": elapsed_ms,
+        "token_usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0},
+        "session_id": resp.headers.get("x-session-id"),
+    }
+    if bool(getattr(ai_cfg, "AI_LOG_REQUEST_RESPONSE", True)):
+        logger.info("AI_RESPONSE provider=gti latency_ms=%s session_id=%s response_excerpt=%s",
+                    elapsed_ms, meta["session_id"], _truncate_for_log(text, _get_log_max_chars()))
+
+    return _normalize_assessment(assessment), meta
+
+
+def get_or_generate_assessment(cache_manager, bundle: dict, force_refresh: bool = False, provider: str = None) -> dict:
+    provider = resolve_provider(provider)
+    cache_key = make_cache_key(bundle, provider)
+    latest_index_key = make_latest_index_key(bundle.get("observable"), bundle.get("datatype"), provider)
     started = time.time()
 
     cache_lookup_started = time.time()
@@ -660,7 +847,7 @@ def get_or_generate_assessment(cache_manager, bundle: dict, force_refresh: bool 
     )
 
     ai_call_started = time.time()
-    assessment, meta = call_gemini(bundle)
+    assessment, meta = _PROVIDER_CALLS[provider](bundle)
     ai_call_ms = int((time.time() - ai_call_started) * 1000)
 
     response = {
@@ -668,6 +855,7 @@ def get_or_generate_assessment(cache_manager, bundle: dict, force_refresh: bool 
         "source": "fresh",
         "cache_key": cache_key,
         "prompt_version": getattr(ai_cfg, "AI_PROMPT_VERSION", "v1"),
+        "provider": provider,
         "model": meta["model"],
         "latency_ms": meta["latency_ms"],
         "token_usage": meta["token_usage"],

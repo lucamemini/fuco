@@ -1,0 +1,12 @@
+{
+  "config": {
+    "api_id": "YOUR_API_ID",
+    "api_key": "YOUR_API_KEY",
+    "base_url": "https://api.imperva.com/ip-reputation",
+    "verifyssl": true
+  },
+  "dataType": "ip",
+  "data": "1.1.1.1",
+  "tlp": 2,
+  "pap": 2
+}

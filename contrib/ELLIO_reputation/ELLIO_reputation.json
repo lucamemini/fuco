@@ -1,0 +1,68 @@
+{
+  "name": "ELLIO_reputation",
+  "version": "1.0",
+  "author": "Luca Memini",
+  "url": "https://ellio.tech/",
+  "license": "AGPL-V3",
+  "description": "Query ELLIO for IP reputation: Threat Intelligence (CTI lookup: seen status, classification, actor, tags), reverse DNS (PTR records) and Common Business Services classification (cloud providers, CDNs, SaaS). Each service can be enabled or disabled independently.",
+  "dataTypeList": ["ip"],
+  "baseConfig": "ELLIO",
+  "command": "ELLIO_reputation/ellio_reputation.py",
+  "config": {
+    "check_tlp": true,
+    "max_tlp": 2
+  },
+  "configurationItems": [
+    {
+      "name": "api_key",
+      "description": "ELLIO API key (sent as X-API-Key header)",
+      "type": "string",
+      "required": true,
+      "multi": false
+    },
+    {
+      "name": "base_url",
+      "description": "ELLIO API base URL",
+      "type": "string",
+      "required": false,
+      "defaultValue": "https://api.ellio.tech",
+      "multi": false
+    },
+    {
+      "name": "enable_cti",
+      "description": "Query the CTI lookup service (requires an active CTI plan)",
+      "type": "boolean",
+      "required": false,
+      "defaultValue": true,
+      "multi": false
+    },
+    {
+      "name": "enable_rdns",
+      "description": "Query the rDNS service (requires an rDNS plan, or a CTI plan with API access)",
+      "type": "boolean",
+      "required": false,
+      "defaultValue": true,
+      "multi": false
+    },
+    {
+      "name": "enable_cbs",
+      "description": "Query the Common Business Services lookup (requires an active CTI or blocklist plan)",
+      "type": "boolean",
+      "required": false,
+      "defaultValue": true,
+      "multi": false
+    },
+    {
+      "name": "verifyssl",
+      "description": "Verify server SSL certificate",
+      "type": "boolean",
+      "required": false,
+      "defaultValue": true,
+      "multi": false
+    }
+  ],
+  "registration_required": true,
+  "subscription_required": true,
+  "free_subscription": false,
+  "service_homepage": "https://docs.ellio.tech/api-reference"
+}

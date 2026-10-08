@@ -14,6 +14,7 @@
       window.FUCO_DEFAULT_PAP = {{ config.get('DEFAULT_PAP', 1) | tojson }};
     </script>
     <script src="{{ url_for('static', filename='js/responder_actions.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/ai_provider.js') }}"></script>
     <script>
   function getCsrfToken() {
     const meta = document.querySelector('meta[name="csrf-token"]');
@@ -296,6 +297,7 @@ body {
     <button id="export-pdf-btn" class="action-btn-header btn-export" onclick="exportToPDF()" disabled>
       <i class="fas fa-file-pdf"></i> Export PDF
     </button>
+    <select id="ai-provider-select" class="form-select form-select-sm d-inline-block w-auto" title="Provider IA" aria-label="Provider IA"></select>
     <button id="ai-analysis-btn" class="action-btn-header btn-export" onclick="runAiAnalysis()" disabled>
       <i class="fas fa-brain"></i> Analisi IA
     </button>
@@ -715,7 +717,8 @@ async function runAiAnalysis(forceRefresh = false) {
             jobs: jobs,
             tlp: tlp,
             pap: pap,
-            force_refresh: forceRefresh
+            force_refresh: forceRefresh,
+            provider: FucoAiProvider.selected('ai-provider-select')
           })
         });
 
@@ -773,6 +776,7 @@ async function runAiAnalysis(forceRefresh = false) {
 
 // Initialization
 $(document).ready(function() {
+    FucoAiProvider.init('ai-provider-select');
     console.log(`Rendering ${totalCount} analyzers in alphabetical order...`);
     
     // Build ordered accordions

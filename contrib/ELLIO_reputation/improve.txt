@@ -1,0 +1,39 @@
+ELLIO_reputation - possibile miglioramento: dividere in engine separati
+=========================================================================
+
+Stato attuale
+-------------
+Un solo engine (ellio_reputation.py + ELLIO_reputation.json) interroga tre servizi ELLIO
+per lo stesso IP:
+  - CTI   GET /v1/cti/lookup/{ip}
+  - rDNS  GET /v1/rdns/ip/{ip}
+  - CBS   GET /v1/cbs/lookup?ip=
+Ogni servizio si puo' disattivare con enable_cti / enable_rdns / enable_cbs.
+
+Riflessione
+-----------
+Nel repo Cortex-Analyzers (analyzers/CrowdstrikeFalcon) convivono due convenzioni:
+  1. un .py + un .json per ogni funzione (ThreatIntel, getDeviceAlerts, getDeviceDetails,
+     getDeviceVulnerabilities): input/output/permessi diversi.
+  2. un solo .py con piu' .json (Sandbox_Win7, Win10, Linux, ...): cambia solo un parametro.
+Regola: si separa l'engine quando cambiano tipo di dato in ingresso, significato del
+risultato o permessi/piano necessari; si condivide il .py quando cambia solo un parametro.
+
+Limiti dell'engine unico
+------------------------
+  - Piani diversi (CTI, rDNS, CBS/blocklist): chi ne ha solo uno deve spegnere gli altri
+    a mano con gli enable_*.
+  - Dai playbook (TheHive) non si puo' lanciare solo "CBS" o solo "rDNS": parte sempre tutto.
+  - Ogni analisi fa 3 richieste: il rate limit e' per organizzazione e per piano.
+
+Proposta (da valutare)
+----------------------
+Tre engine separati, ciascuno con .json, .py e template long/short:
+  - ELLIO_CTI_Lookup   -> /v1/cti/lookup/{ip}
+  - ELLIO_rDNS_Lookup  -> /v1/rdns/ip/{ip}
+  - ELLIO_CBS_Lookup   -> /v1/cbs/lookup
+Codice comune (richiesta HTTP, gestione errori, validazione IP) in un modulo condiviso.
+Attenzione: il modulo condiviso complica il deploy di un singolo engine, perche' ogni
+cartella deve poterlo trovare.
+
+Decisione: per ora si tiene l'engine unico.

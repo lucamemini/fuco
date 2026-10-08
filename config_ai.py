@@ -9,8 +9,47 @@ Secrets (API keys) must be stored in secretai.py or environment variables.
 AI_ENABLED = True
 
 # Provider configuration
-AI_PROVIDER = 'gemini'  # currently supported: gemini
-AI_MODEL = 'gemini-flash-latest'
+AI_PROVIDER = 'gemini'  # default provider id (must be a key of AI_PROVIDERS)
+AI_MODEL = 'gemini-flash-latest'  # model of the 'gemini' provider
+
+# Provider registry (selectable from the GUI).
+#   label        : name shown in the dropdown
+#   model        : model sent to the provider
+#   enabled      : False hides the provider from the dropdown's selectable options
+#   api_key_env  : environment variables checked for the API key (in order)
+#   secret_attr  : attribute name read from secretai.py for the API key
+# A provider is usable only if enabled, implemented in ai_manager (register_provider)
+# and an API key is configured. Placeholders below are not implemented yet.
+AI_PROVIDERS = {
+    'gemini': {
+        'label': 'Google Gemini (free tier)',
+        'model': AI_MODEL,
+        'enabled': True,
+        'api_key_env': ['FUCO_AI_API_KEY', 'GEMINI_API_KEY'],
+        'secret_attr': 'AI_API_KEY',
+    },
+    'gti': {
+        'label': 'Google Threat Intelligence (agentic)',
+        'model': 'gti-agent',
+        'enabled': True,
+        'api_key_env': ['GTI_APIKEY', 'AI_GTI_API_KEY'],
+        'secret_attr': 'AI_GTI_API_KEY',
+    },
+    'openai': {
+        'label': 'OpenAI',
+        'model': 'gpt-4o-mini',
+        'enabled': False,
+        'api_key_env': ['OPENAI_API_KEY'],
+        'secret_attr': 'AI_OPENAI_API_KEY',
+    },
+    'anthropic': {
+        'label': 'Anthropic Claude',
+        'model': 'claude-sonnet-4-5',
+        'enabled': False,
+        'api_key_env': ['ANTHROPIC_API_KEY'],
+        'secret_attr': 'AI_ANTHROPIC_API_KEY',
+    },
+}
 
 # Prompt & policy versioning (used in cache key)
 AI_PROMPT_VERSION = 'v3'
@@ -63,6 +102,10 @@ AI_MAX_PAP = 2
 
 # Gemini endpoint template
 AI_GEMINI_ENDPOINT_TEMPLATE = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+
+# Google Threat Intelligence agentic sessions (synchronous, can be slow)
+AI_GTI_BASE_URL = "https://www.virustotal.com/api/v3"
+AI_GTI_TIMEOUT_SECONDS = 900
 
 # Optional explicit key in non-secret config (not recommended)
 AI_API_KEY = None

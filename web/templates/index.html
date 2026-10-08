@@ -16,6 +16,7 @@
     window.FUCO_DEFAULT_PAP = {{ config.get('DEFAULT_PAP', 1) | tojson }};
   </script>
 	<script src="/js/responder_actions.js"></script>
+	<script src="/js/ai_provider.js"></script>
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/css/all.min.css" integrity="sha512-MV7K8+y+gLIBoVD59lQIYicR65iaqukzvf/nwasF0nqhPay5w/9lJmVM2hMDcnK1OnMGCdVK+iQrJ7lzPJQd1w==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 	<link href="https://cdn.jsdelivr.net/npm/pretty-checkbox@3.0/dist/pretty-checkbox.min.css" rel="stylesheet" />  
 
@@ -1061,6 +1062,7 @@ $(document).on('click', '.load-badges-btn', function () {
           observable: observable,
           datatype: datatype,
           jobs: jobs,
+          provider: (window.FucoAiProvider ? FucoAiProvider.selected() : null),
           force_refresh: false
         })
       });

@@ -1,0 +1,11 @@
+{
+  "config": {
+    "api_key": "YOUR_API_KEY",
+    "base_url": "https://api.ellio.tech",
+    "verifyssl": true
+  },
+  "dataType": "ip",
+  "data": "8.8.8.8",
+  "tlp": 2,
+  "pap": 2
+}

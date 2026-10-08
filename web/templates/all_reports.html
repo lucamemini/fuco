@@ -14,6 +14,7 @@
       window.FUCO_DEFAULT_PAP = {{ config.get('DEFAULT_PAP', 1) | tojson }};
     </script>
     <script src="/js/responder_actions.js"></script>
+    <script src="/js/ai_provider.js"></script>
     <script>
       function getCsrfToken() {
         const meta = document.querySelector('meta[name="csrf-token"]');
@@ -223,6 +224,7 @@
     <button id="export-pdf-btn" class="action-btn-header btn-export" onclick="exportToPDF()">
       <i class="fas fa-file-pdf"></i> Export PDF
     </button>
+    <select id="ai-provider-select" class="form-select form-select-sm d-inline-block w-auto" title="Provider IA" aria-label="Provider IA"></select>
     <button id="ai-analysis-btn" class="action-btn-header btn-export" onclick="runAiAnalysis()" {% if not data.jobs %}disabled{% endif %}>
       <i class="fas fa-brain"></i> Analisi IA
     </button>
@@ -509,7 +511,8 @@ async function runAiAnalysis(forceRefresh = false) {
             jobs: jobIds,
             tlp: tlp,
             pap: pap,
-            force_refresh: forceRefresh
+            force_refresh: forceRefresh,
+            provider: FucoAiProvider.selected('ai-provider-select')
           })
         });
 
@@ -585,7 +588,8 @@ async function runAiAnalysis(forceRefresh = false) {
             jobs: jobIds,
             tlp: tlp,
             pap: pap,
-            force_refresh: false
+            force_refresh: false,
+            provider: FucoAiProvider.selected('ai-provider-select')
           })
         });
 
@@ -769,7 +773,13 @@ $(document).ready(function() {
     
     // Load all badges immediately (no need to open accordions)
     setTimeout(loadAllTaxonomies, 100);
-    setTimeout(loadAiAssessmentFromCache, 150);
+    setTimeout(function () {
+        FucoAiProvider.init('ai-provider-select', function () {
+            document.getElementById('ai-assessment-panel').classList.add('d-none');
+            setAiCacheIndicator(null, 'Checking AI cache...');
+            loadAiAssessmentFromCache();
+        }).then(loadAiAssessmentFromCache);
+    }, 150);
     
     // Load the LONG report only when the accordion is opened
     $('.accordion-button').on('click', function() {

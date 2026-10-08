@@ -1,0 +1,135 @@
+{% if artifact.status == "Success" %}
+{% set content = artifact.report.full if artifact.report.full is defined else {} %}
+{% set risk = (content.risk_score | string | upper) if content.risk_score else 'UNKNOWN' %}
+
+<div class="card border-success report-Thales-Imperva-Reputation">
+  <div class="card-header">
+    <ul class="nav nav-tabs card-header-tabs">
+      <li class="nav-item">
+        <a class="nav-link active" id="summary-tab_{{ artifact.id }}" data-bs-toggle="tab" data-bs-target="#summary_{{ artifact.id }}" role="tab" aria-controls="summary_{{ artifact.id }}" aria-selected="true">Summary</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" id="details-tab_{{ artifact.id }}" data-bs-toggle="tab" data-bs-target="#details_{{ artifact.id }}" role="tab" aria-controls="details_{{ artifact.id }}" aria-selected="false">Details</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" id="json-tab_{{ artifact.id }}" data-bs-toggle="tab" data-bs-target="#json_{{ artifact.id }}" role="tab" aria-controls="json_{{ artifact.id }}" aria-selected="false">Json</a>
+      </li>
+    </ul>
+  </div>
+
+  <div class="card-body">
+    <div class="tab-content" id="ThalesImpervaTabContent_{{ artifact.id }}">
+      <div class="tab-pane fade show active" id="summary_{{ artifact.id }}" role="tabpanel" aria-labelledby="summary-tab_{{ artifact.id }}">
+        {% if not content.found %}
+        <div class="alert alert-info">No reputation data returned by Imperva for <code>{{ content.ioc if content.ioc is defined else artifact.data }}</code>.</div>
+        {% else %}
+        <div class="panel panel-info">
+          <div class="panel-heading"><strong>Reputation Overview</strong></div>
+          <div class="panel-body">
+            <dl class="dl-horizontal">
+              <dt>IP</dt>
+              <dd><code>{{ content.ioc }}</code></dd>
+
+              <dt>Risk Score</dt>
+              <dd>
+                {% if risk in ['HIGH', 'CRITICAL'] %}
+                <span class="badge bg-danger">{{ risk }}</span>
+                {% elif risk == 'MEDIUM' %}
+                <span class="badge bg-warning text-dark">{{ risk }}</span>
+                {% elif risk == 'LOW' %}
+                <span class="badge bg-success">{{ risk }}</span>
+                {% else %}
+                <span class="badge bg-secondary">{{ risk }}</span>
+                {% endif %}
+                {% if content.risk_score_number %}({{ content.risk_score_number }}){% endif %}
+              </dd>
+
+              {% if content.risk_description %}
+              <dt>Description</dt>
+              <dd>{{ content.risk_description }}</dd>
+              {% endif %}
+
+              <dt>Country</dt>
+              <dd>{{ content.origin.country if content.origin and content.origin.country else '-' }}</dd>
+
+              <dt>City</dt>
+              <dd>{{ content.origin.city if content.origin and content.origin.city else '-' }}</dd>
+
+              <dt>ASN</dt>
+              <dd>
+                {% if content.asn and content.asn.organization_number %}AS{{ content.asn.organization_number }}{% endif %}
+                {{ content.asn.organization_name if content.asn and content.asn.organization_name else '' }}
+              </dd>
+
+              <dt>Requests</dt>
+              <dd>{{ content.requests if content.requests else '-' }}</dd>
+            </dl>
+          </div>
+        </div>
+
+        {% if content.known_to_use %}
+        <p><strong>Known to use:</strong>
+          {% for item in content.known_to_use %}
+          <span class="badge bg-warning text-dark" style="margin: 2px;">{{ item }}</span>
+          {% endfor %}
+        </p>
+        {% endif %}
+
+        {% if content.known_for %}
+        <p><strong>Known for:</strong>
+          {% for item in content.known_for %}
+          <span class="badge bg-danger" style="margin: 2px;">{{ item }}</span>
+          {% endfor %}
+        </p>
+        {% endif %}
+        {% endif %}
+      </div>
+
+      <div class="tab-pane fade" id="details_{{ artifact.id }}" role="tabpanel" aria-labelledby="details-tab_{{ artifact.id }}">
+        {% if not content.found %}
+        <div class="alert alert-info">No details available.</div>
+        {% else %}
+        {% for title, rows in [('Violations', content.violations), ('Client Application', content.client_application), ('Attacks by Industries', content.attacks_by_industries)] %}
+        {% if rows %}
+        <div class="panel panel-default" style="margin-bottom: 16px;">
+          <div class="panel-heading"><strong>{{ title }}</strong></div>
+          <div class="panel-body">
+            <table class="table table-sm table-striped">
+              <thead><tr><th>Name</th><th>Percentage</th></tr></thead>
+              <tbody>
+                {% for row in rows %}
+                <tr><td>{{ row.name }}</td><td>{{ row.percentage }}</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        {% endif %}
+        {% endfor %}
+
+        {% if content.client_application_details %}
+        <p><strong>Client application details:</strong> {{ content.client_application_details }}</p>
+        {% endif %}
+        {% if content.violations_over_time %}
+        <p><strong>Violations over time:</strong> <small>{{ content.violations_over_time }}</small></p>
+        {% endif %}
+        {% endif %}
+      </div>
+
+      <div class="tab-pane fade" id="json_{{ artifact.id }}" role="tabpanel" aria-labelledby="json-tab_{{ artifact.id }}">
+        <pre><code>{{ artifact.report | tojson(indent=2) }}</code></pre>
+      </div>
+    </div>
+  </div>
+</div>
+{% else %}
+<div class="card border-danger">
+  <div class="card-header alert alert-danger">
+    <strong>Error</strong>
+  </div>
+  <div class="card-body">
+    <strong>{{ artifact.data }}</strong><br>
+    {{ artifact.report.errorMessage if artifact.report and artifact.report.errorMessage is defined else 'Unknown error' }}
+  </div>
+</div>
+{% endif %}

@@ -1,0 +1,51 @@
+{
+  "name": "thales_imperva_reputation",
+  "version": "1.0",
+  "author": "Luca Memini",
+  "url": "https://www.imperva.com/",
+  "license": "AGPL-V3",
+  "description": "Query Imperva Reputation Intelligence for an IPv4 address. Returns risk score, geolocation, ASN, known usage (e.g. tor), known attacks, violations, client applications and targeted industries.",
+  "dataTypeList": ["ip"],
+  "baseConfig": "Imperva",
+  "command": "thales_imperva_reputation/thales_imperva_reputation.py",
+  "config": {
+    "check_tlp": true,
+    "max_tlp": 2
+  },
+  "configurationItems": [
+    {
+      "name": "api_id",
+      "description": "Imperva API ID (sent as x-API-Id header)",
+      "type": "string",
+      "required": true,
+      "multi": false
+    },
+    {
+      "name": "api_key",
+      "description": "Imperva API Key (sent as x-API-Key header)",
+      "type": "string",
+      "required": true,
+      "multi": false
+    },
+    {
+      "name": "base_url",
+      "description": "Imperva Reputation Intelligence API base URL",
+      "type": "string",
+      "required": false,
+      "defaultValue": "https://api.imperva.com/ip-reputation",
+      "multi": false
+    },
+    {
+      "name": "verifyssl",
+      "description": "Verify server SSL certificate",
+      "type": "boolean",
+      "required": false,
+      "defaultValue": true,
+      "multi": false
+    }
+  ],
+  "registration_required": true,
+  "subscription_required": true,
+  "free_subscription": false,
+  "service_homepage": "https://docs.imperva.com/bundle/ip-reputation/page/reputation-intelligence.htm"
+}
