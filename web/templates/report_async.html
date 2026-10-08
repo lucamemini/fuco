@@ -197,6 +197,11 @@ body {
     color: white;
 }
 
+.ai-split .ai-split-main { border-radius: 6px 0 0 6px; }
+.ai-split .ai-split-toggle { border-radius: 0 6px 6px 0; padding: 10px 8px; border-left: 1px solid rgba(255,255,255,0.35); }
+.ai-split .action-btn-header:hover { transform: none; }
+.ai-split .dropdown-item.active { background: #0d6efd; }
+
 .tlp-badge {
     display: inline-block;
     padding: 3px 10px;
@@ -297,10 +302,13 @@ body {
     <button id="export-pdf-btn" class="action-btn-header btn-export" onclick="exportToPDF()" disabled>
       <i class="fas fa-file-pdf"></i> Export PDF
     </button>
-    <select id="ai-provider-select" class="form-select form-select-sm d-inline-block w-auto" title="Provider IA" aria-label="Provider IA"></select>
-    <button id="ai-analysis-btn" class="action-btn-header btn-export" onclick="runAiAnalysis()" disabled>
-      <i class="fas fa-brain"></i> Analisi IA
-    </button>
+    <div class="btn-group ai-split">
+      <button id="ai-analysis-btn" class="action-btn-header btn-export ai-split-main" onclick="runAiAnalysis()" disabled>
+        <i class="fas fa-brain"></i> Analisi IA
+      </button>
+      <button type="button" class="action-btn-header btn-export ai-split-toggle dropdown-toggle dropdown-toggle-split d-none" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Scegli il motore IA" title="Scegli il motore IA"></button>
+      <ul id="ai-provider-menu" class="dropdown-menu dropdown-menu-end"></ul>
+    </div>
     <div id="responder-actions-{{ data.fuco.id }}"></div>
   </div>
 </div>
@@ -718,7 +726,7 @@ async function runAiAnalysis(forceRefresh = false) {
             tlp: tlp,
             pap: pap,
             force_refresh: forceRefresh,
-            provider: FucoAiProvider.selected('ai-provider-select')
+            provider: FucoAiProvider.selected()
           })
         });
 
@@ -776,7 +784,7 @@ async function runAiAnalysis(forceRefresh = false) {
 
 // Initialization
 $(document).ready(function() {
-    FucoAiProvider.init('ai-provider-select');
+    FucoAiProvider.init('ai-provider-menu');
     console.log(`Rendering ${totalCount} analyzers in alphabetical order...`);
     
     // Build ordered accordions
