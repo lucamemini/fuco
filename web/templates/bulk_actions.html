@@ -272,10 +272,7 @@
                     <div id="responderSelectionPanel">
                         <div class="form-group">
                             <label>Select Responders:</label>
-                            <select id="responderSelection" class="form-control" multiple size="5">
-                                <option disabled>Loading responders...</option>
-                            </select>
-                            <small class="form-text text-muted">Hold Ctrl/Cmd to select multiple</small>
+                            <div id="responderSelection"></div>
                         </div>
                     </div>
 
@@ -614,22 +611,19 @@
         }
 
         // ── Responder loading ─────────────────────────────────────────────────
+        let responderPicker = null;
         async function loadResponders() {
             try {
                 const response = await fetch('/api/responder/list');
                 const data = await response.json();
-                const select = document.getElementById('responderSelection');
-                select.innerHTML = '';
-                if (data.success && data.responders.length > 0) {
-                    data.responders.forEach(resp => {
-                        const option = document.createElement('option');
-                        option.value = resp.id;
-                        option.textContent = `${resp.name} (${resp.version})`;
-                        select.appendChild(option);
-                    });
-                } else {
-                    select.innerHTML = '<option disabled>No responders available</option>';
+                if (!responderPicker) {
+                    responderPicker = new ResponderPicker(document.getElementById('responderSelection'));
                 }
+                responderPicker.setItems(data.success ? data.responders.map(resp => ({
+                    id: resp.id,
+                    label: `${resp.name} (${resp.version})`,
+                    title: resp.description || ''
+                })) : []);
             } catch(error) {
                 console.error('Error loading responders:', error);
             }
@@ -658,8 +652,7 @@
         // ── Responder bulk submit (original logic, extracted to function) ─────
         async function submitResponderBulk() {
             if (observableQueue.length === 0) { alert('Please add at least one observable'); return; }
-            const select = document.getElementById('responderSelection');
-            const selectedResponders = Array.from(select.selectedOptions).map(o => o.value);
+            const selectedResponders = responderPicker ? responderPicker.getSelectedIds() : [];
             if (selectedResponders.length === 0) { alert('Please select at least one responder'); return; }
 
             const tlp     = parseInt(document.getElementById('bulkTLP').value);

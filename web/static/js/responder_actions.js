@@ -70,13 +70,8 @@ class ResponderModal {
 
                         <!-- Responder Selection -->
                         <div class="form-group">
-                            <label for="responderSelect">Select Responders:</label>
-                            <select id="responderSelect" class="form-control" multiple size="5">
-                                <!-- Populated dynamically -->
-                            </select>
-                            <small class="form-text text-muted">
-                                Hold Ctrl/Cmd to select multiple responders
-                            </small>
+                            <label>Select Responders:</label>
+                            <div id="responderSelect"></div>
                         </div>
 
                         <!-- TLP/PAP -->
@@ -195,16 +190,15 @@ class ResponderModal {
     }
 
     populateResponders(responders) {
-        const select = document.getElementById('responderSelect');
-        select.innerHTML = '';
-
-        responders.forEach(resp => {
-            const option = document.createElement('option');
-            option.value = resp.id;
-            option.textContent = `${resp.name} (${resp.version})`;
-            option.title = resp.description || '';
-            select.appendChild(option);
-        });
+        if (!this.picker) {
+            this.picker = new ResponderPicker(document.getElementById('responderSelect'));
+        }
+        this.picker.setItems(responders.map(resp => ({
+            id: resp.id,
+            label: `${resp.name} (${resp.version})`,
+            title: resp.description || ''
+        })));
+        this.picker.focusSearch();
 
         this.currentResponders = responders;
     }
@@ -214,8 +208,7 @@ class ResponderModal {
         const tlp = parseInt(document.getElementById('tlpSelect').value);
         const pap = parseInt(document.getElementById('papSelect').value);
 
-        const select = document.getElementById('responderSelect');
-        const selectedOptions = Array.from(select.selectedOptions);
+        const selectedOptions = this.picker ? this.picker.getSelectedItems() : [];
 
         if (selectedOptions.length === 0) {
             this.showError('Please select at least one responder');
@@ -237,8 +230,8 @@ class ResponderModal {
         try {
             // Execute for each selected responder
             for (const option of selectedOptions) {
-                const responderId = option.value;
-                const responderName = option.textContent;
+                const responderId = option.id;
+                const responderName = option.label;
 
                 try {
                     this.showInfo(`Executing ${responderName}...`);
@@ -426,6 +419,134 @@ function addResponderButtons(observable, dataType, containerId) {
 
 // ============ Initialization ============
 
+// ============ Searchable checkbox picker (shared by single and bulk) ============
+
+class ResponderPicker {
+    constructor(container) {
+        this.container = container;
+        this.items = [];
+        this.selected = new Set();
+        this.filter = '';
+        this.render();
+    }
+
+    render() {
+        this.container.innerHTML = `
+            <input type="search" class="form-control mb-2" placeholder="Search responders..." autocomplete="off" data-role="search">
+            <div class="d-flex justify-content-between align-items-center mb-1 small">
+                <span data-role="count" class="text-muted"></span>
+                <span>
+                    <a href="#" data-role="select-visible">Select visible</a> |
+                    <a href="#" data-role="clear-visible">Clear visible</a> |
+                    <a href="#" data-role="clear-all">Clear all</a>
+                </span>
+            </div>
+            <div data-role="list" class="border rounded p-2" style="max-height: 220px; overflow-y: auto;"></div>
+            <div data-role="chips" class="mt-2"></div>`;
+        const q = role => this.container.querySelector(`[data-role="${role}"]`);
+        this.searchEl = q('search');
+        this.listEl = q('list');
+        this.countEl = q('count');
+        this.chipsEl = q('chips');
+
+        this.searchEl.addEventListener('input', () => {
+            this.filter = this.searchEl.value.trim().toLowerCase();
+            this.renderList();
+        });
+        this.searchEl.addEventListener('keydown', e => {
+            if (e.key === 'Enter') e.preventDefault();
+        });
+        const bind = (role, fn) => q(role).addEventListener('click', e => {
+            e.preventDefault();
+            fn();
+            this.renderList();
+            this.renderChips();
+        });
+        bind('select-visible', () => this.visibleItems().forEach(i => this.selected.add(i.id)));
+        bind('clear-visible', () => this.visibleItems().forEach(i => this.selected.delete(i.id)));
+        bind('clear-all', () => this.selected.clear());
+    }
+
+    setItems(items) {
+        this.items = items;
+        this.selected.clear();
+        this.filter = '';
+        this.searchEl.value = '';
+        this.renderList();
+        this.renderChips();
+    }
+
+    visibleItems() {
+        return this.items.filter(i => i.label.toLowerCase().includes(this.filter));
+    }
+
+    getSelectedIds() {
+        return this.items.filter(i => this.selected.has(i.id)).map(i => i.id);
+    }
+
+    getSelectedItems() {
+        return this.items.filter(i => this.selected.has(i.id));
+    }
+
+    focusSearch() {
+        this.searchEl.focus();
+    }
+
+    renderList() {
+        this.listEl.innerHTML = '';
+        const visible = this.visibleItems();
+        if (visible.length === 0) {
+            const empty = document.createElement('div');
+            empty.className = 'text-muted small';
+            empty.textContent = this.items.length ? 'No responders found' : 'No responders available';
+            this.listEl.appendChild(empty);
+        }
+        visible.forEach(item => {
+            const row = document.createElement('div');
+            row.className = 'form-check';
+            const input = document.createElement('input');
+            input.type = 'checkbox';
+            input.className = 'form-check-input';
+            input.checked = this.selected.has(item.id);
+            input.addEventListener('change', () => {
+                if (input.checked) this.selected.add(item.id); else this.selected.delete(item.id);
+                this.renderChips();
+            });
+            const label = document.createElement('label');
+            label.className = 'form-check-label';
+            label.style.cursor = 'pointer';
+            label.textContent = item.label;
+            label.title = item.title || '';
+            label.prepend(input);
+            row.appendChild(label);
+            this.listEl.appendChild(row);
+        });
+        this.countEl.textContent = `${visible.length} of ${this.items.length} shown`;
+    }
+
+    renderChips() {
+        this.chipsEl.innerHTML = '';
+        const selected = this.getSelectedItems();
+        const summary = document.createElement('div');
+        summary.className = 'small text-muted mb-1';
+        summary.textContent = `${selected.length} selected`;
+        this.chipsEl.appendChild(summary);
+        selected.forEach(item => {
+            const chip = document.createElement('span');
+            chip.className = 'badge bg-secondary badge-secondary me-1 mb-1';
+            chip.style.cursor = 'pointer';
+            chip.title = 'Click to remove';
+            chip.textContent = `${item.label} \u00d7`;
+            chip.addEventListener('click', () => {
+                this.selected.delete(item.id);
+                this.renderList();
+                this.renderChips();
+            });
+            this.chipsEl.appendChild(chip);
+        });
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     if (!window.responderModal) {
         window.responderModal = new ResponderModal();
@@ -436,6 +557,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // ============ Export ============
 
 window.ResponderModal = ResponderModal;
+window.ResponderPicker = ResponderPicker;
 window.addResponderButtons = addResponderButtons;
 
 })();
