@@ -31,18 +31,24 @@
             <thead>
             <th>Type</th>
             <th>Domain</th>
+            <th>Data</th>
             <th>First seen</th>
             <th>Last seen</th>
             <th>Count</th>
             </thead>
             <tbody>
-            <tr >
+            {% for hit in content.rpdns %}
+            <tr>
                 <td>{{hit.rrtype}}</td>
                 <td>{{hit.rrname}}</td>
-                <td>{{hit.time_first}}</td>
-                <td>{{hit.time_last}}</td>
+                <td>{{hit.rrdata}}</td>
+                <td>{{hit.time_first | datetimeformat}}</td>
+                <td>{{hit.time_last | datetimeformat}}</td>
                 <td>{{hit.count}}</td>
             </tr>
+            {% else %}
+            <tr><td colspan="6" class="text-muted">No reverse pDNS records found.</td></tr>
+            {% endfor %}
             </tbody>
         </table>
     </div>

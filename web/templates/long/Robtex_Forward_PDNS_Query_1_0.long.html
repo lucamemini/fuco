@@ -42,8 +42,8 @@
                 <td>{{hit.rrtype}}</td>
                 <td>{{hit.rrname}}</td>
                 <td>{{hit.rrdata}}</td>
-                <td>{{hit.time_first}}<!-- * 1000 | date:'yyyy-MM-dd HH:mm:ss Z' --></td>
-                <td>{{hit.time_last}}<!-- * 1000 | date:'yyyy-MM-dd HH:mm:ss Z' --></td>
+                <td>{{hit.time_first | datetimeformat}}</td>
+                <td>{{hit.time_last | datetimeformat}}</td>
                 <td>{{hit.count}}</td>
             </tr>
 	    {% endfor %}

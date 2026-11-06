@@ -1,0 +1,55 @@
+{% if artifact.status == "Success" %}
+{% set content = artifact.report.full if artifact.report.full is defined else {} %}
+{% set verdict = content.verdict or 'unknown' %}
+{% set badge = {'malicious': 'bg-danger', 'suspicious': 'bg-warning text-dark', 'harmless': 'bg-success', 'unknown': 'bg-secondary'}[verdict] if verdict in ['malicious', 'suspicious', 'harmless', 'unknown'] else 'bg-secondary' %}
+
+<div class="card border-success report-GTI-AI-Analysis">
+  <div class="card-header">
+    <ul class="nav nav-tabs card-header-tabs">
+      <li class="nav-item">
+        <a class="nav-link active" id="summary-tab_{{ artifact.id }}" data-bs-toggle="tab" data-bs-target="#summary_{{ artifact.id }}" role="tab" aria-controls="summary_{{ artifact.id }}" aria-selected="true">Summary</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" id="json-tab_{{ artifact.id }}" data-bs-toggle="tab" data-bs-target="#json_{{ artifact.id }}" role="tab" aria-controls="json_{{ artifact.id }}" aria-selected="false">Json</a>
+      </li>
+    </ul>
+  </div>
+
+  <div class="card-body">
+    <div class="tab-content">
+      <div class="tab-pane fade show active" id="summary_{{ artifact.id }}" role="tabpanel" aria-labelledby="summary-tab_{{ artifact.id }}">
+        <p>
+          <span class="badge {{ badge }}">{{ verdict | upper }}</span>
+          <span class="badge bg-info text-dark">Risk: {{ content.risk_level or 'unknown' }} ({{ content.risk_score if content.risk_score is not none else 0 }}/100)</span>
+          <span class="badge bg-secondary">Confidence: {{ '%.0f' | format((content.confidence or 0) * 100) }}%</span>
+          {% if content.context_used %}<span class="badge bg-light text-dark border">Custom context</span>{% endif %}
+        </p>
+
+        <div class="alert alert-info"><strong>{{ content.short_result }}</strong></div>
+
+        <h6>Detailed analysis</h6>
+        <div style="white-space: pre-wrap;">{{ content.long_result }}</div>
+
+        <p class="small text-muted mt-3">
+          AI-generated assessment, verify before acting.
+          {% if content.session_id %}Session: <code>{{ content.session_id }}</code>{% endif %}
+        </p>
+      </div>
+
+      <div class="tab-pane fade" id="json_{{ artifact.id }}" role="tabpanel" aria-labelledby="json-tab_{{ artifact.id }}">
+        <pre><code>{{ artifact.report | tojson(indent=2) }}</code></pre>
+      </div>
+    </div>
+  </div>
+</div>
+{% else %}
+<div class="card border-danger">
+  <div class="card-header alert alert-danger">
+    <strong>Error</strong>
+  </div>
+  <div class="card-body">
+    <strong>{{ artifact.data }}</strong><br>
+    {{ artifact.report.errorMessage if artifact.report and artifact.report.errorMessage is defined else 'Unknown error' }}
+  </div>
+</div>
+{% endif %}

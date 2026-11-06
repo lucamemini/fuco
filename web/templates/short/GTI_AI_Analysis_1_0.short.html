@@ -1,0 +1,8 @@
+{% for t in taxonomies %}
+<span class="ms-1 badge {{ t.css }}" style="display:inline-block;">
+  {{ t.namespace }}:{{ t.predicate }}={{ t.value }}
+</span>
+{% endfor %}
+{% if full is defined and full and full.short_result %}
+<div class="small text-muted mt-1">{{ full.short_result }}</div>
+{% endif %}

@@ -1,0 +1,13 @@
+{
+  "config": {
+    "api_key": "YOUR_API_KEY",
+    "base_url": "https://www.virustotal.com/api/v3",
+    "context_prompt": "We are a European bank; prioritize threats targeting the financial sector.",
+    "language": "English",
+    "verifyssl": true
+  },
+  "dataType": "domain",
+  "data": "example.com",
+  "tlp": 2,
+  "pap": 2
+}

@@ -355,6 +355,17 @@ curl -X POST http://localhost:5000/api/ai/analyze \
 - If the same normalized input was already evaluated, FUCO returns the cached AI assessment.
 - The AI output is an analyst aid and should not replace final human validation.
 
+#### GTI AI Analysis (Cortex analyzer)
+
+`contrib/GTI_AI_Analysis` is a Cortex analyzer that sends a single observable (`ip`, `domain`, `fqdn`, `url`, `hash`) to the Google Threat Intelligence AI agent and returns a **short result** (one-line conclusion, shown in the short template) and a **long result** (descriptive analysis, shown in the long template).
+
+Analyzer configuration:
+- `api_key`: GTI API key (Enterprise / Enterprise Plus / Integration Advanced)
+- `context_prompt`: optional trusted context (e.g. organization profile, priorities), max 2000 characters
+- `language`, `timeout`, `base_url`, `verifyssl`
+
+Prompt-injection mitigations: strict observable validation, random-delimiter fencing of the observable, sanitization of the context prompt, and validation/sanitization of the model output. Install it by copying the folder to your Cortex analyzers directory and installing `requirements.txt`.
+
 ### Cache Configuration
 
 FUCO implements a configurable caching system to optimize performance and reduce load on the Cortex API. The cache stores completed analysis reports, avoiding duplicate requests for the same observable.

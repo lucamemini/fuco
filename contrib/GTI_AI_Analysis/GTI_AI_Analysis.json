@@ -1,0 +1,68 @@
+{
+  "name": "GTI_AI_Analysis",
+  "version": "1.0",
+  "author": "Luca Memini",
+  "url": "https://gtidocs.virustotal.com/",
+  "license": "AGPL-V3",
+  "description": "Ask the Google Threat Intelligence AI agent to assess an observable. Returns a short result (one-line verdict) and a long descriptive result. A custom context prompt can be configured; observable and context are sanitized and fenced to mitigate prompt injection.",
+  "dataTypeList": ["ip", "domain", "fqdn", "url", "hash"],
+  "baseConfig": "GTI_AI",
+  "command": "GTI_AI_Analysis/gti_ai_analysis.py",
+  "config": {
+    "check_tlp": true,
+    "max_tlp": 2
+  },
+  "configurationItems": [
+    {
+      "name": "api_key",
+      "description": "Google Threat Intelligence API key (Enterprise / Enterprise Plus / Integration Advanced)",
+      "type": "string",
+      "required": true,
+      "multi": false
+    },
+    {
+      "name": "base_url",
+      "description": "GTI API base URL",
+      "type": "string",
+      "required": false,
+      "defaultValue": "https://www.virustotal.com/api/v3",
+      "multi": false
+    },
+    {
+      "name": "context_prompt",
+      "description": "Trusted context for the AI (e.g. organization profile, sectors, what is considered critical). Plain text, max 2000 chars. It is placed in the instruction section; instruction-like markup is stripped.",
+      "type": "string",
+      "required": false,
+      "defaultValue": "",
+      "multi": false
+    },
+    {
+      "name": "language",
+      "description": "Language of short and long results",
+      "type": "string",
+      "required": false,
+      "defaultValue": "English",
+      "multi": false
+    },
+    {
+      "name": "timeout",
+      "description": "HTTP timeout in seconds (GTI agent sessions can be slow)",
+      "type": "number",
+      "required": false,
+      "defaultValue": 900,
+      "multi": false
+    },
+    {
+      "name": "verifyssl",
+      "description": "Verify server SSL certificate",
+      "type": "boolean",
+      "required": false,
+      "defaultValue": true,
+      "multi": false
+    }
+  ],
+  "registration_required": true,
+  "subscription_required": true,
+  "free_subscription": false,
+  "service_homepage": "https://gtidocs.virustotal.com/"
+}
