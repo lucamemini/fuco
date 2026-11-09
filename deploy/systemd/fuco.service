@@ -1,13 +1,14 @@
 [Unit]
 Description=FUCO - Cortex Search Engine
-After=network.target redis.service
+Wants=network-online.target
+After=network-online.target redis.service
 
 [Service]
 Type=simple
 User=fuco
 Group=fuco
 WorkingDirectory=/opt/fuco
-Environment="PATH=/opt/fuco/venv/bin"
+Environment="PATH=/opt/fuco/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 Environment="GUNICORN_WORKERS=5"
 Environment="GUNICORN_WORKER_CLASS=gthread"
 Environment="GUNICORN_THREADS=3"
@@ -18,9 +19,12 @@ Environment="GUNICORN_KEEPALIVE=5"
 Environment="GUNICORN_MAX_REQUESTS=1000"
 Environment="GUNICORN_MAX_REQUESTS_JITTER=100"
 Environment="GUNICORN_LOG_DIR=/opt/fuco/logs"
-ExecStart=/opt/fuco/run_gunicorn.sh
+ExecStart=/bin/bash /opt/fuco/run_gunicorn.sh
 Restart=always
 RestartSec=10
+TimeoutStopSec=45
+StandardOutput=journal
+StandardError=journal
 
 [Install]
 WantedBy=multi-user.target

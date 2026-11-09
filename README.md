@@ -718,40 +718,39 @@ sudo systemctl reload nginx
 
 #### Systemd Service (Linux)
 
-Use the provided unit file [systemd/fuco.service](systemd/fuco.service) and copy it to `/etc/systemd/system/fuco.service`:
+The repository includes [deploy/systemd/fuco.service](deploy/systemd/fuco.service), configured for an installation in `/opt/fuco` running as the unprivileged `fuco` user. Adjust those values in the unit file if your installation uses a different path, account, or port.
 
-```ini
-[Unit]
-Description=FUCO - Cortex Search Engine
-After=network.target redis.service
-
-
-[Service]
-Type=simple
-User=fuco
-Group=fuco
-WorkingDirectory=/opt/fuco
-Environment="PATH=/opt/fuco/venv/bin"
-Environment="GUNICORN_WORKERS=4"
-Environment="GUNICORN_BIND=0.0.0.0:8000"
-Environment="GUNICORN_TIMEOUT=120"
-Environment="GUNICORN_LOG_DIR=/opt/fuco/logs"
-ExecStart=/opt/fuco/run_gunicorn.sh
-Restart=always
-RestartSec=10
-
-[Install]
-WantedBy=multi-user.target
-```
-
-Enable and start:
+Create the service account if it does not already exist, and ensure the service can read the application and write its runtime directories:
 
 ```bash
+if ! id -u fuco >/dev/null 2>&1; then
+  sudo useradd --system --user-group --home-dir /opt/fuco --shell /usr/sbin/nologin fuco
+fi
+sudo install -d -o fuco -g fuco /opt/fuco/logs /opt/fuco/flask_session
+sudo chown -R fuco:fuco /opt/fuco
+```
+
+Install the unit and start FUCO:
+
+```bash
+sudo install -m 0644 deploy/systemd/fuco.service /etc/systemd/system/fuco.service
 sudo systemctl daemon-reload
-sudo systemctl enable fuco
-sudo systemctl start fuco
+sudo systemctl enable --now fuco
 sudo systemctl status fuco
 ```
+
+The unit runs Gunicorn via `run_gunicorn.sh`. Gunicorn access and error logs are written to `/opt/fuco/logs`; FUCO application logs, including AI generation timing and provider token usage, are sent to the systemd journal:
+
+```bash
+# Follow all FUCO application logs
+sudo journalctl -u fuco -f
+
+# Show only AI generation, cache, provider, and timing events
+sudo journalctl -u fuco --since "30 days ago" --no-pager \
+  | grep -E 'AI_ANALYZE_TIMING|AI_CACHE|AI_RESPONSE|AI_ERROR|AI_TIMEOUT|AI provider error'
+```
+
+The journal query is useful for counting fresh AI generations versus cache hits and examining `latency_ms`, token counts, and `total_ms`. Treat logs as potentially sensitive: AI log excerpts may contain prompt or report content. To install log rotation for Gunicorn's files, use [deploy/logrotate/fuco](deploy/logrotate/fuco) as `/etc/logrotate.d/fuco`.
 
 #### Apache Reverse Proxy
 
