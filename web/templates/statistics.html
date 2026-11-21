@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  <title>Statistiche - FUCO</title>
+  <link href="/css/bootstrap.min.css" rel="stylesheet">
+  <link href="/css/main.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/css/all.min.css">
+  <style>
+    body { padding-top: 70px; background: #f2f2f2; }
+    .statistics-container { max-width: 1440px; margin: 30px auto; }
+    .statistics-panel { margin-bottom: 1.5rem; }
+    .metric-card { height: 100%; }
+    .metric-card .metric-value { font-size: 1.45rem; font-weight: 600; }
+    .metric-card .metric-label { color: #6c757d; font-size: .9rem; }
+    .daily-bar { display: flex; height: 14px; min-width: 100px; overflow: hidden; border-radius: 4px; background: #e9ecef; }
+    .daily-bar span { display: block; height: 100%; }
+    .daily-fresh { background: #198754; }
+    .daily-refresh { background: #fd7e14; }
+    .daily-cache { background: #0d6efd; }
+    .statistics-table { font-size: .9rem; }
+    .statistics-table th { white-space: nowrap; }
+    .statistics-empty { color: #6c757d; font-style: italic; }
+    .dashboard-section-title { margin-top: 1.5rem; }
+    .statistics-warning { border-left: 4px solid #0d6efd; }
+    @media (max-width: 767.98px) {
+      .statistics-container { padding: 0 12px; }
+      .statistics-controls { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+<header>
+  <nav class="navbar navbar-expand-md navbar-light fixed-top bg-fuco">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="/"><strong>FUCO</strong></a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-label="Apri navigazione">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarCollapse">
+        <ul class="navbar-nav me-auto mb-2 mb-md-0"></ul>
+        <ul class="navbar-nav mb-2 mb-md-0">
+          <li class="nav-item" id="bulkNav">
+            <a class="nav-link disabled" href="/bulk-actions" data-requires-auth="true">
+              <i class="fas fa-layer-group"></i> Bulk Actions
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link active" href="/statistics" aria-current="page">
+              <i class="fas fa-chart-line"></i> Statistiche
+            </a>
+          </li>
+          <li class="nav-item" id="loginNav">
+            <a class="nav-link" href="#" onclick="handleLogin()">
+              <i class="fas fa-sign-in-alt"></i> Login
+            </a>
+          </li>
+          <li class="nav-item dropdown d-none" id="userNav">
+            <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+              <span class="user-initial" id="userInitial">?</span>
+              <span id="usernameDisplay"></span>
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end">
+              {% if cortex_host %}
+              <li>
+                <a class="dropdown-item" href="{{ cortex_host }}" target="_blank" rel="noopener">
+                  <i class="fas fa-key"></i> Change password
+                </a>
+              </li>
+              {% endif %}
+              <li>
+                <a class="dropdown-item" href="#" onclick="handleLogout()">
+                  <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+</header>
+
+<main class="container statistics-container">
+  <div class="d-flex flex-wrap align-items-end gap-3 mb-4">
+    <div class="me-auto">
+      <h1 class="h2 mb-1"><i class="fas fa-chart-line"></i> Statistiche FUCO</h1>
+      <p class="text-muted mb-0">Utilizzo, tempi ed esiti tecnici delle attività</p>
+    </div>
+    <div class="statistics-controls">
+      <label class="form-label mb-1" for="statisticsDays">Intervallo</label>
+      <select class="form-select" id="statisticsDays">
+        <option value="7">Ultimi 7 giorni</option>
+        <option value="30" selected>Ultimi 30 giorni</option>
+        <option value="90">Ultimi 90 giorni</option>
+      </select>
+    </div>
+    <div class="statistics-controls d-none" id="statisticsUserControl">
+      <label class="form-label mb-1" for="statisticsUser">Dettaglio utente</label>
+      <select class="form-select" id="statisticsUser"></select>
+    </div>
+  </div>
+
+  <div class="alert alert-info statistics-warning" role="note">
+    Gli esiti indicano il funzionamento tecnico dei job, non la qualità dei
+    risultati, e comprendono esclusivamente attività avviate tramite FUCO.
+  </div>
+  <div class="alert alert-danger d-none" id="statisticsError" role="alert"></div>
+  <div class="alert alert-secondary" id="statisticsLoading" role="status">
+    <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+    Caricamento statistiche…
+  </div>
+  <div class="alert alert-light border d-none" id="statisticsEmpty" role="status">
+    Nessun dato statistico disponibile per l'intervallo selezionato.
+  </div>
+
+  <section class="card statistics-panel">
+    <div class="card-header">
+      <h2 class="h5 mb-0">Panoramica aggregata</h2>
+    </div>
+    <div class="card-body" id="globalDashboard"></div>
+  </section>
+
+  <section class="card statistics-panel">
+    <div class="card-header">
+      <h2 class="h5 mb-0" id="individualTitle">I miei dati</h2>
+    </div>
+    <div class="card-body" id="individualDashboard"></div>
+  </section>
+</main>
+
+<script src="/js/bootstrap.bundle.min.js"></script>
+<script src="/js/auth.js"></script>
+<script src="/js/statistics.js"></script>
+</body>
+</html>

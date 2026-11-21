@@ -14,7 +14,9 @@ try:
 except Exception:
     secretconfig = None
 from routes import routes_bp
+from routes_statistics import statistics_bp
 from cache_manager import CacheManager
+from statistics_manager import StatisticsManager
 
 from responder_manager import ResponderManager
 from routes_responder import register_responder_routes
@@ -212,6 +214,7 @@ Session(app)
 # ============ Register Base Routes ============
 
 app.register_blueprint(routes_bp)
+app.register_blueprint(statistics_bp)
 
 # ============ Cache Manager Initialization ============
 
@@ -220,6 +223,32 @@ cache_manager = CacheManager(redis_url=validated_config['redis_url'])
 
 # Expose globally
 app.cache_manager = cache_manager
+
+# ============ Statistics Manager ============
+
+app.statistics_manager = None
+if config.STATS_ENABLED:
+    try:
+        statistics_manager = StatisticsManager()
+        statistics_manager.initialize()
+        app.statistics_manager = statistics_manager
+        logger.info("Statistics manager initialized")
+        try:
+            removed = statistics_manager.cleanup()
+            if removed:
+                logger.info(
+                    "Startup statistics retention cleanup removed %s events",
+                    removed,
+                )
+        except Exception:
+            logger.exception(
+                "Startup statistics retention cleanup failed; collection remains enabled"
+            )
+    except Exception:
+        logger.exception(
+            "Statistics are enabled but the database could not be initialized; "
+            "event collection is unavailable"
+        )
 
 # ============ Responder Manager ============
 
@@ -267,22 +296,39 @@ except Exception as e:
     app.auth_manager = None
 
 
-# ============ Periodic Cleanup (Memory Cache only) ============
+# ============ Periodic Cleanup ============
 
-if validated_config['cache_type'] == 'memory':
+if (
+    validated_config['cache_type'] == 'memory'
+    or app.statistics_manager is not None
+):
     from flask_apscheduler import APScheduler
     
     scheduler = APScheduler()
     scheduler.init_app(app)
+
+    if validated_config['cache_type'] == 'memory':
+        @scheduler.task('interval', id='cleanup_cache', minutes=10)
+        def cleanup_expired_cache():
+            """Clean expired entries from memory cache every 10 minutes."""
+            with app.app_context():
+                removed = cache_manager.cleanup_expired()
+                if removed > 0:
+                    logger.info("Automatic cache cleanup removed %s entries", removed)
+
+    if app.statistics_manager is not None:
+        @scheduler.task('interval', id='cleanup_statistics', hours=24)
+        def cleanup_statistics_events():
+            """Remove statistics events beyond the configured retention window."""
+            with app.app_context():
+                removed = app.statistics_manager.cleanup()
+                if removed:
+                    logger.info(
+                        "Automatic statistics retention cleanup removed %s events",
+                        removed,
+                    )
+
     scheduler.start()
-    
-    @scheduler.task('interval', id='cleanup_cache', minutes=10)
-    def cleanup_expired_cache():
-        """Clean expired entries from memory cache every 10 minutes"""
-        with app.app_context():
-            removed = cache_manager.cleanup_expired()
-            if removed > 0:
-                logger.info(f"Automatic cleanup: {removed} entries removed")
 
 # ============ Template Filters ============
 

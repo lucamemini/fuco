@@ -10,11 +10,17 @@ import time
 from typing import Optional, List, Dict, Any
 from dataclasses import dataclass
 from datetime import datetime
+from flask import current_app, has_app_context, has_request_context, session
 
 from cortex4py.api import Api
 from requests.auth import HTTPBasicAuth
 
 import config_responder as responder_cfg
+from statistics_manager import (
+    duration_milliseconds,
+    record_event_safely,
+    update_event_safely,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -197,7 +203,9 @@ class ResponderManager:
                      api_key: str = None,
                      tlp: int = responder_cfg.RESPONDER_DEFAULT_TLP,
                      pap: int = responder_cfg.RESPONDER_DEFAULT_PAP,
-                     message: str = None) -> ResponderAction:
+                     message: str = None,
+                     statistics_username: str = None,
+                     mode: str = "single") -> ResponderAction:
         """
         Execute a responder on an observable.
         
@@ -226,6 +234,23 @@ class ResponderManager:
 
             responder_name = self._get_responder_name(responder_id, api) or responder_id
             if not self._is_allowed_by_config(responder_id, responder_name, data_type):
+                stats_manager = (
+                    getattr(current_app, 'statistics_manager', None)
+                    if has_app_context() else None
+                )
+                record_event_safely(
+                    stats_manager,
+                    'responder',
+                    username=statistics_username or (
+                        session.get('cortex_username')
+                        if has_request_context() else username
+                    ),
+                    responder_name=responder_name,
+                    data_type=data_type,
+                    indicators_count=1,
+                    mode=mode,
+                    status='Invalid data type',
+                )
                 raise ValueError(
                     f"Responder '{responder_name}' is not allowed for data type '{data_type}' by configuration"
                 )
@@ -290,6 +315,25 @@ class ResponderManager:
             
             # Add to history
             self._action_history.append(action)
+
+            stats_manager = (
+                getattr(current_app, 'statistics_manager', None)
+                if has_app_context() else None
+            )
+            record_event_safely(
+                stats_manager,
+                'responder',
+                job_id=str(action.job_id),
+                username=statistics_username or (
+                    session.get('cortex_username')
+                    if has_request_context() else username
+                ),
+                responder_name=action.responder_name,
+                data_type=data_type,
+                indicators_count=1,
+                mode=mode,
+                status='Submitted',
+            )
             
             logger.info(f"Responder job started: {job.id}")
             return action
@@ -306,7 +350,8 @@ class ResponderManager:
                           api_key: str = None,
                           tlp: int = responder_cfg.RESPONDER_DEFAULT_TLP,
                           pap: int = responder_cfg.RESPONDER_DEFAULT_PAP,
-                          message: str = None) -> List[ResponderAction]:
+                          message: str = None,
+                          statistics_username: str = None) -> List[ResponderAction]:
         """
         Execute multiple responders on multiple observables.
         
@@ -340,7 +385,9 @@ class ResponderManager:
                         api_key=api_key,
                         tlp=tlp,
                         pap=pap,
-                        message=message
+                        message=message,
+                        statistics_username=statistics_username,
+                        mode="bulk",
                     )
                     actions.append(action)
                     
@@ -407,6 +454,21 @@ class ResponderManager:
                 'startDate': getattr(job, 'startDate', None),
                 'endDate': getattr(job, 'endDate', None)
             }
+
+            if job.status in ('Success', 'Failure', 'Deleted'):
+                stats_manager = (
+                    getattr(current_app, 'statistics_manager', None)
+                    if has_app_context() else None
+                )
+                update_event_safely(
+                    stats_manager,
+                    'responder',
+                    str(job_id),
+                    status=job.status,
+                    duration_ms=duration_milliseconds(
+                        result['startDate'], result['endDate']
+                    ),
+                )
             
             # If completed, add report
             if job.status in ('Success', 'Failure'):
@@ -454,7 +516,7 @@ class ResponderManager:
             try:
                 status = self.get_responder_job_status(job_id, username, password, api_key)
                 
-                if status['status'] in ('Success', 'Failure'):
+                if status['status'] in ('Success', 'Failure', 'Deleted'):
                     logger.info(f"Job {job_id} completed: {status['status']}")
                     return status
                 
@@ -466,6 +528,13 @@ class ResponderManager:
                 raise
         
         logger.warning(f"Job {job_id} timed out after {max_attempts} attempts")
+        stats_manager = (
+            getattr(current_app, 'statistics_manager', None)
+            if has_app_context() else None
+        )
+        update_event_safely(
+            stats_manager, 'responder', str(job_id), status='Timeout'
+        )
         return {
             'id': job_id,
             'status': 'Timeout',

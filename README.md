@@ -203,10 +203,74 @@ Edit `config.py` to customize FUCO behavior:
 | `REDIS_URL` | `None` | Redis URL (overrides host/port if set) |
 | `REDIS_HOST` / `REDIS_PORT` / `REDIS_DB` | `localhost` / `6379` / `0` | Redis connection parameters |
 | `REDIS_PASSWORD` | `None` | Redis password (if enabled) |
+| `STATS_ENABLED` | `True` | Enable/disable FUCO statistics collection |
+| `STATS_DB_PATH` | `'/opt/fuco/data/stats.sqlite3'` | SQLite database path for statistics |
+| `STATS_RETENTION_DAYS` | `90` | Statistics event retention period (days) |
+| `STATS_ADMIN_USERS` | `[]` | Cortex usernames allowed to view other users' individual statistics |
 | `API_SHORT_MAX_ATTEMPTS` | 15 | Polling attempts for short API |
 | `API_SHORT_INITIAL_DELAY` | 5 | Initial delay between polls (seconds) |
 | `JOB_RECENT_LIMIT` | 10 | Number of recent searches to display |
 | `ALLOWED_IPS` | `['127.0.0.1','::1']` | Whitelist for cache admin endpoints |
+
+#### Statistics database
+
+Statistics settings are defined in `config.py`. The default SQLite database is
+`/opt/fuco/data/stats.sqlite3`; set `STATS_DB_PATH` to use another location.
+Create the parent directory and grant the FUCO process read/write/execute
+permissions on that directory and read/write permissions on the database file.
+The directory must be writable so SQLite can create the database and its
+temporary journal files. FUCO does not create missing database directories.
+`STATS_RETENTION_DAYS` defaults to 90 days. Set `STATS_ENABLED` to `False` to
+disable collection. FUCO removes expired events at startup and once every 24
+hours; repeated or overlapping cleanup runs are safe. The database is also
+opened at the configured path on each operation, so the parent directory must
+exist and be writable by the FUCO process.
+
+The statistics manager logs database errors and raises them to its caller. The
+stored schema is limited to event metadata and aggregate counts/timings and does
+not include observables, reports, prompts, AI responses, API keys, or responder
+parameters. AI events record success/failure, fresh/cache/forced-refresh source,
+provider latency, available token counts, and indicator/report counts.
+Analyzer and responder events record the job name, data type, authenticated
+username, status, and duration when available; submitted jobs remain marked as
+unobserved until a final status is seen. Statistics APIs require an authenticated
+FUCO session; all users can view global aggregates and their own statistics.
+Set `STATS_ADMIN_USERS` to a list of Cortex usernames to allow those
+administrators to select other users.
+
+For Docker Compose deployments, statistics are stored in the persistent
+`stats_data` volume mounted at `/opt/fuco/data`.
+
+#### Back up and restore statistics
+
+Use SQLite's online backup API instead of copying the database file while FUCO
+is running. For example, create a backup with:
+
+```python
+import sqlite3
+
+source = sqlite3.connect("/opt/fuco/data/stats.sqlite3")
+backup = sqlite3.connect("/safe/backup/stats.sqlite3")
+source.backup(backup)
+backup.close()
+source.close()
+```
+
+To restore, stop FUCO and copy the backup into the configured database path
+using the same `Connection.backup()` method in reverse:
+
+```python
+import sqlite3
+
+backup = sqlite3.connect("/safe/backup/stats.sqlite3")
+target = sqlite3.connect("/opt/fuco/data/stats.sqlite3")
+backup.backup(target)
+target.close()
+backup.close()
+```
+
+Then ensure the restored database file and its parent directory are readable
+and writable by the FUCO service account before restarting FUCO.
 
 #### Rate limiting (Flask-Limiter)
 
@@ -726,6 +790,7 @@ Create the service account if it does not already exist, and ensure the service 
 if ! id -u fuco >/dev/null 2>&1; then
   sudo useradd --system --user-group --home-dir /opt/fuco --shell /usr/sbin/nologin fuco
 fi
+sudo install -d -o fuco -g fuco /opt/fuco/data
 sudo install -d -o fuco -g fuco /opt/fuco/logs /opt/fuco/flask_session
 sudo chown -R fuco:fuco /opt/fuco
 ```
@@ -939,6 +1004,8 @@ curl http://localhost:5000/api/getAnalyzer
 | `/api/ai/cache-assessment` | POST | Return cached AI assessment only |
 | `/api/submit_job` | POST | Submit single job (AJAX) |
 | `/api/poll_job/<job_id>` | GET | Poll job status |
+| `/api/statistics/aggregate` | GET | Global and current-user statistics (authenticated) |
+| `/api/statistics/users` | GET | List users for statistics (statistics administrators) |
 | `/api/cache/stats` | GET | Cache statistics (IP-restricted) |
 | `/api/cache/clear` | POST | Clear cache (IP-restricted) |
 | `/health` | GET | Health check endpoint |

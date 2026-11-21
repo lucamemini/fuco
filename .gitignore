@@ -21,10 +21,15 @@ __pycache__/
 .Python
 venv/
 env/
+docs/
 
 # Runtime logs
 logs/*.log
+flask_session/*
 
 # Compliance artifacts
 /compliance/
+
+# Development notes
+/DEVEL/
 

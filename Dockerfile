@@ -14,7 +14,7 @@ RUN pip install --no-cache-dir -r requirements.txt \
     && pip install --no-cache-dir gunicorn
 
 COPY . /app
-RUN mkdir -p /app/logs /app/flask_session
+RUN mkdir -p /app/logs /app/flask_session /opt/fuco/data
 
 EXPOSE 8000
 

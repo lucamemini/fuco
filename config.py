@@ -89,6 +89,15 @@ REDIS_SOCKET_CONNECT_TIMEOUT = 5
 
 # ============ END CACHE CONFIGURATION ============
 
+# ============ STATISTICS CONFIGURATION ============
+
+STATS_ENABLED = True
+STATS_DB_PATH = '/opt/fuco/data/stats.sqlite3'
+STATS_RETENTION_DAYS = 90
+STATS_ADMIN_USERS = []
+
+# ============ END STATISTICS CONFIGURATION ============
+
 # ============ RATE LIMITS (Flask-Limiter) ============
 
 # Format: "N/period" (e.g., "10/minute", "100/hour")

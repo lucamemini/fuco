@@ -19,6 +19,7 @@ from urllib import error as url_error
 from urllib import request as url_request
 
 import config_ai as ai_cfg
+from statistics_manager import record_event_safely
 
 logger = logging.getLogger(__name__)
 
@@ -679,9 +680,18 @@ def call_gemini(bundle: dict) -> Tuple[dict, dict]:
         "model": model,
         "latency_ms": elapsed_ms,
         "token_usage": {
-            "input_tokens": int(usage.get("promptTokenCount", 0) or 0),
-            "output_tokens": int(usage.get("candidatesTokenCount", 0) or 0),
-            "total_tokens": int(usage.get("totalTokenCount", 0) or 0),
+            "input_tokens": (
+                int(usage["promptTokenCount"])
+                if usage.get("promptTokenCount") is not None else None
+            ),
+            "output_tokens": (
+                int(usage["candidatesTokenCount"])
+                if usage.get("candidatesTokenCount") is not None else None
+            ),
+            "total_tokens": (
+                int(usage["totalTokenCount"])
+                if usage.get("totalTokenCount") is not None else None
+            ),
         },
     }
 
@@ -799,7 +809,11 @@ def call_gti(bundle: dict) -> Tuple[dict, dict]:
     meta = {
         "model": get_provider_model("gti") or "gti-agent",
         "latency_ms": elapsed_ms,
-        "token_usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0},
+        "token_usage": {
+            "input_tokens": None,
+            "output_tokens": None,
+            "total_tokens": None,
+        },
         "session_id": resp.headers.get("x-session-id"),
     }
     if bool(getattr(ai_cfg, "AI_LOG_REQUEST_RESPONSE", True)):
@@ -809,11 +823,39 @@ def call_gti(bundle: dict) -> Tuple[dict, dict]:
     return _normalize_assessment(assessment), meta
 
 
-def get_or_generate_assessment(cache_manager, bundle: dict, force_refresh: bool = False, provider: str = None) -> dict:
+def get_or_generate_assessment(
+    cache_manager,
+    bundle: dict,
+    force_refresh: bool = False,
+    provider: str = None,
+    statistics_manager=None,
+    username: str = None,
+    indicators_count: int = 1,
+    reports_count: int = 0,
+    ai_input_count: int = 0,
+) -> dict:
     provider = resolve_provider(provider)
     cache_key = make_cache_key(bundle, provider)
     latest_index_key = make_latest_index_key(bundle.get("observable"), bundle.get("datatype"), provider)
     started = time.time()
+
+    def record_ai_event(status, source, duration_ms, latency_ms=None, token_usage=None):
+        usage = token_usage or {}
+        record_event_safely(
+            statistics_manager,
+            "ai",
+            username=username,
+            status=status,
+            source=source,
+            duration_ms=duration_ms,
+            provider_latency_ms=latency_ms,
+            indicators_count=indicators_count,
+            reports_count=reports_count,
+            ai_input_count=ai_input_count,
+            input_tokens=usage.get("input_tokens"),
+            output_tokens=usage.get("output_tokens"),
+            total_tokens=usage.get("total_tokens"),
+        )
 
     cache_lookup_started = time.time()
     cached = None
@@ -837,6 +879,9 @@ def get_or_generate_assessment(cache_manager, bundle: dict, force_refresh: bool 
             cache_lookup_ms,
             int((time.time() - started) * 1000),
         )
+        record_ai_event(
+            "Success", "cache", int((time.time() - started) * 1000)
+        )
         return response
 
     logger.info(
@@ -847,8 +892,17 @@ def get_or_generate_assessment(cache_manager, bundle: dict, force_refresh: bool 
     )
 
     ai_call_started = time.time()
-    assessment, meta = _PROVIDER_CALLS[provider](bundle)
+    try:
+        assessment, meta = _PROVIDER_CALLS[provider](bundle)
+    except Exception:
+        record_ai_event(
+            "Failure",
+            "refresh" if force_refresh else "fresh",
+            int((time.time() - started) * 1000),
+        )
+        raise
     ai_call_ms = int((time.time() - ai_call_started) * 1000)
+    token_usage = meta.get("token_usage") or {}
 
     response = {
         "ok": True,
@@ -857,11 +911,23 @@ def get_or_generate_assessment(cache_manager, bundle: dict, force_refresh: bool 
         "prompt_version": getattr(ai_cfg, "AI_PROMPT_VERSION", "v1"),
         "provider": provider,
         "model": meta["model"],
-        "latency_ms": meta["latency_ms"],
-        "token_usage": meta["token_usage"],
+        "latency_ms": meta.get("latency_ms"),
+        "token_usage": {
+            "input_tokens": token_usage.get("input_tokens"),
+            "output_tokens": token_usage.get("output_tokens"),
+            "total_tokens": token_usage.get("total_tokens"),
+        },
         "assessment": assessment,
         "created_at": datetime.utcnow().isoformat() + "Z",
     }
+
+    record_ai_event(
+        "Success",
+        "refresh" if force_refresh else "fresh",
+        int((time.time() - started) * 1000),
+        latency_ms=response["latency_ms"],
+        token_usage=response["token_usage"],
+    )
 
     cache_manager.set_ai_assessment(cache_key, response)
     cache_manager.set_ai_assessment(

@@ -203,6 +203,33 @@ Clears the cache.
 
 ---
 
+## Statistics APIs (require authenticated session)
+
+### GET /api/statistics/aggregate
+Returns global aggregates and the individual aggregates for the authenticated
+user. Administrators may pass `username=<cortex_username>` to select another
+user's individual aggregates. The response includes daily AI fresh/cache/refresh
+counts, AI latency and token totals, analyzer/responder outcomes, duration
+percentiles, and top/least-used and reliable analyzer/responder rankings grouped
+by data type. Submitted jobs are reported as unobserved, not counted as failures.
+
+Query params:
+- `days` (optional): `7`, `30` (default), or `90`
+- `username` (optional; statistics administrators only)
+
+### GET /api/statistics/users
+Lists usernames with statistics in the selected period. Available only to
+usernames configured in `STATS_ADMIN_USERS`.
+
+Query params:
+- `days` (optional): `7`, `30` (default), or `90`
+
+Statistics administrator usernames are configured as a list in `config.py`.
+These endpoints return aggregate data only; individual event rows are not
+exposed.
+
+---
+
 ## Responder APIs (require authenticated session)
 
 ### GET /api/responder/list

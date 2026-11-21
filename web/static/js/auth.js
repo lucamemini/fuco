@@ -89,6 +89,9 @@ function updateAuthState(authenticated, username) {
     window.authState.authenticated = authenticated;
     window.authState.username = username;
     updateAuthDependentUI(authenticated);
+    window.dispatchEvent(new CustomEvent('fuco-auth-state-changed', {
+        detail: { authenticated, username }
+    }));
 }
 
 function updateAuthDependentUI(authenticated) {

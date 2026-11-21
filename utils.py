@@ -22,7 +22,12 @@ import bleach
 
 # cache
 #from cache_manager import cache_manager
-from flask import current_app
+from flask import current_app, has_app_context, has_request_context, session
+from statistics_manager import (
+    duration_milliseconds,
+    record_event_safely,
+    update_event_safely,
+)
 
 # Logging configuration
 logger = logging.getLogger(__name__)
@@ -173,7 +178,35 @@ class InputValidator:
         # For other types, accept non-empty strings
         return
 
-def get_cached_report(job_id):
+def _statistics_manager():
+    if not has_app_context():
+        return None
+    return getattr(current_app, 'statistics_manager', None)
+
+
+def _statistics_username():
+    if not has_request_context():
+        return None
+    return session.get('cortex_username')
+
+
+def _record_analyzer_result(job_id, report):
+    status = getattr(report, 'status', None)
+    if status not in ('Success', 'Failure', 'Deleted'):
+        return
+    update_event_safely(
+        _statistics_manager(),
+        'analyzer',
+        str(job_id),
+        status=status,
+        duration_ms=duration_milliseconds(
+            getattr(report, 'startDate', None),
+            getattr(report, 'endDate', None),
+        ),
+    )
+
+
+def get_cached_report(job_id, include_source=False):
     """
     Retrieve a report from cache or Cortex.
     Uses the CacheManager configured in fuco.py.
@@ -185,7 +218,8 @@ def get_cached_report(job_id):
     report = cache_manager.get_report(job_id)
     if report:
         logger.debug(f"Report {job_id} retrieved from cache")
-        return report
+        _record_analyzer_result(job_id, report)
+        return (report, 'cache') if include_source else report
     
     # 2. Not in cache, fetch from Cortex
     logger.info(f"Report {job_id} not in cache, fetching from Cortex")
@@ -198,6 +232,7 @@ def get_cached_report(job_id):
         
         if hasattr(report, 'status') and report.status in final_statuses:
             cache_manager.set_report(job_id, report)
+            _record_analyzer_result(job_id, report)
             logger.info(f"Report {job_id} saved to cache (status: {report.status})")
         else:
             current_status = getattr(report, 'status', 'Unknown')
@@ -206,7 +241,7 @@ def get_cached_report(job_id):
                 f"(non-final status: {current_status})"
             )
         
-        return report
+        return (report, 'cortex') if include_source else report
         
     except Exception as e:
         logger.error(f"Error retrieving report {job_id}: {str(e)}")
@@ -380,7 +415,18 @@ def run_analysis(analyzer: str, datatype: str, data: str, tlp: int = None, pap: 
         )
         
         logger.info(f"Job started: {analyzer} for {datatype} '{data}' (ID: {job.id}) - TLP:{tlp} PAP:{pap}")
-        return job.json()
+        job_result = job.json()
+        record_event_safely(
+            _statistics_manager(),
+            'analyzer',
+            job_id=str(job.id),
+            username=_statistics_username(),
+            analyzer_name=analyzer,
+            data_type=datatype,
+            indicators_count=1,
+            status='Submitted',
+        )
+        return job_result
         
     except Exception as e:
         logger.error(f"Error starting analysis: {str(e)}")
@@ -500,11 +546,15 @@ def poll_job(job_id: str, max_attempts: int = None, initial_delay: int = None):
             time.sleep(initial_delay + attempt)
             #report = cortex_api.jobs.get_report(job_id)
             report = get_cached_report(job_id)
-            if report.status in ("Success", "Failure"):
+            if report.status in ("Success", "Failure", "Deleted"):
                 logger.info(f"Job {job_id} completed with status: {report.status}")
                 return report
         
         logger.warning(f"Job {job_id} not completed after {max_attempts} attempts")
+        if max_attempts > 1:
+            update_event_safely(
+                _statistics_manager(), 'analyzer', str(job_id), status='Timeout'
+            )
         return None
     except Exception as e:
         logger.error(f"Error while polling job {job_id}: {str(e)}")

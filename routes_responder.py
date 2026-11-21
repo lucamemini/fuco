@@ -207,7 +207,8 @@ def register_responder_routes(app):
                 api_key=api_key,  # Use API key from the session
                 tlp=req.tlp,
                 pap=req.pap,
-                message=req.message
+                message=req.message,
+                statistics_username=username,
             )
             
             # Refresh session
@@ -299,6 +300,11 @@ def register_responder_routes(app):
             
             # Convert observables to dict
             observables = [obs.dict() for obs in req.observables]
+            statistics_username = (
+                auth_manager.get_username()
+                if auth_manager and auth_manager.is_authenticated()
+                else req.username
+            )
             
             # Execute bulk
             actions = responder_manager.run_responder_bulk(
@@ -309,7 +315,8 @@ def register_responder_routes(app):
                 api_key=api_key,
                 tlp=req.tlp,
                 pap=req.pap,
-                message=req.message
+                message=req.message,
+                statistics_username=statistics_username,
             )
             
             # Notify for each action

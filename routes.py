@@ -511,6 +511,14 @@ def home():
         logger.error(f"Error in home(): {str(e)}")
         return error_response(str(e))
 
+@routes_bp.route('/statistics')
+def statistics_page():
+    """Render the authenticated statistics dashboard shell."""
+    return render_template(
+        'statistics.html',
+        cortex_host=_get_cortex_host(),
+    )
+
 @routes_bp.route("/favicon.ico")
 def favicon():
     return "", 204
@@ -1194,12 +1202,17 @@ def api_ai_analyze():
         reports_payload = []
         final_statuses = ("Success", "Failure", "Deleted")
         reports_collection_started = time.time()
+        reports_received_count = 0
 
         for job_id in jobs:
-            report = utils.get_cached_report(job_id)
+            report, report_source = utils.get_cached_report(
+                job_id, include_source=True
+            )
             if not report:
                 continue
 
+            if report_source == 'cortex':
+                reports_received_count += 1
             status = getattr(report, 'status', None)
             if getattr(config_ai, 'AI_REQUIRE_FINAL_RESULTS', True) and status not in final_statuses:
                 return error_response(f"Job {job_id} not completed yet", 409)
@@ -1221,6 +1234,11 @@ def api_ai_analyze():
             bundle,
             force_refresh=bool(ai_req.force_refresh),
             provider=ai_req.provider,
+            statistics_manager=getattr(current_app, 'statistics_manager', None),
+            username=session.get('cortex_username'),
+            indicators_count=1,
+            reports_count=reports_received_count,
+            ai_input_count=len(reports_payload),
         )
         ai_step_ms = int((time.time() - ai_step_started) * 1000)
 

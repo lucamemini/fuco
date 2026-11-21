@@ -11,6 +11,7 @@ services:
     volumes:
       - ./logs:/app/logs
       - ./flask_session:/app/flask_session
+      - stats_data:/opt/fuco/data
     depends_on:
       - redis
 
@@ -26,3 +27,4 @@ services:
 
 volumes:
   redis_data:
+  stats_data:
