@@ -70,12 +70,6 @@ try:
 except ImportError:
     from bleach.sanitizer import Cleaner
 
-    _CLEANER = Cleaner(
-        tags=_ALLOWED_TAGS,
-        attributes=_ALLOWED_ATTRS,
-        styles=_ALLOWED_STYLES,
-        strip=True,
-    )
     _USE_CSS_SANITIZER = False
 
 
@@ -95,7 +89,12 @@ def sanitize_html(html: str) -> str:
             css_sanitizer=_CSS_SANITIZER,
         )
     else:
-        return _CLEANER.clean(html)
+        return Cleaner(
+            tags=_ALLOWED_TAGS,
+            attributes=_ALLOWED_ATTRS,
+            styles=_ALLOWED_STYLES,
+            strip=True,
+        ).clean(html)
 
 class InputValidator:
     """Input validation and sanitization."""
