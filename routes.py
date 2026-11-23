@@ -956,8 +956,8 @@ def api_analysis_bulk_job(job_id):
             }
     """
     try:
-        # Validate job_id: Cortex IDs are alphanumeric + hyphens only
-        if not re.fullmatch(r'[A-Za-z0-9\-]{1,128}', job_id):
+        # Cortex job IDs use URL-safe alphanumeric characters, hyphens and underscores.
+        if not re.fullmatch(r'[A-Za-z0-9_-]{1,128}', job_id):
             return error_response("Invalid job ID", 400)
 
         # Single non-blocking check (max_attempts=1, initial_delay=0)

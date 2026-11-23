@@ -911,8 +911,27 @@
                         `&dataType=${encodeURIComponent(job.dataType)}` +
                         `&analyzer=${encodeURIComponent(job.analyzerId)}`
                     )
-                    .then(r => r.ok ? r.json() : null)
-                    .catch(() => null)
+                    .then(async r => {
+                        if (r.ok) return r.json();
+                        if (r.status >= 400 && r.status < 500 && r.status !== 408 && r.status !== 429) {
+                            let message = `HTTP ${r.status}`;
+                            if ((r.headers.get('content-type') || '').includes('application/json')) {
+                                try {
+                                    const body = await r.json();
+                                    if (typeof body.error === 'string') message += `: ${body.error}`;
+                                } catch (error) {
+                                    console.warn('Invalid polling error response:', error);
+                                }
+                            }
+                            return { status: 'error', error: message };
+                        }
+                        console.warn(`Bulk job polling failed (HTTP ${r.status}); retrying`);
+                        return null;
+                    })
+                    .catch(error => {
+                        console.warn('Bulk job polling failed; retrying:', error);
+                        return null;
+                    })
                 );
 
                 const results  = await Promise.allSettled(fetches);
@@ -922,6 +941,12 @@
                     const data = res.status === 'fulfilled' ? res.value : null;
                     if (data && data.status === 'done') {
                         updateAnalysisRow(pending[i].jobId, data.result);
+                    } else if (data && data.status === 'error') {
+                        updateAnalysisRow(pending[i].jobId, {
+                            status: 'Error',
+                            shortSummary: data.error,
+                            taxonomies: []
+                        });
                     } else {
                         stillPending.push(pending[i]);
                     }

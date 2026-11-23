@@ -87,6 +87,55 @@ class StatisticsManagerTests(unittest.TestCase):
         self.assertEqual(aggregate[0]["success_count"], 1)
         self.assertEqual(aggregate[0]["average_duration_ms"], 125.5)
 
+    def test_event_insertion_works_without_upsert_syntax(self):
+        class LegacyConnection(sqlite3.Connection):
+            def execute(self, sql, parameters=()):
+                if "ON CONFLICT" in sql.upper():
+                    raise sqlite3.OperationalError('near "ON": syntax error')
+                return super().execute(sql, parameters)
+
+        connect = sqlite3.connect
+
+        def legacy_connect(*args, **kwargs):
+            return connect(*args, factory=LegacyConnection, **kwargs)
+
+        with mock.patch("statistics_manager.sqlite3.connect", side_effect=legacy_connect):
+            job_id = self.manager.record_event("analyzer", job_id="job-1")
+            self.assertEqual(self.manager.record_event("analyzer", job_id="job-1"), job_id)
+            self.assertNotEqual(
+                self.manager.record_event("responder", job_id="job-1"), job_id
+            )
+            first_ai = self.manager.record_event("ai")
+            self.assertNotEqual(self.manager.record_event("ai"), first_ai)
+
+    def test_concurrent_duplicate_job_insertions_return_same_id(self):
+        with ThreadPoolExecutor(max_workers=8) as executor:
+            ids = list(executor.map(
+                lambda _: self.manager.record_event("analyzer", job_id="shared-job"),
+                range(16),
+            ))
+
+        self.assertEqual(len(set(ids)), 1)
+        self.assertEqual(
+            self.manager.aggregate_events(event_type="analyzer")[0]["event_count"], 1
+        )
+
+    def test_insertion_does_not_hide_other_constraint_errors(self):
+        connection = sqlite3.connect(self.db_path)
+        try:
+            connection.execute(
+                "CREATE TRIGGER reject_event BEFORE INSERT ON statistics_events "
+                "WHEN NEW.status = 'rejected' BEGIN "
+                "SELECT RAISE(ABORT, 'rejected'); END"
+            )
+            connection.commit()
+        finally:
+            connection.close()
+
+        with self.assertLogs("statistics_manager", level=logging.ERROR):
+            with self.assertRaisesRegex(sqlite3.IntegrityError, "rejected"):
+                self.manager.record_event("analyzer", job_id="job-1", status="rejected")
+
     def test_ai_events_persist_and_aggregate_without_job_ids(self):
         self.manager.record_event(
             "ai",

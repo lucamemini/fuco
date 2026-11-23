@@ -1,7 +1,43 @@
 import unittest
 from unittest import mock
 
+from flask import Flask
+
+from routes import routes_bp
 import utils
+
+
+class BulkAnalysisJobRouteTests(unittest.TestCase):
+    def setUp(self):
+        app = Flask(__name__)
+        app.secret_key = "test"
+        app.config["TESTING"] = True
+        app.auth_manager = mock.Mock()
+        app.auth_manager.is_authenticated.return_value = True
+        app.register_blueprint(routes_bp)
+        self.client = app.test_client()
+
+    def test_poll_accepts_url_safe_cortex_ids(self):
+        report = mock.Mock(status="Success", analyzerName="Example")
+        for job_id in ("_d7CB6IBHJ4vDlgeLoAQ", "-d7CB6IBHJ4vDlgeIoAH", "a_b-c"):
+            with self.subTest(job_id=job_id), \
+                 mock.patch("routes.utils.get_cached_report", return_value=report) as get_report, \
+                 mock.patch("routes.utils.build_short_result", return_value={"status": "Success"}):
+                response = self.client.get(
+                    "/api/analysis/bulk/job/" + job_id,
+                    query_string={"observable": "1.1.1.1", "dataType": "ip", "analyzer": "id"},
+                )
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(response.get_json()["status"], "done")
+                get_report.assert_called_once_with(job_id)
+
+    def test_poll_rejects_invalid_ids(self):
+        for job_id in ("bad.id", "bad%20id", "a" * 129):
+            with self.subTest(job_id=job_id), \
+                 mock.patch("routes.utils.get_cached_report") as get_report:
+                response = self.client.get("/api/analysis/bulk/job/" + job_id)
+                self.assertEqual(response.status_code, 400)
+                get_report.assert_not_called()
 
 
 class BulkAnalysisTests(unittest.TestCase):

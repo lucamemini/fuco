@@ -341,11 +341,12 @@ class StatisticsManager:
 
         with self._connection() as connection:
             cursor = connection.execute(
-                "INSERT INTO statistics_events ({}) VALUES ({}) "
-                "ON CONFLICT (event_type, job_id) DO NOTHING".format(
+                "INSERT INTO statistics_events ({}) SELECT {} "
+                "WHERE NOT EXISTS (SELECT 1 FROM statistics_events "
+                "WHERE event_type = ? AND job_id = ?)".format(
                     column_list, placeholders
                 ),
-                values,
+                values + [event_type, job_id],
             )
             if cursor.rowcount:
                 return int(cursor.lastrowid)

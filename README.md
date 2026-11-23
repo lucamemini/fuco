@@ -226,8 +226,11 @@ hours; repeated or overlapping cleanup runs are safe. The database is also
 opened at the configured path on each operation, so the parent directory must
 exist and be writable by the FUCO process.
 
-The statistics manager logs database errors and raises them to its caller. The
-stored schema is limited to event metadata and aggregate counts/timings and does
+The statistics manager logs database errors and raises them to its caller.
+The event insertion query does not require SQLite's UPSERT syntax (introduced in
+SQLite 3.24). Events that failed to persist cannot be recovered from the
+statistics database. The stored schema is limited to event metadata and
+aggregate counts/timings and does
 not include observables, reports, prompts, AI responses, API keys, or responder
 parameters. AI events record success/failure, fresh/cache/forced-refresh source,
 provider latency, available token counts, and indicator/report counts.
