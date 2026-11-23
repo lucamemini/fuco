@@ -872,7 +872,7 @@ def api_analyzer_list():
     Response JSON:
     {
         "analyzers": [
-            {"id": "AnalyzerName_x_x", "name": "AnalyzerName_x_x", "dataTypeList": ["ip", "domain"]},
+            {"id": "<cortex-analyzer-id>", "name": "AnalyzerName_x_x", "dataTypeList": ["ip", "domain"]},
             ...
         ]
     }
@@ -1012,7 +1012,7 @@ def api_analysis_bulk():
             {"data": "1.2.3.4", "dataType": "ip"},
             {"data": "evil.com"}
         ],
-        "analyzerIds": ["VirusTotal_GetReport_3_1", "AbuseIPDB_1_0"],
+        "analyzerIds": ["<cortex-analyzer-id>"],
         "tlp": 1,
         "pap": 1,
         "message": "optional context"

@@ -367,16 +367,20 @@ def get_recent_searches():
         logger.error(f"Error retrieving recent searches: {str(e)}")
         return {}
 
-def run_analysis(analyzer: str, datatype: str, data: str, tlp: int = None, pap: int = None) -> dict:
+def run_analysis(
+    analyzer: str, datatype: str, data: str, tlp: int = None, pap: int = None,
+    *, by_id: bool = False,
+) -> dict:
     """
     Run an analysis through a specific analyzer.
     
     Args:
-        analyzer: Analyzer name
+        analyzer: Analyzer name, or ID when by_id is True
         datatype: Data type (ip, domain, url, hash, etc.)
         data: Data to analyze
         tlp: Traffic Light Protocol level (0-3). If None, uses config.DEFAULT_TLP
         pap: Permissible Actions Protocol level (0-3). If None, uses config.DEFAULT_PAP
+        by_id: Run the analyzer by its Cortex ID instead of its name
     
     Returns:
         dict: JSON result of the submitted job
@@ -403,7 +407,7 @@ def run_analysis(analyzer: str, datatype: str, data: str, tlp: int = None, pap: 
     
     try:
         job = cortex_api_call(
-            cortex_api.analyzers.run_by_name,
+            cortex_api.analyzers.run_by_id if by_id else cortex_api.analyzers.run_by_name,
             analyzer,
             {
                 'data': data,
@@ -451,7 +455,7 @@ def run_analysis_bulk(
 
     Args:
         observables:  list of dicts ``{"data": ..., "dataType": ...}``
-        analyzer_ids: list of analyzer name/id strings
+        analyzer_ids: list of Cortex analyzer ID strings
         tlp:          TLP level (0-3); falls back to config default
         pap:          PAP level (0-3); falls back to config default
         message:      optional free-text context (not used by Cortex run, kept
@@ -499,7 +503,7 @@ def run_analysis_bulk(
 
             time.sleep(delay)
             try:
-                job = run_analysis(analyzer_id, obs_type, obs_data, tlp, pap)
+                job = run_analysis(analyzer_id, obs_type, obs_data, tlp, pap, by_id=True)
                 jobs_out.append({
                     'observable': obs_data,
                     'dataType': obs_type,
